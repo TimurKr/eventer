@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={font.className}>
       <body className="h-screen bg-background text-foreground">
-        <main className="flex h-full min-h-screen">{children}</main>
+        <main className="flex h-full min-h-screen w-full">{children}</main>
       </body>
     </html>
   );

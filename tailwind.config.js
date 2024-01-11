@@ -17,4 +17,9 @@ module.exports = {
     },
   },
   plugins: [],
+  safelist: [
+    {
+      pattern: /(bg|text)-(yellow|gray|blue)-(200|600)/,
+    },
+  ],
 };

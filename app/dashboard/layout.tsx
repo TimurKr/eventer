@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   };
 
   return (
-    <section className="flex h-full justify-start">
+    <section className="flex h-full w-full justify-start">
       <nav className="flex w-48 flex-col gap-1 bg-gray-100 p-2">
         <p className="p-2 text-lg font-black tracking-widest">
           Tajomné Variácie
