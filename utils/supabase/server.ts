@@ -7,7 +7,7 @@ import { Database } from "@/utils/supabase/database.types";
 // Do not cache
 export const revalidate = 0;
 
-export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
+export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,3 +38,9 @@ export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
     },
   );
 };
+
+export const getServerUser = async (cooieStore: ReturnType<typeof cookies>) => {
+  const supabase = createServerSupabase(cooieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
