@@ -10,18 +10,18 @@ export default function Links() {
   const supabase = createBrowserSupabase();
 
   return [
-    { title: "Predstavenia", href: "events" },
-    { title: "Lístky", href: "tickets" },
+    { title: "Predstavenia", href: "/dashboard/events" },
+    { title: "Kupóny", href: "/dashboard/coupons" },
   ].map((item) => (
     <Link
       key={item.href}
       className={
-        "w-auto rounded-md px-4 py-1 pl-2 " +
-        (path === `/dashboard/${item.href}`
-          ? "bg-blue-100 font-black tracking-wide text-blue-500 hover:bg-blue-200"
-          : "hover:bg-gray-200")
+        "w-auto rounded-lg px-4 py-1 pl-2 " +
+        (path.startsWith(`${item.href}`)
+          ? "bg-cyan-700/70 font-bold tracking-widest text-white hover:bg-cyan-600"
+          : "hover:bg-cyan-700/30")
       }
-      href={`${item.href}`}
+      href={item.href}
     >
       {item.title}
     </Link>

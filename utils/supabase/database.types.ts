@@ -32,13 +32,13 @@ export interface Database {
       };
       tickets: {
         Row: {
-          bought_with: string | null;
+          billing_email: string | null;
+          billing_name: string | null;
+          billing_phone: string | null;
           created_at: string;
           email: string | null;
           event_id: number;
-          guest_email: string | null;
-          guest_name: string | null;
-          guest_phone: string | null;
+          group_id: string | null;
           id: string;
           name: string;
           phone: string | null;
@@ -47,13 +47,13 @@ export interface Database {
           type: string;
         };
         Insert: {
-          bought_with?: string | null;
+          billing_email?: string | null;
+          billing_name?: string | null;
+          billing_phone?: string | null;
           created_at?: string;
           email?: string | null;
           event_id: number;
-          guest_email?: string | null;
-          guest_name?: string | null;
-          guest_phone?: string | null;
+          group_id?: string | null;
           id?: string;
           name: string;
           phone?: string | null;
@@ -62,13 +62,13 @@ export interface Database {
           type: string;
         };
         Update: {
-          bought_with?: string | null;
+          billing_email?: string | null;
+          billing_name?: string | null;
+          billing_phone?: string | null;
           created_at?: string;
           email?: string | null;
           event_id?: number;
-          guest_email?: string | null;
-          guest_name?: string | null;
-          guest_phone?: string | null;
+          group_id?: string | null;
           id?: string;
           name?: string;
           phone?: string | null;
@@ -78,17 +78,17 @@ export interface Database {
         };
         Relationships: [
           {
-            foreignKeyName: "tickets_bought_with_fkey";
-            columns: ["bought_with"];
-            isOneToOne: false;
-            referencedRelation: "tickets";
-            referencedColumns: ["id"];
-          },
-          {
             foreignKeyName: "tickets_event_id_fkey";
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
             referencedColumns: ["id"];
           },
         ];

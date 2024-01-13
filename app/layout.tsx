@@ -2,7 +2,7 @@ import { Roboto } from "next/font/google";
 
 // If loading a variable font, you don't need to specify the font weight
 const font = Roboto({
-  weight: "400",
+  weight: ["100", "300", "400", "500", "700", "900"],
   subsets: ["latin"],
   display: "swap",
 });
