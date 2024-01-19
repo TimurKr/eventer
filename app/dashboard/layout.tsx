@@ -1,7 +1,7 @@
 import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
 import Links from "./links";
 import { cookies } from "next/headers";
-import AuthButton from "@/components/AuthButton";
+import AuthButton from "@/app/components/AuthButton";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@heroicons/react/24/solid";
@@ -47,7 +47,7 @@ export default async function DashboardLayout({
           </button>
         </form>
       </nav>
-      <div className="m-2 w-5/6 overflow-y-scroll rounded-xl bg-white p-4">
+      <div className="m-2 w-5/6 overflow-y-auto rounded-xl bg-white p-4 pe-2">
         {children}
       </div>
     </section>

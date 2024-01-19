@@ -33,47 +33,44 @@ export interface Database {
       tickets: {
         Row: {
           billing_email: string | null;
-          billing_name: string | null;
+          billing_name: string;
           billing_phone: string | null;
           created_at: string;
           email: string | null;
           event_id: number;
-          group_id: string | null;
           id: string;
           name: string;
+          payment_status: string;
           phone: string | null;
           price: number;
-          state: string;
           type: string;
         };
         Insert: {
           billing_email?: string | null;
-          billing_name?: string | null;
+          billing_name: string;
           billing_phone?: string | null;
           created_at?: string;
           email?: string | null;
           event_id: number;
-          group_id?: string | null;
           id?: string;
           name: string;
+          payment_status?: string;
           phone?: string | null;
           price: number;
-          state?: string;
           type: string;
         };
         Update: {
           billing_email?: string | null;
-          billing_name?: string | null;
+          billing_name?: string;
           billing_phone?: string | null;
           created_at?: string;
           email?: string | null;
           event_id?: number;
-          group_id?: string | null;
           id?: string;
           name?: string;
+          payment_status?: string;
           phone?: string | null;
           price?: number;
-          state?: string;
           type?: string;
         };
         Relationships: [
@@ -82,13 +79,6 @@ export interface Database {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "tickets_group_id_fkey";
-            columns: ["group_id"];
-            isOneToOne: false;
-            referencedRelation: "tickets";
             referencedColumns: ["id"];
           },
         ];

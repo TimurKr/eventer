@@ -18,7 +18,7 @@ module.exports = {
       },
     },
   },
-  plugins: [require("flowbite/plugin")],
+  plugins: [require("flowbite/plugin"), require("@tailwindcss/forms")],
   safelist: [
     {
       pattern: /(bg|text)-(yellow|gray|blue)-(200|600)/,

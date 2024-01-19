@@ -1,20 +1,25 @@
 "use server";
 
+import { InsertTickets } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 // Create new event
 export async function createNewEvent(date: Date, isPublic: boolean) {
   const supabase = createServerSupabase(cookies());
-  const result = await supabase.from("events").insert([
-    {
-      datetime: date.toISOString(),
-      is_public: isPublic,
-    },
-  ]);
+  const result = await supabase
+    .from("events")
+    .insert([
+      {
+        datetime: date.toISOString(),
+        is_public: isPublic,
+      },
+    ])
+    .select();
   if (!result.error) {
-    revalidatePath("/dashboard/events");
+    revalidateTag("events");
   }
   return result;
 }
@@ -43,4 +48,14 @@ export async function changeEventPublicStatus(
     revalidatePath("/dashboard/events");
   }
   return result;
+}
+
+// Create new tickets
+export async function bulkCreateTickets(tickets: InsertTickets[]) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase.from("tickets").insert(tickets).select();
+  if (!res.error) {
+    revalidateTag("tickets");
+  }
+  return res;
 }

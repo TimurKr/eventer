@@ -1,7 +1,7 @@
-import DeployButton from "../components/DeployButton";
-import AuthButton from "../components/AuthButton";
-import SignUpUserSteps from "@/components/SignUpUserSteps";
-import Header from "@/components/Header";
+import DeployButton from "./components/DeployButton";
+import AuthButton from "./components/AuthButton";
+import SignUpUserSteps from "@/app/components/SignUpUserSteps";
+import Header from "@/app/components/Header";
 import { cookies } from "next/headers";
 
 export default async function Index() {

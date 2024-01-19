@@ -7,7 +7,7 @@ import { Database } from "@/utils/supabase/database.types";
 // Do not cache
 export const revalidate = 0;
 
-export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>) => {
+export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>, tags?: string[]) => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,6 +35,14 @@ export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>) =>
           }
         },
       },
+      global:{
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+          return fetch(input, {
+            ...init,
+            next: {tags: tags}
+          });
+        }
+      }
     },
   );
 };

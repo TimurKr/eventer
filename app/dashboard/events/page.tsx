@@ -4,16 +4,19 @@ import EventsAccordion from "./EventsAccordion";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { Button } from "flowbite-react";
+import NewEventModal from "./NewEventModal";
 
 export default async function Page() {
-  const supabase = createServerSupabase(cookies());
+  const supabase = createServerSupabase(cookies(), ["events", "tickets"]);
   const { data: events, error } = await supabase
     .from("events")
     .select(
       `*,
       tickets (*)`,
     )
-    .order("datetime", { ascending: false });
+    .order("datetime", { ascending: false })
+    .order("billing_name", { referencedTable: "tickets", ascending: true })
+    .order("type", { referencedTable: "tickets", ascending: true });
   if (error) {
     console.error(error);
     return <div>Error loading events</div>;
@@ -21,20 +24,6 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between">
-        <p className="text-2xl font-bold tracking-wider">
-          Termíny Tajomných Variácií
-        </p>
-        {/* // @ts-ignore */}
-        <Link
-          color="success"
-          href={"events/new_event"}
-          className="m-2 flex items-center gap-2 rounded-lg bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Nový termín
-        </Link>
-      </div>
       <EventsAccordion events={events} />
     </div>
   );
