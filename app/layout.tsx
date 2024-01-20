@@ -7,6 +7,8 @@ const font = Roboto({
   display: "swap",
 });
 import "./globals.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.min.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -26,6 +28,7 @@ export default function RootLayout({
     <html lang="en" className={font.className}>
       <body className="h-screen bg-background text-foreground">
         <main className="flex h-full min-h-screen w-full">{children}</main>
+        <ToastContainer position="top-right" />
       </body>
     </html>
   );

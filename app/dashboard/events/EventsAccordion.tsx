@@ -3,51 +3,541 @@
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useState } from "react";
 import {
-  ArrowTopRightOnSquareIcon,
-  ChevronDownIcon,
+  ArrowPathIcon,
   EllipsisHorizontalIcon,
-  PencilSquareIcon,
 } from "@heroicons/react/24/solid";
-import {
-  Badge,
-  Button,
-  Checkbox,
-  Dropdown,
-  Progress,
-  Table,
-} from "flowbite-react";
-import { HiChevronDown } from "react-icons/hi2";
-import Link from "next/link";
+import { Badge, Dropdown, Progress, Table } from "flowbite-react";
+import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import NewTicketModal from "./NewTicketModal";
-import { changeEventPublicStatus, deleteEvent } from "./serverActions";
-import { useImmer } from "use-immer";
+import {
+  changeEventPublicStatus,
+  deleteEvent,
+  deleteTicket,
+  fetchEvents,
+  updateTicketFields,
+  updateTicketPaymentStatus,
+  updateTicketType,
+} from "./serverActions";
+import { Updater, useImmer } from "use-immer";
 import NewEventModal from "./NewEventModal";
+import { toast } from "react-toastify";
+import { string as yupString } from "yup";
 
-export default function EventsAccordion(props: {
-  events: (Events & { tickets: Tickets[] })[];
+type Event = Events & { tickets: Tickets[] };
+
+const ticketTypes = [
+  { label: "VIP", color: "yellow", max_sold: 6 },
+  { label: "standard", color: "gray", max_sold: 24 },
+];
+
+const ticketStatuses = [
+  { label: "rezervované", color: "yellow" },
+  { label: "zaplatené", color: "green" },
+  { label: "zrušené", color: "red" },
+];
+
+function InstantInput({
+  type = "text",
+  value,
+  placeholder,
+  inline = false,
+  validate,
+  updateDatabase,
+  setLocalValue,
+}: {
+  type: "text" | "number" | "email" | "tel";
+  value?: string | null;
+  placeholder?: string;
+  inline?: boolean;
+  validate?: (value: string) => Promise<string | null>;
+  updateDatabase: (value: string) => Promise<any>;
+  setLocalValue: (value: string) => void;
 }) {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <input
+      type={type}
+      className={`mx-1 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
+        error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
+      } ${inline ? "font-mono" : ""}`}
+      defaultValue={value || undefined}
+      size={inline ? value?.length || 5 : undefined}
+      onChange={async (e) => {
+        if (validate) {
+          const err = await validate(e.target.value);
+          if (err) {
+            setError(err);
+            return;
+          }
+        }
+        setError(null);
+      }}
+      placeholder={placeholder}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      onBlur={async (e) => {
+        if (e.target.value == (value || "")) {
+          setError(null);
+          return;
+        }
+        const err = validate && (await validate(e.target.value));
+        if (err) {
+          e.target.focus();
+          setError(err);
+          toast.error(err, {
+            autoClose: 2000,
+          });
+          e.target.value = value || "";
+          return;
+        }
+        setError(null);
+        toast
+          .promise(
+            updateDatabase(e.target.value),
+            {
+              pending: "Ukladám...",
+              success: "Uložené",
+              error: "Nastala chyba",
+            },
+            {
+              autoClose: 1000,
+              hideProgressBar: true,
+            },
+          )
+          .then((r) => {
+            if (r.error) e.target.value = value || "";
+            else setLocalValue(e.target.value);
+          });
+      }}
+    />
+  );
+}
+
+function TicketRows({
+  event,
+  setEvents,
+}: {
+  event: Event;
+  setEvents: Updater<Event[]>;
+}) {
+  return (
+    <>
+      {event.tickets
+        .map((t) => t.billing_name)
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .map((billing_name) => {
+          const groupSize = event.tickets.filter(
+            (t) => t.billing_name == billing_name,
+          ).length;
+          return (
+            <>
+              <Table.Row key={billing_name} className="h-1"></Table.Row>
+              {event.tickets
+                .filter((t) => t.billing_name == billing_name)
+                .map((ticket, i) => {
+                  return (
+                    <Table.Row key={ticket.id} className={`bg-white`}>
+                      <Table.Cell
+                        className={`whitespace-nowrap p-0 pl-2 ${
+                          i == 0 && "rounded-tl-md"
+                        } ${i == groupSize - 1 && "rounded-bl-md"}`}
+                      >
+                        {event.tickets.findIndex((t) => t === ticket) + 1} -{" "}
+                        <span className="text-xs">{i + 1}</span>
+                      </Table.Cell>
+                      <Table.Cell className="p-2 py-0">
+                        <select
+                          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
+                            ticket.type === "VIP"
+                              ? "bg-emerald-400 text-black"
+                              : ticket.type === "standard"
+                                ? "bg-gray-200 text-gray-600"
+                                : ""
+                          }`}
+                          onChange={async (e) => {
+                            if (
+                              !confirm(
+                                `Naozaj chcete zmeniť typ lístka?\n\nZmena: ${
+                                  ticket.type
+                                } => ${e.target.value}\n\nPo zmene bude:\n${
+                                  e.target.value
+                                }: ${
+                                  event.tickets.filter(
+                                    (t) => t.type == e.target.value,
+                                  ).length + 1
+                                } lístkov\n${ticket.type}: ${
+                                  event.tickets.filter(
+                                    (t) => t.type == ticket.type,
+                                  ).length - 1
+                                } lístkov`,
+                              )
+                            )
+                              return;
+                            const originalType = ticket.type;
+                            setEvents((draft) => {
+                              draft[
+                                draft.findIndex((e) => e.id == event.id)
+                              ].tickets.find((t) => t.id == ticket.id)!.type =
+                                e.target.value;
+                            });
+                            const r = await updateTicketType(
+                              ticket.id,
+                              e.target.value,
+                            );
+                            if (r.error) {
+                              setEvents((draft) => {
+                                draft[
+                                  draft.findIndex((e) => e.id == event.id)
+                                ].tickets.find((t) => t.id == ticket.id)!.type =
+                                  originalType;
+                              });
+                              alert(r.error.message);
+                              return;
+                            }
+                          }}
+                          value={ticket.type}
+                        >
+                          {ticketTypes.map((type) => (
+                            <option key={type.label} value={type.label}>
+                              {type.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Table.Cell>
+                      <Table.Cell className="border-l p-0">
+                        <InstantInput
+                          value={ticket.name}
+                          type="text"
+                          placeholder="Meno"
+                          validate={async (value) =>
+                            value == "" ? "Meno nesmie byť prázdne" : null
+                          }
+                          updateDatabase={(value) =>
+                            updateTicketFields({
+                              id: ticket.id,
+                              name: value,
+                            })
+                          }
+                          setLocalValue={(value) =>
+                            setEvents((draft) => {
+                              draft[
+                                draft.findIndex((e) => e.id == event.id)
+                              ].tickets.find((t) => t.id == ticket.id)!.name =
+                                value;
+                            })
+                          }
+                        />
+                      </Table.Cell>
+                      <Table.Cell className="p-0">
+                        <InstantInput
+                          value={ticket.phone}
+                          type="text"
+                          placeholder="Telefón"
+                          updateDatabase={(value) =>
+                            updateTicketFields({
+                              id: ticket.id,
+                              phone: value || null,
+                            })
+                          }
+                          setLocalValue={(value) =>
+                            setEvents((draft) => {
+                              draft[
+                                draft.findIndex((e) => e.id == event.id)
+                              ].tickets.find((t) => t.id == ticket.id)!.phone =
+                                value;
+                            })
+                          }
+                        />
+                      </Table.Cell>
+                      <Table.Cell className="p-0">
+                        <InstantInput
+                          value={ticket.email}
+                          type="email"
+                          placeholder="Email"
+                          validate={(value) =>
+                            yupString()
+                              .email("Zadajte platný email")
+                              .validate(value)
+                              .then(() => null)
+                              .catch((err) => err.message)
+                          }
+                          updateDatabase={(value) =>
+                            updateTicketFields({
+                              id: ticket.id,
+                              email: value || null,
+                            })
+                          }
+                          setLocalValue={(value) =>
+                            setEvents((draft) => {
+                              draft[
+                                draft.findIndex((e) => e.id == event.id)
+                              ].tickets.find((t) => t.id == ticket.id)!.email =
+                                value;
+                            })
+                          }
+                        />
+                      </Table.Cell>
+                      {i == 0 && (
+                        <Table.Cell
+                          className="border-x p-1"
+                          rowSpan={groupSize}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <InstantInput
+                              value={ticket.billing_name}
+                              type="text"
+                              placeholder="Meno"
+                              validate={async (value) =>
+                                value == "" ? "Meno nesmie byť prázdne" : null
+                              }
+                              updateDatabase={(value) =>
+                                updateTicketFields({
+                                  id: ticket.id,
+                                  billing_name: value,
+                                })
+                              }
+                              setLocalValue={(value) =>
+                                setEvents((draft) => {
+                                  draft[
+                                    draft.findIndex((e) => e.id == event.id)
+                                  ].tickets.find(
+                                    (t) => t.id == ticket.id,
+                                  )!.billing_name = value;
+                                })
+                              }
+                            />
+                            <InstantInput
+                              value={ticket.billing_phone}
+                              type="text"
+                              placeholder="Telefón"
+                              updateDatabase={(value) =>
+                                updateTicketFields({
+                                  id: ticket.id,
+                                  billing_phone: value,
+                                })
+                              }
+                              setLocalValue={(value) =>
+                                setEvents((draft) => {
+                                  draft[
+                                    draft.findIndex((e) => e.id == event.id)
+                                  ].tickets.find(
+                                    (t) => t.id == ticket.id,
+                                  )!.billing_phone = value;
+                                })
+                              }
+                            />
+                            <InstantInput
+                              value={ticket.billing_email}
+                              type="email"
+                              placeholder="Email"
+                              validate={(value) =>
+                                yupString()
+                                  .email("Zadajte platný email")
+                                  .validate(value)
+                                  .then(() => null)
+                                  .catch((err) => err.message)
+                              }
+                              updateDatabase={(value) =>
+                                updateTicketFields({
+                                  id: ticket.id,
+                                  billing_email: value,
+                                })
+                              }
+                              setLocalValue={(value) =>
+                                setEvents((draft) => {
+                                  draft[
+                                    draft.findIndex((e) => e.id == event.id)
+                                  ].tickets.find(
+                                    (t) => t.id == ticket.id,
+                                  )!.billing_email = value;
+                                })
+                              }
+                            />
+                          </div>
+                        </Table.Cell>
+                      )}
+                      <Table.Cell className="p-1 text-end">
+                        <select
+                          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
+                            ticket.payment_status === "rezervované"
+                              ? "bg-yellow-200 text-yellow-600"
+                              : ticket.payment_status === "zaplatené"
+                                ? "bg-green-200 text-green-600"
+                                : ticket.payment_status === "zrušené"
+                                  ? "bg-red-200 text-gray-500"
+                                  : ""
+                          }`}
+                          onChange={async (e) => {
+                            let IDs = event.tickets
+                              .filter(
+                                (t) =>
+                                  t.billing_name == ticket.billing_name &&
+                                  t.payment_status == ticket.payment_status,
+                              )
+                              .map((t) => t.id);
+                            if (
+                              IDs.length > 1 &&
+                              !confirm(
+                                `Prajete si zmeniť status všetkých lístky v tejto skupine s aktuálnym statusom ${ticket.payment_status}? (${IDs.length} lístkov)`,
+                              )
+                            )
+                              IDs = [ticket.id];
+                            const originalStatus = ticket.payment_status;
+                            setEvents((draft) => {
+                              IDs.forEach((id) => {
+                                draft[
+                                  draft.findIndex((e) => e.id == event.id)
+                                ].tickets.find(
+                                  (t) => t.id == id,
+                                )!.payment_status = e.target.value;
+                              });
+                            });
+                            const r = await updateTicketPaymentStatus(
+                              IDs,
+                              e.target.value,
+                            );
+                            if (r.error) {
+                              setEvents((draft) => {
+                                IDs.forEach((id) => {
+                                  draft[
+                                    draft.findIndex((e) => e.id == event.id)
+                                  ].tickets.find(
+                                    (t) => t.id == id,
+                                  )!.payment_status = originalStatus;
+                                });
+                              });
+                              alert(r.error.message);
+                              return;
+                            }
+                          }}
+                          value={ticket.payment_status}
+                        >
+                          {ticketStatuses.map((status) => (
+                            <option key={status.label} value={status.label}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Table.Cell>
+                      <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
+                        {ticket.price} €
+                      </Table.Cell>
+                      <Table.Cell
+                        className={`whitespace-nowrap p-1 ${
+                          i == 0 && "rounded-tr-md"
+                        } ${i == groupSize - 1 && "rounded-br-md"}`}
+                      >
+                        <Dropdown
+                          label=""
+                          dismissOnClick={false}
+                          renderTrigger={() => (
+                            <EllipsisHorizontalIcon className="h-5 w-5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 hover:cursor-pointer hover:bg-gray-200" />
+                          )}
+                        >
+                          <Dropdown.Item
+                            onClick={() => alert("Táto funkcia ešte nefunguje")}
+                          >
+                            Premeň na kupón
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            className="text-red-500"
+                            icon={HiTrash}
+                            onClick={async () => {
+                              if (
+                                !confirm("Naozaj chcete vymazať tento lístok?")
+                              )
+                                return;
+                              const toastId = toast.loading("Vymazávam...");
+                              const removedTicket = event.tickets.find(
+                                (t) => t.id == ticket.id,
+                              );
+                              const index = event.tickets.findIndex(
+                                (t) => t.id == ticket.id,
+                              );
+                              setEvents((draft) => {
+                                const tickets =
+                                  draft[
+                                    draft.findIndex((e) => e.id == event.id)
+                                  ].tickets;
+                                tickets.splice(
+                                  tickets.findIndex((t) => t.id == ticket.id),
+                                  1,
+                                );
+                              });
+                              const r = await deleteTicket(ticket.id);
+                              if (r.error) {
+                                setEvents((draft) => {
+                                  const tickets =
+                                    draft[
+                                      draft.findIndex((e) => e.id == event.id)
+                                    ].tickets;
+                                  tickets.splice(index, 0, removedTicket!);
+                                });
+                                toast.update(toastId, {
+                                  render: r.error.message,
+                                  type: "error",
+                                  isLoading: false,
+                                });
+                                return;
+                              }
+                              toast.update(toastId, {
+                                render: "Lístok vymazaný",
+                                type: "success",
+                                isLoading: false,
+                                autoClose: 1000,
+                              });
+                            }}
+                          >
+                            Vymazať
+                          </Dropdown.Item>
+                        </Dropdown>
+                      </Table.Cell>
+                    </Table.Row>
+                  );
+                })}
+            </>
+          );
+        })}
+    </>
+  );
+}
+
+export default function EventsAccordion(props: { events: Event[] }) {
   // Create a state for the accordion
   const [expanded, setExpanded] = useState<Events["id"][]>([]);
-  const [events, setEvents] = useImmer<(Events & { tickets: Tickets[] })[]>(
-    props.events,
-  );
+  const [events, setEvents] = useImmer<Event[]>(props.events);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const ticketTypes = [
-    { label: "VIP", color: "yellow", max_sold: 6 },
-    { label: "standard", color: "gray", max_sold: 24 },
-  ];
-
-  const ticketStatuses = [
-    { label: "rezervované", color: "yellow" },
-    { label: "zaplatené", color: "green" },
-    { label: "zrušené", color: "red" },
-  ];
+  function refreshEvents() {
+    setIsRefreshing(true);
+    fetchEvents().then(({ data, error }) => {
+      if (error) {
+        alert(error.message);
+        return;
+      }
+      setEvents(data);
+      setIsRefreshing(false);
+    });
+  }
 
   return (
     <>
       <div className="flex items-center justify-between">
-        <p className="text-2xl font-bold tracking-wider">
+        <p className="flex items-center gap-4 text-2xl font-bold tracking-wider">
           Termíny Tajomných Variácií
+          <button
+            className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
+            onClick={refreshEvents}
+          >
+            <ArrowPathIcon
+              className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
+            />
+            Obnoviť
+          </button>
         </p>
         <NewEventModal setEvents={setEvents} />
       </div>
@@ -55,7 +545,7 @@ export default function EventsAccordion(props: {
         role="list"
         className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
       >
-        {events.map((event) => (
+        {events.map((event, eventIndex) => (
           <li key={event.id} className={`flex flex-col p-1`}>
             <div className="mx-2 flex justify-between gap-x-6">
               <div className="flex min-w-0 flex-1 flex-col self-center">
@@ -72,37 +562,59 @@ export default function EventsAccordion(props: {
                   {new Date(event.datetime).toLocaleTimeString("sk-SK")}
                 </p>
               </div>
-              <div className="flex flex-col items-center justify-start gap-1 lg:flex-row lg:gap-2">
-                {ticketTypes.map((type) => (
-                  <div key={type.label} className="w-24">
-                    <div className="flex items-end justify-between">
-                      <span
-                        className={`text-xs font-medium text-${type.color}-600`}
+              <div className="flex flex-col items-center justify-start gap-1 lg:flex-row lg:gap-4">
+                {ticketTypes.map((type) => {
+                  const sold = event.tickets.filter(
+                    (t) =>
+                      t.type == type.label && t.payment_status != "zrušené",
+                  ).length;
+                  return (
+                    <div key={type.label} className="w-28">
+                      <div
+                        className={`flex items-end text-sm ${
+                          type.label == "VIP"
+                            ? "text-amber-600"
+                            : type.label == "standard"
+                              ? "text-gray-600"
+                              : ""
+                        }`}
                       >
-                        {type.label}
-                      </span>
-                      <span
-                        className={`text-sm font-medium text-${type.color}-600`}
-                      >
-                        {
-                          event.tickets.filter((t) => t.type == type.label)
-                            .length
+                        <span className="font-medium">{type.label}</span>
+                        <span
+                          className={`ms-auto text-base font-bold ${
+                            sold > type.max_sold
+                              ? "text-red-600"
+                              : sold == 0
+                                ? "text-gray-400"
+                                : ""
+                          }`}
+                        >
+                          {
+                            event.tickets.filter((t) => t.type == type.label)
+                              .length
+                          }
+                        </span>
+                        /<span>{type.max_sold}</span>
+                      </div>
+                      <Progress
+                        size="sm"
+                        progress={
+                          (event.tickets.filter((t) => t.type == type.label)
+                            .length /
+                            type.max_sold) *
+                          100
                         }
-                      </span>
+                        color={
+                          sold > type.max_sold
+                            ? "red"
+                            : type.label == "VIP"
+                              ? "yellow"
+                              : "gray"
+                        }
+                      />
                     </div>
-                    <Progress
-                      size="sm"
-                      progress={
-                        (event.tickets.filter((t) => t.type == type.label)
-                          .length /
-                          type.max_sold) *
-                        100
-                      }
-                      color={type.color}
-                      // className="border border-gray-300 bg-white"
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex flex-row items-center justify-start gap-1">
                 <NewTicketModal event={event} setEvents={setEvents} />
@@ -205,16 +717,20 @@ export default function EventsAccordion(props: {
                   </button>
                 </div>
                 {event.tickets.length > 0 ? (
-                  <div className="overflow-x-scroll">
-                    <Table hoverable className="w-full">
+                  <div className="overflow-x-auto">
+                    <Table className="w-full">
                       <Table.Head>
+                        <Table.HeadCell className="p-1 px-2">#</Table.HeadCell>
                         <Table.HeadCell className="p-1 px-2">
                           Typ
                         </Table.HeadCell>
-                        <Table.HeadCell className="p-1"></Table.HeadCell>
-                        <Table.HeadCell className="p-1">Hosť</Table.HeadCell>
-                        <Table.HeadCell className="p-1">Platca</Table.HeadCell>
-                        <Table.HeadCell className="p-1 text-end">
+                        <Table.HeadCell className="p-1 text-center" colSpan={3}>
+                          Hostia
+                        </Table.HeadCell>
+                        <Table.HeadCell className="p-1 text-center">
+                          Platca
+                        </Table.HeadCell>
+                        <Table.HeadCell className="p-1 text-center">
                           Status
                         </Table.HeadCell>
                         <Table.HeadCell className="p-1 text-end">
@@ -224,114 +740,8 @@ export default function EventsAccordion(props: {
                           <span className="sr-only">Edit</span>
                         </Table.HeadCell>
                       </Table.Head>
-                      <Table.Body className="">
-                        {event.tickets.map((ticket, i) => (
-                          <Table.Row
-                            key={ticket.id}
-                            className={`${
-                              i != 0 &&
-                              event.tickets[i - 1].billing_name !=
-                                ticket.billing_name
-                                ? "border-t"
-                                : ""
-                            } ${
-                              event.tickets
-                                .map((t) => t.billing_name)
-                                .filter((v, i, a) => a.indexOf(v) === i)
-                                .findIndex((n) => n == ticket.billing_name) %
-                                2 ==
-                              0
-                                ? "bg-slate-50"
-                                : "bg-slate-100"
-                            }`}
-                          >
-                            <Table.Cell className="p-2">{i + 1}</Table.Cell>
-                            <Table.Cell className="p-2">
-                              <Badge
-                                className="inline-block"
-                                color={
-                                  ticketTypes.find(
-                                    (t) => ticket.type === t.label,
-                                  )?.color || "info"
-                                }
-                              >
-                                {ticket.type}
-                              </Badge>
-                            </Table.Cell>
-                            <Table.Cell className="whitespace-nowrap p-1 font-medium text-gray-900 dark:text-white">
-                              {ticket.name}
-                              {ticket.phone && (
-                                <>
-                                  {" - "}
-                                  <span>{ticket.phone}</span>
-                                </>
-                              )}
-                              {ticket.email && (
-                                <>
-                                  {" - "}
-                                  <span>{ticket.email}</span>
-                                </>
-                              )}
-                            </Table.Cell>
-                            <Table.Cell className={`text-ellipsis p-1`}>
-                              {/* <div
-                              className={`h-auto ${
-                                event.tickets
-                                  .map((t) => t.billing_name)
-                                  .filter((v, i, a) => a.indexOf(v) === i)
-                                  .findIndex((n) => n == ticket.billing_name) %
-                                  2 ==
-                                0
-                                  ? "bg-slate-50 hover:bg-slate-100"
-                                  : "bg-slate-200 hover:bg-slate-100"
-                              } ${""}`}
-                            > */}
-                              {ticket.billing_name}
-                              {ticket.billing_phone && (
-                                <>
-                                  {" - "}
-                                  <span>{ticket.billing_phone}</span>
-                                </>
-                              )}
-                              {ticket.billing_email && (
-                                <>
-                                  {" - "}
-                                  <span>{ticket.billing_email}</span>
-                                </>
-                              )}
-                              {/* </div> */}
-                            </Table.Cell>
-                            <Table.Cell className="p-1 text-end">
-                              <Badge
-                                className="inline-block rounded-md"
-                                color={
-                                  ticketStatuses.find(
-                                    (t) => ticket.payment_status === t.label,
-                                  )?.color || "info"
-                                }
-                              >
-                                {ticket.payment_status}
-                              </Badge>
-                            </Table.Cell>
-                            <Table.Cell className="whitespace-nowrap p-1 text-end">
-                              {ticket.price} €
-                            </Table.Cell>
-                            <Table.Cell className="p-1">
-                              <Dropdown
-                                label=""
-                                dismissOnClick={false}
-                                renderTrigger={() => (
-                                  <EllipsisHorizontalIcon className="h-6 w-6 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 hover:cursor-pointer hover:bg-gray-200" />
-                                )}
-                              >
-                                <Dropdown.Item>Dashboard</Dropdown.Item>
-                                <Dropdown.Item>Settings</Dropdown.Item>
-                                <Dropdown.Item>Earnings</Dropdown.Item>
-                                <Dropdown.Item>Sign out</Dropdown.Item>
-                              </Dropdown>
-                            </Table.Cell>
-                          </Table.Row>
-                        ))}
+                      <Table.Body>
+                        <TicketRows event={event} setEvents={setEvents} />
                       </Table.Body>
                     </Table>
                   </div>
