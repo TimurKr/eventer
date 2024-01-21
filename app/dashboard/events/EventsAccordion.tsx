@@ -10,37 +10,33 @@ import { Badge, Dropdown, Progress, Table } from "flowbite-react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import NewTicketModal from "./NewTicketModal";
 import {
+  type EventWithTickets,
   changeEventPublicStatus,
   deleteEvent,
   deleteTicket,
   fetchEvents,
   updateTicketFields,
   updateTicketPaymentStatus,
-  updateTicketType,
 } from "./serverActions";
-import { Updater, useImmer } from "use-immer";
+import { DraftFunction, Updater, useImmer } from "use-immer";
 import NewEventModal from "./NewEventModal";
 import { toast } from "react-toastify";
-import { string as yupString } from "yup";
-
-type Event = Events & { tickets: Tickets[] };
+import { string as yupString, number as yupNumber } from "yup";
+import { ticketSortFunction } from "./utils";
 
 const ticketTypes = [
-  { label: "VIP", color: "yellow", max_sold: 6 },
-  { label: "standard", color: "gray", max_sold: 24 },
+  { label: "VIP", max_sold: 6, price: 100 },
+  { label: "standard", max_sold: 24, price: 80 },
 ];
 
-const ticketStatuses = [
-  { label: "rezervované", color: "yellow" },
-  { label: "zaplatené", color: "green" },
-  { label: "zrušené", color: "red" },
-];
+const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
 function InstantInput({
   type = "text",
   value,
   placeholder,
   inline = false,
+  className,
   validate,
   updateDatabase,
   setLocalValue,
@@ -49,6 +45,7 @@ function InstantInput({
   value?: string | null;
   placeholder?: string;
   inline?: boolean;
+  className?: string;
   validate?: (value: string) => Promise<string | null>;
   updateDatabase: (value: string) => Promise<any>;
   setLocalValue: (value: string) => void;
@@ -59,18 +56,16 @@ function InstantInput({
       type={type}
       className={`mx-1 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
         error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-      } ${inline ? "font-mono" : ""}`}
+      } ${inline ? "font-mono" : ""} ${className}`}
       defaultValue={value || undefined}
       size={inline ? value?.length || 5 : undefined}
       onChange={async (e) => {
         if (validate) {
           const err = await validate(e.target.value);
-          if (err) {
-            setError(err);
-            return;
-          }
+          if (err) setError(err);
+          else setError(null);
         }
-        setError(null);
+        if (inline) e.target.size = e.target.value.length || 4;
       }}
       placeholder={placeholder}
       onKeyDown={(e) => {
@@ -118,36 +113,43 @@ function InstantInput({
 }
 
 function TicketRows({
-  event,
-  setEvents,
+  tickets,
+  setEvent,
 }: {
-  event: Event;
-  setEvents: Updater<Event[]>;
+  tickets: Tickets[];
+  setEvent: Updater<EventWithTickets>;
 }) {
   return (
     <>
-      {event.tickets
+      {tickets
         .map((t) => t.billing_name)
         .filter((v, i, a) => a.indexOf(v) === i)
         .map((billing_name) => {
-          const groupSize = event.tickets.filter(
+          const groupSize = tickets.filter(
             (t) => t.billing_name == billing_name,
           ).length;
           return (
             <>
               <Table.Row key={billing_name} className="h-1"></Table.Row>
-              {event.tickets
+              {tickets
                 .filter((t) => t.billing_name == billing_name)
-                .map((ticket, i) => {
+                .map((ticket, indexInGroup) => {
                   return (
-                    <Table.Row key={ticket.id} className={`bg-white`}>
+                    <Table.Row
+                      key={ticket.id}
+                      className={`${
+                        ticket.payment_status == "zrušené"
+                          ? "bg-red-50"
+                          : "bg-white"
+                      }`}
+                    >
                       <Table.Cell
                         className={`whitespace-nowrap p-0 pl-2 ${
-                          i == 0 && "rounded-tl-md"
-                        } ${i == groupSize - 1 && "rounded-bl-md"}`}
+                          indexInGroup == 0 && "rounded-tl-md"
+                        } ${indexInGroup == groupSize - 1 && "rounded-bl-md"}`}
                       >
-                        {event.tickets.findIndex((t) => t === ticket) + 1} -{" "}
-                        <span className="text-xs">{i + 1}</span>
+                        {tickets.findIndex((t) => t === ticket) + 1} -{" "}
+                        <span className="text-xs">{indexInGroup + 1}</span>
                       </Table.Cell>
                       <Table.Cell className="p-2 py-0">
                         <select
@@ -161,39 +163,47 @@ function TicketRows({
                           onChange={async (e) => {
                             if (
                               !confirm(
-                                `Naozaj chcete zmeniť typ lístka?\n\nZmena: ${
+                                `Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.\n\nZmena: ${
                                   ticket.type
                                 } => ${e.target.value}\n\nPo zmene bude:\n${
                                   e.target.value
                                 }: ${
-                                  event.tickets.filter(
+                                  tickets.filter(
                                     (t) => t.type == e.target.value,
                                   ).length + 1
                                 } lístkov\n${ticket.type}: ${
-                                  event.tickets.filter(
-                                    (t) => t.type == ticket.type,
-                                  ).length - 1
+                                  tickets.filter((t) => t.type == ticket.type)
+                                    .length - 1
                                 } lístkov`,
                               )
                             )
                               return;
                             const originalType = ticket.type;
-                            setEvents((draft) => {
-                              draft[
-                                draft.findIndex((e) => e.id == event.id)
-                              ].tickets.find((t) => t.id == ticket.id)!.type =
-                                e.target.value;
+                            const originalPrice = ticket.price;
+                            setEvent((draft) => {
+                              const t = draft.tickets.find(
+                                (t) => t.id == ticket.id,
+                              )!;
+                              t.type = e.target.value;
+                              t.price = ticketTypes.find(
+                                (type) => type.label == e.target.value,
+                              )!.price;
                             });
-                            const r = await updateTicketType(
-                              ticket.id,
-                              e.target.value,
-                            );
+                            const r = await updateTicketFields({
+                              id: ticket.id,
+                              type: e.target.value,
+                              price: ticketTypes.find(
+                                (type) => type.label == e.target.value,
+                              )!.price,
+                            });
                             if (r.error) {
-                              setEvents((draft) => {
-                                draft[
-                                  draft.findIndex((e) => e.id == event.id)
-                                ].tickets.find((t) => t.id == ticket.id)!.type =
-                                  originalType;
+                              setEvent((draft) => {
+                                draft.tickets.find(
+                                  (t) => t.id == ticket.id,
+                                )!.type = originalType;
+                                draft.tickets.find(
+                                  (t) => t.id == ticket.id,
+                                )!.price = originalPrice;
                               });
                               alert(r.error.message);
                               return;
@@ -223,11 +233,10 @@ function TicketRows({
                             })
                           }
                           setLocalValue={(value) =>
-                            setEvents((draft) => {
-                              draft[
-                                draft.findIndex((e) => e.id == event.id)
-                              ].tickets.find((t) => t.id == ticket.id)!.name =
-                                value;
+                            setEvent((draft) => {
+                              draft.tickets.find(
+                                (t) => t.id == ticket.id,
+                              )!.name = value;
                             })
                           }
                         />
@@ -244,11 +253,10 @@ function TicketRows({
                             })
                           }
                           setLocalValue={(value) =>
-                            setEvents((draft) => {
-                              draft[
-                                draft.findIndex((e) => e.id == event.id)
-                              ].tickets.find((t) => t.id == ticket.id)!.phone =
-                                value;
+                            setEvent((draft) => {
+                              draft.tickets.find(
+                                (t) => t.id == ticket.id,
+                              )!.phone = value;
                             })
                           }
                         />
@@ -272,16 +280,15 @@ function TicketRows({
                             })
                           }
                           setLocalValue={(value) =>
-                            setEvents((draft) => {
-                              draft[
-                                draft.findIndex((e) => e.id == event.id)
-                              ].tickets.find((t) => t.id == ticket.id)!.email =
-                                value;
+                            setEvent((draft) => {
+                              draft.tickets.find(
+                                (t) => t.id == ticket.id,
+                              )!.email = value;
                             })
                           }
                         />
                       </Table.Cell>
-                      {i == 0 && (
+                      {indexInGroup == 0 && (
                         <Table.Cell
                           className="border-x p-1"
                           rowSpan={groupSize}
@@ -301,10 +308,8 @@ function TicketRows({
                                 })
                               }
                               setLocalValue={(value) =>
-                                setEvents((draft) => {
-                                  draft[
-                                    draft.findIndex((e) => e.id == event.id)
-                                  ].tickets.find(
+                                setEvent((draft) => {
+                                  draft.tickets.find(
                                     (t) => t.id == ticket.id,
                                   )!.billing_name = value;
                                 })
@@ -321,10 +326,8 @@ function TicketRows({
                                 })
                               }
                               setLocalValue={(value) =>
-                                setEvents((draft) => {
-                                  draft[
-                                    draft.findIndex((e) => e.id == event.id)
-                                  ].tickets.find(
+                                setEvent((draft) => {
+                                  draft.tickets.find(
                                     (t) => t.id == ticket.id,
                                   )!.billing_phone = value;
                                 })
@@ -348,10 +351,8 @@ function TicketRows({
                                 })
                               }
                               setLocalValue={(value) =>
-                                setEvents((draft) => {
-                                  draft[
-                                    draft.findIndex((e) => e.id == event.id)
-                                  ].tickets.find(
+                                setEvent((draft) => {
+                                  draft.tickets.find(
                                     (t) => t.id == ticket.id,
                                   )!.billing_email = value;
                                 })
@@ -372,7 +373,7 @@ function TicketRows({
                                   : ""
                           }`}
                           onChange={async (e) => {
-                            let IDs = event.tickets
+                            let IDs = tickets
                               .filter(
                                 (t) =>
                                   t.billing_name == ticket.billing_name &&
@@ -382,33 +383,48 @@ function TicketRows({
                             if (
                               IDs.length > 1 &&
                               !confirm(
-                                `Prajete si zmeniť status všetkých lístky v tejto skupine s aktuálnym statusom ${ticket.payment_status}? (${IDs.length} lístkov)`,
+                                `Prajete si zmeniť status všetkých lístkov v tejto skupine s aktuálnym statusom ${ticket.payment_status}? (${IDs.length} lístkov)`,
                               )
                             )
                               IDs = [ticket.id];
                             const originalStatus = ticket.payment_status;
-                            setEvents((draft) => {
-                              IDs.forEach((id) => {
-                                draft[
-                                  draft.findIndex((e) => e.id == event.id)
-                                ].tickets.find(
-                                  (t) => t.id == id,
-                                )!.payment_status = e.target.value;
+                            setEvent((draft) => {
+                              const allTickets = [
+                                ...draft.tickets,
+                                ...draft.cancelled_tickets,
+                              ];
+                              allTickets.forEach((t) => {
+                                if (IDs.includes(t.id))
+                                  t.payment_status = e.target.value;
                               });
+                              draft.tickets = allTickets.filter(
+                                (t) => t.payment_status != "zrušené",
+                              );
+                              draft.cancelled_tickets = allTickets.filter(
+                                (t) => t.payment_status == "zrušené",
+                              );
                             });
+
                             const r = await updateTicketPaymentStatus(
                               IDs,
                               e.target.value,
                             );
                             if (r.error) {
-                              setEvents((draft) => {
-                                IDs.forEach((id) => {
-                                  draft[
-                                    draft.findIndex((e) => e.id == event.id)
-                                  ].tickets.find(
-                                    (t) => t.id == id,
-                                  )!.payment_status = originalStatus;
+                              setEvent((draft) => {
+                                const allTickets = [
+                                  ...draft.tickets,
+                                  ...draft.cancelled_tickets,
+                                ];
+                                allTickets.forEach((t) => {
+                                  if (IDs.includes(t.id))
+                                    t.payment_status = originalStatus;
                                 });
+                                draft.tickets = allTickets.filter(
+                                  (t) => t.payment_status != "zrušené",
+                                );
+                                draft.cancelled_tickets = allTickets.filter(
+                                  (t) => t.payment_status == "zrušené",
+                                );
                               });
                               alert(r.error.message);
                               return;
@@ -417,19 +433,46 @@ function TicketRows({
                           value={ticket.payment_status}
                         >
                           {ticketStatuses.map((status) => (
-                            <option key={status.label} value={status.label}>
-                              {status.label}
+                            <option key={status} value={status}>
+                              {status}
                             </option>
                           ))}
                         </select>
                       </Table.Cell>
                       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
-                        {ticket.price} €
+                        <InstantInput
+                          type="text"
+                          value={ticket.price.toString()}
+                          placeholder="Cena"
+                          inline={true}
+                          className="me-0"
+                          setLocalValue={(value) =>
+                            setEvent((draft) => {
+                              draft.tickets.find(
+                                (t) => t.id == ticket.id,
+                              )!.price = parseFloat(value);
+                            })
+                          }
+                          updateDatabase={(value) =>
+                            updateTicketFields({
+                              id: ticket.id,
+                              price: parseFloat(value),
+                            })
+                          }
+                          validate={async (value) =>
+                            yupNumber()
+                              .min(0)
+                              .validate(value)
+                              .then(() => null)
+                              .catch((err) => err.message)
+                          }
+                        />{" "}
+                        €
                       </Table.Cell>
                       <Table.Cell
                         className={`whitespace-nowrap p-1 ${
-                          i == 0 && "rounded-tr-md"
-                        } ${i == groupSize - 1 && "rounded-br-md"}`}
+                          indexInGroup == 0 && "rounded-tr-md"
+                        } ${indexInGroup == groupSize - 1 && "rounded-br-md"}`}
                       >
                         <Dropdown
                           label=""
@@ -452,35 +495,34 @@ function TicketRows({
                               )
                                 return;
                               const toastId = toast.loading("Vymazávam...");
-                              const removedTicket = event.tickets.find(
+                              const removedTicket = tickets.find(
                                 (t) => t.id == ticket.id,
                               );
-                              const index = event.tickets.findIndex(
+                              const index = tickets.findIndex(
                                 (t) => t.id == ticket.id,
                               );
-                              setEvents((draft) => {
-                                const tickets =
-                                  draft[
-                                    draft.findIndex((e) => e.id == event.id)
-                                  ].tickets;
-                                tickets.splice(
-                                  tickets.findIndex((t) => t.id == ticket.id),
+                              setEvent((draft) => {
+                                draft.tickets.splice(
+                                  draft.tickets.findIndex(
+                                    (t) => t.id == ticket.id,
+                                  ),
                                   1,
                                 );
                               });
                               const r = await deleteTicket(ticket.id);
                               if (r.error) {
-                                setEvents((draft) => {
-                                  const tickets =
-                                    draft[
-                                      draft.findIndex((e) => e.id == event.id)
-                                    ].tickets;
-                                  tickets.splice(index, 0, removedTicket!);
+                                setEvent((draft) => {
+                                  draft.tickets.splice(
+                                    index,
+                                    0,
+                                    removedTicket!,
+                                  );
                                 });
                                 toast.update(toastId, {
                                   render: r.error.message,
                                   type: "error",
                                   isLoading: false,
+                                  closeButton: true,
                                 });
                                 return;
                               }
@@ -502,26 +544,255 @@ function TicketRows({
             </>
           );
         })}
+      {tickets[0].payment_status != "zrušené" && (
+        <Table.Row className="h-1">
+          <Table.Cell className="p-1" colSpan={7} />
+          <Table.Cell className="p-1 text-end font-bold tracking-wider text-black">
+            <hr />
+            {tickets.reduce((acc, t) => acc + t.price, 0)} €
+          </Table.Cell>
+          <Table.Cell className="p-1" colSpan={1} />
+        </Table.Row>
+      )}
     </>
   );
 }
 
-export default function EventsAccordion(props: { events: Event[] }) {
+function EventRow({
+  event,
+  setEvent,
+  removeEvent,
+}: {
+  event: EventWithTickets;
+  setEvent: Updater<EventWithTickets>;
+  removeEvent: () => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [showCancelled, setShowCancelled] = useState<boolean>(false);
+  return (
+    <li key={event.id} className={`flex flex-col p-1`}>
+      <div className="mx-2 flex justify-between gap-x-6">
+        <div className="flex min-w-0 flex-1 flex-col self-center">
+          <p className="flex items-center gap-4 text-sm font-semibold leading-6 text-gray-900">
+            {new Date(event.datetime).toLocaleDateString("sk-SK")}
+            <Badge
+              color={event.is_public ? "blue" : "purple"}
+              className="rounded-md"
+            >
+              {event.is_public ? "Verejné" : "Súkromné"}
+            </Badge>
+          </p>
+          <p className="truncate text-xs leading-5 text-gray-500">
+            {new Date(event.datetime).toLocaleTimeString("sk-SK")}
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-start gap-1 lg:flex-row lg:gap-4">
+          {ticketTypes.map((type) => {
+            const sold = event.tickets.filter(
+              (t) => t.type == type.label,
+            ).length;
+            return (
+              <div key={type.label} className="w-28">
+                <div
+                  className={`flex items-end text-sm ${
+                    type.label == "VIP"
+                      ? "text-amber-600"
+                      : type.label == "standard"
+                        ? "text-gray-600"
+                        : ""
+                  }`}
+                >
+                  <span className="font-medium">{type.label}</span>
+                  <span
+                    className={`ms-auto text-base font-bold ${
+                      sold > type.max_sold
+                        ? "text-red-600"
+                        : sold == 0
+                          ? "text-gray-400"
+                          : ""
+                    }`}
+                  >
+                    {event.tickets.filter((t) => t.type == type.label).length}
+                  </span>
+                  /<span>{type.max_sold}</span>
+                </div>
+                <Progress
+                  size="sm"
+                  progress={
+                    (event.tickets.filter((t) => t.type == type.label).length /
+                      type.max_sold) *
+                    100
+                  }
+                  color={
+                    sold > type.max_sold
+                      ? "red"
+                      : type.label == "VIP"
+                        ? "yellow"
+                        : "gray"
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-row items-center justify-start gap-1">
+          <NewTicketModal
+            event={event}
+            ticketTypes={ticketTypes}
+            insertLocalTickets={(tickets) =>
+              setEvent((draft) => {
+                draft.tickets.push(
+                  ...tickets.filter((t) => t.payment_status != "zrušené"),
+                );
+                draft.cancelled_tickets.push(
+                  ...tickets.filter((t) => t.payment_status == "zrušené"),
+                );
+                draft.tickets.sort(ticketSortFunction);
+                draft.cancelled_tickets.sort(ticketSortFunction);
+              })
+            }
+          />
+          <button
+            className="flex justify-center rounded-md bg-gray-200 p-0.5 hover:bg-gray-300"
+            onClick={() => setIsExpanded(!isExpanded)}
+            // aria-expanded={isExpanded}
+            // aria-controls={`event-details-${event.id}`}
+          >
+            <HiChevronDown
+              className={`${
+                isExpanded ? "rotate-180 transform" : ""
+              } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Below is the expanded part */}
+      <div
+        // id={`event-details-${event.id}`}
+        // role="region"
+        className={`grid overflow-y-hidden rounded-xl bg-slate-200 text-sm text-slate-600 transition-all duration-300 ease-in-out ${
+          isExpanded
+            ? "my-2 grid-rows-[1fr] p-2 opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-x-auto overflow-y-hidden">
+          <div className="flex items-start gap-2 pb-1">
+            <p className="ps-2 text-lg font-medium tracking-wider text-gray-900">
+              Lístky
+            </p>
+            <button
+              className="ms-auto rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700"
+              onClick={async () => {
+                setEvent((draft) => (draft.is_public = !draft.is_public));
+                const r = await changeEventPublicStatus(
+                  event.id,
+                  !event.is_public,
+                );
+                if (r.error) {
+                  setEvent((draft) => {
+                    draft.is_public = !event.is_public;
+                  });
+                  alert(r.error.message);
+                  return;
+                }
+              }}
+            >
+              {event.is_public ? "Spraviť súkromným" : "Zverejniť"}
+            </button>
+            <button
+              className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700"
+              onClick={removeEvent}
+            >
+              Vymazať
+            </button>
+          </div>
+          {event.tickets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="w-full">
+                <Table.Head>
+                  <Table.HeadCell className="p-1 px-2">#</Table.HeadCell>
+                  <Table.HeadCell className="p-1 px-2">Typ</Table.HeadCell>
+                  <Table.HeadCell className="p-1 text-center" colSpan={3}>
+                    Hostia
+                  </Table.HeadCell>
+                  <Table.HeadCell className="p-1 text-center">
+                    Platca
+                  </Table.HeadCell>
+                  <Table.HeadCell className="p-1 text-center">
+                    Status
+                  </Table.HeadCell>
+                  <Table.HeadCell className="p-1 text-end">Cena</Table.HeadCell>
+                  <Table.HeadCell className="p-1">
+                    <span className="sr-only">Edit</span>
+                  </Table.HeadCell>
+                </Table.Head>
+                <Table.Body>
+                  <TicketRows tickets={event.tickets} setEvent={setEvent} />
+                  {event.cancelled_tickets.length > 0 && (
+                    <>
+                      <Table.Row className="text-center">
+                        <Table.Cell className="p-1" colSpan={9}>
+                          <button
+                            className="flex w-full items-center justify-center hover:underline"
+                            onClick={() => setShowCancelled(!showCancelled)}
+                          >
+                            <HiChevronDown
+                              className={`${
+                                showCancelled ? "rotate-180 transform" : ""
+                              } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
+                            />
+                            Zrušené lístky
+                          </button>
+                        </Table.Cell>
+                      </Table.Row>
+                      {showCancelled && (
+                        <TicketRows
+                          tickets={event.cancelled_tickets}
+                          setEvent={setEvent}
+                        />
+                      )}
+                    </>
+                  )}
+                </Table.Body>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-center">Žiadne lístky</p>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+export default function EventsAccordion(props: { events: EventWithTickets[] }) {
   // Create a state for the accordion
   const [expanded, setExpanded] = useState<Events["id"][]>([]);
-  const [events, setEvents] = useImmer<Event[]>(props.events);
+  const [events, setEvents] = useImmer<EventWithTickets[]>(props.events);
+  const getEventSetter =
+    (eventIndex: number) =>
+    (updater: EventWithTickets | DraftFunction<EventWithTickets>) => {
+      setEvents((draft) => {
+        if (typeof updater == "function") updater(draft[eventIndex]);
+        else draft[eventIndex] = updater;
+        draft[eventIndex].tickets.sort(ticketSortFunction);
+        draft[eventIndex].cancelled_tickets.sort(ticketSortFunction);
+      });
+    };
+
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  function refreshEvents() {
+  async function refreshEvents() {
     setIsRefreshing(true);
-    fetchEvents().then(({ data, error }) => {
-      if (error) {
-        alert(error.message);
-        return;
-      }
-      setEvents(data);
-      setIsRefreshing(false);
-    });
+    const r = await fetchEvents();
+    if (r.error) {
+      toast.error(r.error.message);
+      return;
+    }
+    setEvents(r.data);
+    setIsRefreshing(false);
   }
 
   return (
@@ -546,211 +817,50 @@ export default function EventsAccordion(props: { events: Event[] }) {
         className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
       >
         {events.map((event, eventIndex) => (
-          <li key={event.id} className={`flex flex-col p-1`}>
-            <div className="mx-2 flex justify-between gap-x-6">
-              <div className="flex min-w-0 flex-1 flex-col self-center">
-                <p className="flex items-center gap-4 text-sm font-semibold leading-6 text-gray-900">
-                  {new Date(event.datetime).toLocaleDateString("sk-SK")}
-                  <Badge
-                    color={event.is_public ? "blue" : "purple"}
-                    className="rounded-md"
-                  >
-                    {event.is_public ? "Verejné" : "Súkromné"}
-                  </Badge>
-                </p>
-                <p className="truncate text-xs leading-5 text-gray-500">
-                  {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-                </p>
-              </div>
-              <div className="flex flex-col items-center justify-start gap-1 lg:flex-row lg:gap-4">
-                {ticketTypes.map((type) => {
-                  const sold = event.tickets.filter(
-                    (t) =>
-                      t.type == type.label && t.payment_status != "zrušené",
-                  ).length;
-                  return (
-                    <div key={type.label} className="w-28">
-                      <div
-                        className={`flex items-end text-sm ${
-                          type.label == "VIP"
-                            ? "text-amber-600"
-                            : type.label == "standard"
-                              ? "text-gray-600"
-                              : ""
-                        }`}
-                      >
-                        <span className="font-medium">{type.label}</span>
-                        <span
-                          className={`ms-auto text-base font-bold ${
-                            sold > type.max_sold
-                              ? "text-red-600"
-                              : sold == 0
-                                ? "text-gray-400"
-                                : ""
-                          }`}
-                        >
-                          {
-                            event.tickets.filter((t) => t.type == type.label)
-                              .length
-                          }
-                        </span>
-                        /<span>{type.max_sold}</span>
-                      </div>
-                      <Progress
-                        size="sm"
-                        progress={
-                          (event.tickets.filter((t) => t.type == type.label)
-                            .length /
-                            type.max_sold) *
-                          100
-                        }
-                        color={
-                          sold > type.max_sold
-                            ? "red"
-                            : type.label == "VIP"
-                              ? "yellow"
-                              : "gray"
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex flex-row items-center justify-start gap-1">
-                <NewTicketModal event={event} setEvents={setEvents} />
-                <button
-                  className="flex justify-center rounded-md bg-gray-200 p-0.5 hover:bg-gray-300"
-                  onClick={() =>
-                    setExpanded(
-                      expanded.includes(event.id)
-                        ? expanded.filter((e) => e != event.id)
-                        : [...expanded, event.id],
-                    )
-                  }
-                  aria-expanded={expanded.includes(event.id)}
-                  aria-controls={`event-details-${event.id}`}
-                >
-                  <HiChevronDown
-                    className={`${
-                      expanded.includes(event.id) ? "rotate-180 transform" : ""
-                    } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Below is the expanded part */}
-            <div
-              id={`event-details-${event.id}`}
-              role="region"
-              className={`grid overflow-y-hidden rounded-xl bg-slate-200 text-sm text-slate-600 transition-all duration-300 ease-in-out ${
-                expanded.includes(event.id)
-                  ? "my-2 grid-rows-[1fr] p-2 opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
-              }`}
-            >
-              <div className="overflow-x-auto overflow-y-hidden">
-                <div className="flex items-start gap-2 pb-1">
-                  <p className="ps-2 text-lg font-medium tracking-wider text-gray-900">
-                    Lístky
-                  </p>
-                  <button
-                    className="ms-auto rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700"
-                    onClick={async () => {
-                      setEvents((draft) => {
-                        const index = draft.findIndex((e) => e.id == event.id);
-                        draft[index].is_public = !event.is_public;
-                      });
-                      const r = await changeEventPublicStatus(
-                        event.id,
-                        !event.is_public,
-                      );
-                      if (r.error) {
-                        setEvents((draft) => {
-                          const index = draft.findIndex(
-                            (e) => e.id == event.id,
-                          );
-                          draft[index].is_public = !event.is_public;
-                        });
-                        alert(r.error.message);
-                        return;
-                      }
-                    }}
-                  >
-                    {event.is_public ? "Spraviť súkromným" : "Zverejniť"}
-                  </button>
-                  <button
-                    className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700"
-                    onClick={async () => {
-                      if (event.tickets.length > 0) {
-                        alert(
-                          "Nemôžete vymazať termín, ktorý má predané lístky. Najprv vymažte lístky.",
-                        );
-                        return;
-                      }
-                      if (!confirm("Naozaj chcete vymazať tento termín?"))
-                        return;
-                      const removedEvent = events.find((e) => e.id == event.id);
-                      setEvents((draft) => {
-                        draft.splice(
-                          draft.findIndex((e) => e.id == event.id),
-                          1,
-                        );
-                      });
-                      const r = await deleteEvent(event.id);
-                      if (r.error) {
-                        setEvents((draft) => {
-                          draft.push(removedEvent!);
-                          draft.sort((a, b) => {
-                            return (
-                              new Date(b.datetime).getTime() -
-                              new Date(a.datetime).getTime()
-                            );
-                          });
-                        });
-                        alert(r.error.message);
-                        return;
-                      }
-                    }}
-                  >
-                    Vymazať
-                  </button>
-                </div>
-                {event.tickets.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table className="w-full">
-                      <Table.Head>
-                        <Table.HeadCell className="p-1 px-2">#</Table.HeadCell>
-                        <Table.HeadCell className="p-1 px-2">
-                          Typ
-                        </Table.HeadCell>
-                        <Table.HeadCell className="p-1 text-center" colSpan={3}>
-                          Hostia
-                        </Table.HeadCell>
-                        <Table.HeadCell className="p-1 text-center">
-                          Platca
-                        </Table.HeadCell>
-                        <Table.HeadCell className="p-1 text-center">
-                          Status
-                        </Table.HeadCell>
-                        <Table.HeadCell className="p-1 text-end">
-                          Cena
-                        </Table.HeadCell>
-                        <Table.HeadCell className="p-1">
-                          <span className="sr-only">Edit</span>
-                        </Table.HeadCell>
-                      </Table.Head>
-                      <Table.Body>
-                        <TicketRows event={event} setEvents={setEvents} />
-                      </Table.Body>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-center">Žiadne lístky</p>
-                )}
-              </div>
-            </div>
-          </li>
+          <EventRow
+            key={event.id}
+            event={event}
+            setEvent={getEventSetter(eventIndex)}
+            removeEvent={async () => {
+              if (event.tickets.length > 0) {
+                alert(
+                  "Nemôžete vymazať termín, ktorý má predané lístky. Najprv vymažte lístky.",
+                );
+                return;
+              }
+              if (!confirm("Naozaj chcete vymazať tento termín?")) return;
+              const removedEvent = event;
+              setEvents((draft) => {
+                draft.splice(eventIndex, 1);
+              });
+              const toastId = toast.loading("Vymazávam...");
+              const r = await deleteEvent(event.id);
+              if (r.error) {
+                setEvents((draft) => {
+                  draft.push(removedEvent!);
+                  draft.sort((a, b) => {
+                    return (
+                      new Date(b.datetime).getTime() -
+                      new Date(a.datetime).getTime()
+                    );
+                  });
+                });
+                toast.update(toastId, {
+                  render: r.error.message,
+                  type: "error",
+                  isLoading: false,
+                  closeButton: true,
+                });
+                return;
+              }
+              toast.update(toastId, {
+                render: "Termín vymazaný",
+                type: "success",
+                isLoading: false,
+                autoClose: 1000,
+              });
+            }}
+          />
         ))}
       </ul>
     </>

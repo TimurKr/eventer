@@ -4,21 +4,39 @@ import { InsertTickets, Tickets } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { ticketSortFunction } from "./utils";
 
 // Fetch events
 export async function fetchEvents() {
-  const supabase = createServerSupabase(cookies(), ["events", "tickets"]);
-  return await supabase
+  const r = await createServerSupabase(cookies(), ["events", "tickets"])
     .from("events")
     .select(
       `*,
       tickets (*)`,
     )
-    .order("datetime", { ascending: false })
-    .order("billing_name", { referencedTable: "tickets", ascending: true })
-    .order("type", { referencedTable: "tickets", ascending: true });
+    .order("datetime", { ascending: false });
+  if (r.error) {
+    return r;
+  }
+  return {
+    ...r,
+    data: r.data.map((event) => {
+      return {
+        ...event,
+        tickets: [
+          ...event.tickets.filter((t) => t.payment_status != "zrušené"),
+        ].sort(ticketSortFunction),
+        cancelled_tickets: [
+          ...event.tickets.filter((t) => t.payment_status == "zrušené"),
+        ].sort(ticketSortFunction),
+      };
+    }),
+  };
 }
+
+export type EventWithTickets = NonNullable<
+  Awaited<ReturnType<typeof fetchEvents>>["data"]
+>[0];
 
 // Create new event
 export async function createNewEvent(date: Date, isPublic: boolean) {
@@ -84,19 +102,6 @@ export async function updateTicketPaymentStatus(
     .from("tickets")
     .update({ payment_status: paymentStatus })
     .in("id", ticketIDs);
-  if (!res.error) {
-    revalidateTag("tickets");
-  }
-  return res;
-}
-
-// Update ticket type
-export async function updateTicketType(ticketID: string, type: string) {
-  const supabase = createServerSupabase(cookies());
-  const res = await supabase
-    .from("tickets")
-    .update({ type })
-    .match({ id: ticketID });
   if (!res.error) {
     revalidateTag("tickets");
   }

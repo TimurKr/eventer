@@ -2,7 +2,7 @@
 
 import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
 import { useState, useTransition } from "react";
-import { createNewEvent } from "./serverActions";
+import { EventWithTickets, createNewEvent } from "./serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Updater } from "use-immer";
@@ -11,7 +11,7 @@ import { Events, Tickets } from "@/utils/supabase/database.types";
 export default function NewEventModal({
   setEvents,
 }: {
-  setEvents: Updater<(Events & { tickets: Tickets[] })[]>;
+  setEvents: Updater<EventWithTickets[]>;
 }) {
   const [date, setDate] = useState<Date>(new Date());
   const [time, setTime] = useState<string>("18:00");
@@ -35,6 +35,7 @@ export default function NewEventModal({
         draft.push({
           ...data[0],
           tickets: [],
+          cancelled_tickets: [],
         });
         draft.sort((a, b) => {
           return (

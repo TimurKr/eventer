@@ -12,10 +12,8 @@ import {
 } from "@/utils/supabase/database.types";
 import { Alert, Button, Modal } from "flowbite-react";
 import {
-  ErrorMessage,
   Field,
   FieldArray,
-  FieldProps,
   Form,
   Formik,
   FormikHelpers,
@@ -25,37 +23,20 @@ import { useState } from "react";
 import * as Yup from "yup";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
-import { get } from "http";
-import { bulkCreateTickets } from "./serverActions";
-import { useRouter } from "next/navigation";
-import { Updater } from "use-immer";
-import { HiExclamationCircle, HiExclamationTriangle } from "react-icons/hi2";
+import { EventWithTickets, bulkCreateTickets } from "./serverActions";
+import { HiExclamationTriangle } from "react-icons/hi2";
+import { toast } from "react-toastify";
 
 export default function NewTicketModal({
   event,
-  setEvents,
+  ticketTypes,
+  insertLocalTickets,
 }: {
-  event: Events & { tickets: Tickets[] };
-  setEvents: Updater<(Events & { tickets: Tickets[] })[]>;
+  event: EventWithTickets;
+  ticketTypes: { [key: string]: any }[];
+  insertLocalTickets: (tickets: Tickets[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // const mySchema = z.object({
-  //   name: z
-  //     .string({ required_error: "Meno je povinné" })
-  //     .min(3, { message: "Meno musí mať aspoň 3 znaky" }),
-  //   email: z
-  //     .string()
-  //     .email("Zadajte platný email")
-  //     .or(z.literal("").transform(() => undefined)),
-  //   phone: z.string().optional(),
-  //   // price: z.number(),
-  //   // paymentStatus: z.enum(["zaplatené", "rezervované", "zrušené"]),
-  //   // type: z.enum(["VIP", "standard"]),
-  //   // billingName: z.string().optional(),
-  //   // billingEmail: z.string().email().optional(),
-  //   // billingPhone: z.string(),
-  // });
 
   const validationSchema = Yup.object({
     billingName: Yup.string()
@@ -91,7 +72,7 @@ export default function NewTicketModal({
 
   const onSubmit = async (
     values: TicketOrderType,
-    { setSubmitting, setErrors }: FormikHelpers<TicketOrderType>,
+    { setErrors }: FormikHelpers<TicketOrderType>,
   ) => {
     const tickets: InsertTickets[] = values.tickets.map((ticket) => ({
       billing_name: values.billingName,
@@ -110,13 +91,8 @@ export default function NewTicketModal({
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
     }
-    setEvents((draft) => {
-      const index = draft.findIndex((e) => e.id === event.id);
-      draft[index].tickets = [...draft[index].tickets, ...data];
-      draft[index].tickets.sort((a, b) =>
-        a.billing_name.localeCompare(b.billing_name),
-      );
-    });
+    insertLocalTickets(data);
+    toast.success("Lístky boli vytvorené");
     setIsOpen(false);
   };
 
@@ -203,7 +179,12 @@ export default function NewTicketModal({
                           className="ms-auto p-0 ps-1"
                           pill
                           onClick={() =>
-                            ticketsProps.push({ type: "standard", price: 80 })
+                            ticketsProps.push({
+                              type: "standard",
+                              price: ticketTypes.find(
+                                (t) => t.type == "standard",
+                              )!.price,
+                            })
                           }
                         >
                           {
@@ -218,7 +199,11 @@ export default function NewTicketModal({
                           className="p-0 ps-1"
                           pill
                           onClick={() =>
-                            ticketsProps.push({ type: "VIP", price: 100 })
+                            ticketsProps.push({
+                              type: "VIP",
+                              price: ticketTypes.find((t) => t.type == "VIP")!
+                                .price,
+                            })
                           }
                         >
                           {values.tickets.filter((t) => t.type == "VIP").length}
