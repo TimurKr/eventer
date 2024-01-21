@@ -1,7 +1,7 @@
 "use client";
 
 import { Events, Tickets } from "@/utils/supabase/database.types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowPathIcon,
   EllipsisHorizontalIcon,
@@ -33,7 +33,7 @@ const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
 function InstantInput({
   type = "text",
-  value,
+  defaultValue,
   placeholder,
   inline = false,
   className,
@@ -42,7 +42,7 @@ function InstantInput({
   setLocalValue,
 }: {
   type: "text" | "number" | "email" | "tel";
-  value?: string | null;
+  defaultValue?: string | null;
   placeholder?: string;
   inline?: boolean;
   className?: string;
@@ -50,16 +50,23 @@ function InstantInput({
   updateDatabase: (value: string) => Promise<any>;
   setLocalValue: (value: string) => void;
 }) {
+  const [value, setValue] = useState<string>(defaultValue || "");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue || "");
+  }, [defaultValue]);
+
   return (
     <input
       type={type}
       className={`mx-1 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
         error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
       } ${inline ? "font-mono" : ""} ${className}`}
-      defaultValue={value || undefined}
+      value={value}
       size={inline ? value?.length || 5 : undefined}
       onChange={async (e) => {
+        setValue(e.target.value);
         if (validate) {
           const err = await validate(e.target.value);
           if (err) setError(err);
@@ -75,24 +82,24 @@ function InstantInput({
         }
       }}
       onBlur={async (e) => {
-        if (e.target.value == (value || "")) {
+        if (value == (defaultValue || "")) {
           setError(null);
           return;
         }
-        const err = validate && (await validate(e.target.value));
+        const err = validate && (await validate(value));
         if (err) {
           e.target.focus();
           setError(err);
           toast.error(err, {
             autoClose: 2000,
           });
-          e.target.value = value || "";
+          setValue(defaultValue || "");
           return;
         }
         setError(null);
         toast
           .promise(
-            updateDatabase(e.target.value),
+            updateDatabase(value),
             {
               pending: "Ukladám...",
               success: "Uložené",
@@ -104,7 +111,7 @@ function InstantInput({
             },
           )
           .then((r) => {
-            if (r.error) e.target.value = value || "";
+            if (r.error) setValue(value || "");
             else setLocalValue(e.target.value);
           });
       }}
@@ -193,7 +200,7 @@ function TicketRows({
                               id: ticket.id,
                               type: e.target.value,
                               price: ticketTypes.find(
-                                (type) => type.label == e.target.value,
+                                (t) => t.label == e.target.value,
                               )!.price,
                             });
                             if (r.error) {
@@ -220,7 +227,7 @@ function TicketRows({
                       </Table.Cell>
                       <Table.Cell className="border-l p-0">
                         <InstantInput
-                          value={ticket.name}
+                          defaultValue={ticket.name}
                           type="text"
                           placeholder="Meno"
                           validate={async (value) =>
@@ -243,7 +250,7 @@ function TicketRows({
                       </Table.Cell>
                       <Table.Cell className="p-0">
                         <InstantInput
-                          value={ticket.phone}
+                          defaultValue={ticket.phone}
                           type="text"
                           placeholder="Telefón"
                           updateDatabase={(value) =>
@@ -263,7 +270,7 @@ function TicketRows({
                       </Table.Cell>
                       <Table.Cell className="p-0">
                         <InstantInput
-                          value={ticket.email}
+                          defaultValue={ticket.email}
                           type="email"
                           placeholder="Email"
                           validate={(value) =>
@@ -295,7 +302,7 @@ function TicketRows({
                         >
                           <div className="flex flex-col gap-1">
                             <InstantInput
-                              value={ticket.billing_name}
+                              defaultValue={ticket.billing_name}
                               type="text"
                               placeholder="Meno"
                               validate={async (value) =>
@@ -316,7 +323,7 @@ function TicketRows({
                               }
                             />
                             <InstantInput
-                              value={ticket.billing_phone}
+                              defaultValue={ticket.billing_phone}
                               type="text"
                               placeholder="Telefón"
                               updateDatabase={(value) =>
@@ -334,7 +341,7 @@ function TicketRows({
                               }
                             />
                             <InstantInput
-                              value={ticket.billing_email}
+                              defaultValue={ticket.billing_email}
                               type="email"
                               placeholder="Email"
                               validate={(value) =>
@@ -442,7 +449,7 @@ function TicketRows({
                       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
                         <InstantInput
                           type="text"
-                          value={ticket.price.toString()}
+                          defaultValue={ticket.price.toString()}
                           placeholder="Cena"
                           inline={true}
                           className="me-0"
