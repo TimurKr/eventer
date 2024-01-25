@@ -9,7 +9,8 @@ import {
   FieldProps,
   GenericFieldHTMLAttributes,
 } from "formik";
-import { HTMLInputTypeAttribute } from "react";
+import { HTMLInputTypeAttribute, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export function CustomErrorMessage({
   fieldMeta,
@@ -98,6 +99,95 @@ export const GenericTextField = ({
     </Field>
   </>
 );
+
+export function InstantInput({
+  type = "text",
+  defaultValue,
+  placeholder = " - ",
+  inline = false,
+  className,
+  validate,
+  updateDatabase,
+  setLocalValue,
+}: {
+  type: "text" | "number" | "email" | "tel";
+  defaultValue?: string | null;
+  placeholder?: string;
+  inline?: boolean;
+  className?: string;
+  validate?: (value: string) => Promise<string | null>;
+  updateDatabase: (value: string) => Promise<any>;
+  setLocalValue: (value: string) => void | Promise<void>;
+}) {
+  const [value, setValue] = useState<string>(defaultValue || "");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue || "");
+  }, [defaultValue]);
+
+  return (
+    <input
+      type={type}
+      className={`m-0.5 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
+        error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
+      } ${inline ? "font-mono" : ""} ${className}`}
+      value={value}
+      size={inline ? value?.length || placeholder?.length || 3 : undefined}
+      onChange={async (e) => {
+        setValue(e.target.value);
+        if (validate) {
+          const err = await validate(e.target.value);
+          if (err) setError(err);
+          else setError(null);
+        }
+        if (inline) e.target.size = e.target.value.length || 4;
+      }}
+      placeholder={placeholder}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      onBlur={async (e) => {
+        if (value == (defaultValue || "")) {
+          setError(null);
+          return;
+        }
+        const err = validate && (await validate(value));
+        if (err) {
+          e.target.focus();
+          setError(err);
+          toast.error(err, {
+            autoClose: 2000,
+          });
+          setValue(defaultValue || "");
+          return;
+        }
+        setError(null);
+        const toastId = toast.loading("Ukladám...", { autoClose: false });
+        const r = await updateDatabase(value);
+        if (r.error) {
+          toast.update(toastId, {
+            render: "Nastala chyba: " + r.error.message,
+            type: "error",
+            closeButton: true,
+          });
+          setValue(defaultValue || "");
+          return;
+        }
+        await setLocalValue(e.target.value);
+        toast.update(toastId, {
+          render: "Uložené",
+          type: "success",
+          isLoading: false,
+          autoClose: 1000,
+        });
+      }}
+    />
+  );
+}
 
 export function SubmitButton({
   isSubmitting,

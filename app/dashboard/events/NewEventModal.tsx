@@ -1,18 +1,16 @@
 "use client";
 
 import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
-import { useState, useTransition } from "react";
+import { useContext, useState, useTransition } from "react";
 import { EventWithTickets, createNewEvent } from "./serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Updater } from "use-immer";
 import { Events, Tickets } from "@/utils/supabase/database.types";
+import { useStore } from "zustand";
+import { EventsContext } from "./zustand";
 
-export default function NewEventModal({
-  setEvents,
-}: {
-  setEvents: Updater<EventWithTickets[]>;
-}) {
+export default function NewEventModal() {
   const [date, setDate] = useState<Date>(new Date());
   const [time, setTime] = useState<string>("18:00");
   const [isPublic, setIsPublic] = useState<boolean>(false);
@@ -20,6 +18,10 @@ export default function NewEventModal({
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
+
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const { addEvent } = useStore(store, (state) => state);
 
   const submit = () => {
     startSubmition(async () => {
@@ -31,17 +33,10 @@ export default function NewEventModal({
         setErrorMessages(error.message.split("\n"));
         return;
       }
-      setEvents((draft) => {
-        draft.push({
-          ...data[0],
-          tickets: [],
-          cancelled_tickets: [],
-        });
-        draft.sort((a, b) => {
-          return (
-            new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
-          );
-        });
+      addEvent({
+        ...data[0],
+        tickets: [],
+        cancelled_tickets: [],
       });
       setIsOpen(false);
     });

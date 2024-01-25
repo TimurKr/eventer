@@ -1,18 +1,42 @@
 "use server";
 
-import { InsertTickets, Tickets } from "@/utils/supabase/database.types";
+import {
+  Contacts,
+  InsertContacts,
+  InsertTickets,
+  Tickets,
+} from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { ticketSortFunction } from "./utils";
 
+export async function fetchTicketTypes() {
+  return {
+    data: [
+      { label: "VIP", max_sold: 6, price: 100 },
+      { label: "standard", max_sold: 24, price: 80 },
+    ],
+    error: null,
+  };
+}
+
+export type TicketTypes = Awaited<ReturnType<typeof fetchTicketTypes>>["data"];
+
 // Fetch events
 export async function fetchEvents() {
-  const r = await createServerSupabase(cookies(), ["events", "tickets"])
+  const r = await createServerSupabase(cookies(), [
+    "events",
+    "tickets",
+    "contacts",
+  ])
     .from("events")
     .select(
       `*,
-      tickets (*)`,
+      tickets (*,
+        billing:contacts!tickets_billing_id_fkey(*),
+        guest:contacts!tickets_guest_id_fkey(*)
+        )`,
     )
     .order("datetime", { ascending: false });
   if (r.error) {
@@ -37,6 +61,15 @@ export async function fetchEvents() {
 export type EventWithTickets = NonNullable<
   Awaited<ReturnType<typeof fetchEvents>>["data"]
 >[0];
+
+// Fetch all contacts
+export async function fetchContacts() {
+  const r = await createServerSupabase(cookies()).from("contacts").select();
+  if (r.error) {
+    return r;
+  }
+  return r;
+}
 
 // Create new event
 export async function createNewEvent(date: Date, isPublic: boolean) {
@@ -67,7 +100,7 @@ export async function deleteEvent(eventId: number) {
 }
 
 // Change event public status
-export async function changeEventPublicStatus(
+export async function updateEventPublicStatus(
   eventId: number,
   isPublic: boolean,
 ) {
@@ -80,6 +113,15 @@ export async function changeEventPublicStatus(
     revalidatePath("/dashboard/events");
   }
   return result;
+}
+
+export async function bulkInsertContacts(contacts: InsertContacts[]) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase.from("contacts").insert(contacts).select();
+  if (!res.error) {
+    revalidateTag("contacts");
+  }
+  return res;
 }
 
 // Create new tickets
@@ -123,6 +165,21 @@ export async function updateTicketFields(
   return res;
 }
 
+// Update contact fields
+export async function updateContactFields(
+  contact: Partial<Contacts> & { id: NonNullable<Contacts["id"]> },
+) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase
+    .from("contacts")
+    .update(contact)
+    .match({ id: contact.id });
+  if (!res.error) {
+    revalidateTag("contacts");
+  }
+  return res;
+}
+
 // Delete ticket
 export async function deleteTicket(ticketID: string) {
   const supabase = createServerSupabase(cookies());
@@ -131,4 +188,68 @@ export async function deleteTicket(ticketID: string) {
     revalidateTag("tickets");
   }
   return res;
+}
+
+// Bulk delete contacts
+export async function deleteContacts(contactIDs: number[]) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase.from("contacts").delete().in("id", contactIDs);
+  if (!res.error) {
+    revalidateTag("contacts");
+  }
+  return res;
+}
+
+// Merge contacts
+export async function mergeContacts(targetContact: Contacts) {
+  const { id, created_at, ...contactFilter } = targetContact;
+  const supabase = createServerSupabase(cookies());
+
+  let q1 = supabase.from("contacts").select().neq("id", targetContact.id);
+  for (const [key, value] of Object.entries(contactFilter)) {
+    if (value == null) {
+      q1 = q1.is(key, null);
+    } else {
+      q1 = q1.eq(key, value);
+    }
+  }
+  const contactsQ = await q1;
+  if (contactsQ.error) {
+    return contactsQ;
+  }
+
+  const updateBillingQ = await supabase
+    .from("tickets")
+    .update({ billing_id: targetContact.id })
+    .in(
+      "billing_id",
+      contactsQ.data.map((c) => c.id),
+    );
+  if (updateBillingQ.error) {
+    return updateBillingQ;
+  }
+  const updateGuestQ = await supabase
+    .from("tickets")
+    .update({ guest_id: targetContact.id })
+    .in(
+      "guest_id",
+      contactsQ.data.map((c) => c.id),
+    );
+  if (updateGuestQ.error) {
+    return updateGuestQ;
+  }
+
+  let q2 = supabase.from("contacts").delete().neq("id", targetContact.id);
+  for (const [key, value] of Object.entries(contactFilter)) {
+    if (value == null) {
+      q2 = q2.is(key, null);
+    } else {
+      q2 = q2.eq(key, value);
+    }
+  }
+  const deleteQ = await q2;
+  if (deleteQ.error) {
+    return deleteQ;
+  }
+  return;
 }

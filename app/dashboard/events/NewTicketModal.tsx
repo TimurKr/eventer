@@ -5,11 +5,7 @@ import {
   GenericTextField,
   SubmitButton,
 } from "@/app/components/FormElements";
-import {
-  Events,
-  InsertTickets,
-  Tickets,
-} from "@/utils/supabase/database.types";
+import { Contacts, Events } from "@/utils/supabase/database.types";
 import { Alert, Button, Modal } from "flowbite-react";
 import {
   Field,
@@ -19,24 +15,47 @@ import {
   FormikHelpers,
   FormikProps,
 } from "formik";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import * as Yup from "yup";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
-import { EventWithTickets, bulkCreateTickets } from "./serverActions";
+import {
+  EventWithTickets,
+  bulkCreateTickets,
+  bulkInsertContacts,
+  fetchContacts,
+} from "./serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
+import { EventsContext } from "./zustand";
+import { useStore } from "zustand";
+import { contactsEqual } from "./utils";
 
-export default function NewTicketModal({
-  event,
-  ticketTypes,
-  insertLocalTickets,
-}: {
-  event: EventWithTickets;
-  ticketTypes: { [key: string]: any }[];
-  insertLocalTickets: (tickets: Tickets[]) => void;
-}) {
+export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [contacts, setContacts] = useState<Contacts[]>([]);
+
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const ticketTypes = useStore(store, (state) =>
+    state.ticketTypes.map((t) => ({
+      ...t,
+      sold: state.events
+        .find((e) => e.id === eventId)!
+        .tickets.filter((ticket) => ticket.type == t.label).length,
+    })),
+  );
+  const addTickets = useStore(store, (state) => state.addTickets);
+
+  useEffect(() => {
+    (async () => {
+      const { data: contacts, error } = await fetchContacts();
+      if (error) {
+        throw error;
+      }
+      setContacts(contacts);
+    })();
+  }, []);
 
   const validationSchema = Yup.object({
     billingName: Yup.string()
@@ -74,24 +93,87 @@ export default function NewTicketModal({
     values: TicketOrderType,
     { setErrors }: FormikHelpers<TicketOrderType>,
   ) => {
-    const tickets: InsertTickets[] = values.tickets.map((ticket) => ({
-      billing_name: values.billingName,
-      billing_email: values.billingEmail,
-      billing_phone: values.billingPhone,
-      event_id: event.id,
-      name: ticket.name || values.billingName,
-      email: ticket.email,
-      phone: ticket.phone,
-      type: ticket.type as string,
-      price: ticket.price,
-      payment_status: values.paymentStatus as string,
-    }));
-    const { data, error } = await bulkCreateTickets(tickets);
+    let allContacts = [...contacts];
+    let billingContact = contacts.find((c) =>
+      contactsEqual(c, {
+        name: values.billingName,
+        email: values.billingEmail || null,
+        phone: values.billingPhone || null,
+      }),
+    );
+    if (!billingContact) {
+      const { data: billingContacts, error: billingError } =
+        await bulkInsertContacts([
+          {
+            name: values.billingName,
+            email: values.billingEmail || null,
+            phone: values.billingPhone || null,
+          },
+        ]);
+      if (billingError) {
+        setErrors({
+          tickets: "Chyba pri vytváraní fakturačného kontaktu: " + billingError,
+        });
+        return;
+      }
+      billingContact = billingContacts[0];
+      allContacts = [...contacts, ...billingContacts];
+    }
+    const { data: guestContacts, error: guestsError } =
+      await bulkInsertContacts(
+        values.tickets
+          .map(
+            (ticket) =>
+              ({
+                name: ticket.name || values.billingName,
+                email: ticket.email || null,
+                phone: ticket.phone || null,
+              }) as Contacts,
+          )
+          // filter out existing contacts
+          .filter(
+            (contact) => ![...contacts].find((c) => contactsEqual(c, contact)),
+          )
+          // filter out duplicates
+          .filter(
+            (ticket, i, a) =>
+              i === a.findIndex((t) => contactsEqual(t, ticket)),
+          ),
+      );
+    if (guestsError) {
+      setErrors({ tickets: "Chyba pri vytváraní kontaktov: " + guestsError });
+      return;
+    }
+    allContacts = [...allContacts, ...guestContacts];
+
+    const { data: createdTickets, error } = await bulkCreateTickets(
+      values.tickets.map((ticket) => ({
+        billing_id: billingContact!.id,
+        guest_id: allContacts.find((c) =>
+          contactsEqual(c, {
+            name: ticket.name || values.billingName,
+            email: ticket.email || null,
+            phone: ticket.phone || null,
+          }),
+        )!.id,
+        event_id: eventId,
+        type: ticket.type as string,
+        price: ticket.price,
+        payment_status: values.paymentStatus as string,
+      })),
+    );
     if (error) {
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
     }
-    insertLocalTickets(data);
+    addTickets(
+      eventId,
+      createdTickets.map((t) => ({
+        ...t,
+        billing: allContacts.find((c) => c.id == t.billing_id)!,
+        guest: allContacts.find((c) => c.id == t.guest_id)!,
+      })),
+    );
     toast.success("Lístky boli vytvorené");
     setIsOpen(false);
   };
@@ -182,7 +264,7 @@ export default function NewTicketModal({
                             ticketsProps.push({
                               type: "standard",
                               price: ticketTypes.find(
-                                (t) => t.type == "standard",
+                                (t) => t.label == "standard",
                               )!.price,
                             })
                           }
@@ -201,7 +283,7 @@ export default function NewTicketModal({
                           onClick={() =>
                             ticketsProps.push({
                               type: "VIP",
-                              price: ticketTypes.find((t) => t.type == "VIP")!
+                              price: ticketTypes.find((t) => t.label == "VIP")!
                                 .price,
                             })
                           }
@@ -319,38 +401,21 @@ export default function NewTicketModal({
                     </>
                   )}
                 </FieldArray>
-                {event.tickets.filter(
-                  (t) => t.type == "standard" && t.payment_status != "zrušené",
-                ).length +
-                  values.tickets.filter(
-                    (t) =>
-                      t.type == "standard" && values.paymentStatus != "zrušené",
-                  ).length >
-                24 ? (
-                  <Alert color="warning" icon={HiExclamationTriangle}>
-                    Po vytvorení bude{" "}
-                    {event.tickets.filter((t) => t.type == "standard").length +
-                      values.tickets.filter((t) => t.type == "standard")
-                        .length}{" "}
-                    štandardných lístkov, čo je viac ako 24.
-                  </Alert>
-                ) : event.tickets.filter(
-                    (t) => t.type == "VIP" && t.payment_status != "zrušené",
-                  ).length +
-                    values.tickets.filter(
-                      (t) =>
-                        t.type == "VIP" && values.paymentStatus != "zrušené",
-                    ).length >
-                  6 ? (
-                  <Alert color="warning" icon={HiExclamationTriangle}>
-                    Po vytvorení bude{" "}
-                    {event.tickets.filter((t) => t.type == "VIP").length +
-                      values.tickets.filter((t) => t.type == "VIP").length}{" "}
-                    VIP lístkov, čo je viac ako 6.
-                  </Alert>
-                ) : (
-                  ""
-                )}
+                {ticketTypes.map((type) => {
+                  const afterSaleCount =
+                    type.sold +
+                    values.tickets.filter((t) => t.type == type.label).length;
+                  if (afterSaleCount > type.max_sold) {
+                    return (
+                      <Alert color="warning" icon={HiExclamationTriangle}>
+                        Po vytvorení bude {afterSaleCount} lístkov typu{" "}
+                        <span className="font-semibold">{type.label}</span>, čo
+                        je viac ako povolených {type.max_sold}.
+                      </Alert>
+                    );
+                  }
+                })}
+
                 <div className="flex justify-end">
                   <SubmitButton isSubmitting={isSubmitting} />
                 </div>

@@ -9,6 +9,33 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          address: string | null;
+          created_at: string;
+          email: string | null;
+          id: number;
+          name: string | null;
+          phone: string | null;
+        };
+        Insert: {
+          address?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name?: string | null;
+          phone?: string | null;
+        };
+        Update: {
+          address?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name?: string | null;
+          phone?: string | null;
+        };
+        Relationships: [];
+      };
       events: {
         Row: {
           created_at: string;
@@ -32,53 +59,55 @@ export interface Database {
       };
       tickets: {
         Row: {
-          billing_email: string | null;
-          billing_name: string;
-          billing_phone: string | null;
+          billing_id: number;
           created_at: string;
-          email: string | null;
           event_id: number;
+          guest_id: number;
           id: string;
-          name: string;
           payment_status: string;
-          phone: string | null;
           price: number;
           type: string;
         };
         Insert: {
-          billing_email?: string | null;
-          billing_name: string;
-          billing_phone?: string | null;
+          billing_id: number;
           created_at?: string;
-          email?: string | null;
           event_id: number;
+          guest_id: number;
           id?: string;
-          name: string;
           payment_status?: string;
-          phone?: string | null;
           price: number;
           type: string;
         };
         Update: {
-          billing_email?: string | null;
-          billing_name?: string;
-          billing_phone?: string | null;
+          billing_id?: number;
           created_at?: string;
-          email?: string | null;
           event_id?: number;
+          guest_id?: number;
           id?: string;
-          name?: string;
           payment_status?: string;
-          phone?: string | null;
           price?: number;
           type?: string;
         };
         Relationships: [
           {
+            foreignKeyName: "tickets_billing_id_fkey";
+            columns: ["billing_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "tickets_event_id_fkey";
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_guest_id_fkey";
+            columns: ["guest_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
             referencedColumns: ["id"];
           },
         ];
@@ -181,6 +210,10 @@ export type Enums<
 
 // Schema: public
 // Tables
+export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
+export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
+export type UpdateContacts = Database["public"]["Tables"]["contacts"]["Update"];
+
 export type Events = Database["public"]["Tables"]["events"]["Row"];
 export type InsertEvents = Database["public"]["Tables"]["events"]["Insert"];
 export type UpdateEvents = Database["public"]["Tables"]["events"]["Update"];

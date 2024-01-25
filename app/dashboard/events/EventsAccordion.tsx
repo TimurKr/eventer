@@ -1,559 +1,601 @@
 "use client";
 
-import { Events, Tickets } from "@/utils/supabase/database.types";
-import { useEffect, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import {
   ArrowPathIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/24/solid";
-import { Badge, Dropdown, Progress, Table } from "flowbite-react";
+import { Badge, Dropdown, Progress, Table, Tooltip } from "flowbite-react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
+import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
 import NewTicketModal from "./NewTicketModal";
 import {
   type EventWithTickets,
-  changeEventPublicStatus,
   deleteEvent,
   deleteTicket,
-  fetchEvents,
   updateTicketFields,
   updateTicketPaymentStatus,
+  updateContactFields,
+  updateEventPublicStatus,
+  fetchTicketTypes,
+  bulkInsertContacts,
+  mergeContacts,
 } from "./serverActions";
-import { DraftFunction, Updater, useImmer } from "use-immer";
 import NewEventModal from "./NewEventModal";
 import { toast } from "react-toastify";
 import { string as yupString, number as yupNumber } from "yup";
-import { ticketSortFunction } from "./utils";
-
-const ticketTypes = [
-  { label: "VIP", max_sold: 6, price: 100 },
-  { label: "standard", max_sold: 24, price: 80 },
-];
+import { contactsEqual } from "./utils";
+import { InstantInput } from "@/app/components/FormElements";
+import { EventsContext, createEventsStore } from "./zustand";
+import { useStore } from "zustand";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
-function InstantInput({
-  type = "text",
-  defaultValue,
-  placeholder,
-  inline = false,
-  className,
-  validate,
-  updateDatabase,
-  setLocalValue,
+function LinkUnlinkContact({
+  identicalContactFound,
+  contactUsage,
+  groupSize,
+  ticket,
+  type,
 }: {
-  type: "text" | "number" | "email" | "tel";
-  defaultValue?: string | null;
-  placeholder?: string;
-  inline?: boolean;
-  className?: string;
-  validate?: (value: string) => Promise<string | null>;
-  updateDatabase: (value: string) => Promise<any>;
-  setLocalValue: (value: string) => void;
+  identicalContactFound: number;
+  contactUsage: number;
+  groupSize: number;
+  ticket: EventWithTickets["tickets"][0];
+  type: "guest" | "billing";
 }) {
-  const [value, setValue] = useState<string>(defaultValue || "");
-  const [error, setError] = useState<string | null>(null);
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const { refresh, setPartialTicket } = useStore(store, (state) => state);
+  if (identicalContactFound < 2 && contactUsage < 2) return null;
+  return (
+    <div className="inline-flex">
+      {identicalContactFound > 1 && (
+        <div className={`inline-block p-1 text-green-500`}>
+          <Tooltip
+            content={`Máte ${identicalContactFound} rôznych kontaktov s týmito údajmi. Kliknutím ich spojíte do jedného synchronizovaného.`}
+          >
+            <button
+              onClick={async () => {
+                const toastId = toast.loading("Spájam kontakty...");
+                const r = await mergeContacts(ticket[type]!);
+                if (r?.error) {
+                  toast.update(toastId, {
+                    render: r.error.message,
+                    type: "error",
+                    isLoading: false,
+                    closeButton: true,
+                  });
+                  return;
+                }
+                refresh();
+                toast.update(toastId, {
+                  render: "Kontakty spojené",
+                  type: "success",
+                  isLoading: false,
+                  autoClose: 1000,
+                });
+              }}
+            >
+              <LiaLinkSolid
+                className={`inline h-4 w-4 hover:scale-105 active:scale-110`}
+              />
+            </button>
+          </Tooltip>
+        </div>
+      )}
+      {contactUsage > 1 && (groupSize > 1 || type === "guest") && (
+        <div
+          className={`inline-block p-1 ${
+            type === "guest" ? "invisible group-hover:visible" : ""
+          }`}
+        >
+          <Tooltip
+            content={`Tento kontakt sa používa na ${
+              contactUsage - 1
+            } iných miestach. Kliknutím sem ${
+              type === "guest"
+                ? "zrušíte tento link a umožníte zmeny iba na tomto mieste."
+                : "oddelíte jeden lístok z tejto skupiny."
+            }`}
+          >
+            <button
+              onClick={async () => {
+                const toastId = toast.loading("Vytváram kópiu kontaktu...");
+                const { id, created_at, ...contactData } = ticket[type]!;
+                const r = await bulkInsertContacts([contactData]);
+                if (r.error) {
+                  toast.update(toastId, {
+                    render: r.error.message,
+                    type: "error",
+                    isLoading: false,
+                    closeButton: true,
+                  });
+                  return;
+                }
+                const r2 = await updateTicketFields({
+                  id: ticket.id,
+                  billing_id:
+                    type === "billing" ? r.data[0].id : ticket.billing_id,
+                  guest_id:
+                    type === "guest" ||
+                    contactsEqual(ticket.guest!, ticket.billing!)
+                      ? r.data[0].id
+                      : ticket.guest_id,
+                });
+                if (r2.error) {
+                  toast.update(toastId, {
+                    render: r2.error.message,
+                    type: "error",
+                    isLoading: false,
+                    closeButton: true,
+                  });
+                  return;
+                }
+                setPartialTicket({
+                  id: ticket.id,
+                  billing_id:
+                    type === "billing" ? r.data[0].id : ticket.billing_id,
+                  billing: type === "billing" ? r.data[0] : ticket.billing,
+                  guest_id:
+                    type === "guest" ||
+                    contactsEqual(ticket.guest!, ticket.billing!)
+                      ? r.data[0].id
+                      : ticket.guest_id,
+                  guest:
+                    type === "guest" ||
+                    contactsEqual(ticket.guest!, ticket.billing!)
+                      ? r.data[0]
+                      : ticket.guest,
+                });
+                toast.update(toastId, {
+                  render: "Kontakt oddelený",
+                  type: "success",
+                  isLoading: false,
+                  autoClose: 1000,
+                });
+              }}
+            >
+              <LiaUnlinkSolid
+                className={`inline h-4 w-4 hover:scale-105 active:scale-110 active:text-red-500`}
+              />
+            </button>
+          </Tooltip>
+        </div>
+      )}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    setValue(defaultValue || "");
-  }, [defaultValue]);
+function TicketRow({
+  ticket,
+  tickets,
+}: {
+  ticket: EventWithTickets["tickets"][0];
+  tickets: EventWithTickets["tickets"];
+}) {
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+
+  const {
+    ticketTypes,
+    setPartialTicket,
+    setPartialContact,
+    setTicketsStatus,
+    removeTicket,
+    addTickets,
+  } = useStore(store, (state) => state);
+
+  const allContacts = useStore(store, (state) =>
+    state.events
+      .flatMap((event) => event.tickets)
+      .flatMap((ticket) => [ticket.guest!, ticket.billing!]),
+  );
+  const indexInEvent = tickets.findIndex((t) => t === ticket);
+  const groupSize = tickets.filter(
+    (t) => t.billing_id === ticket.billing_id,
+  ).length;
+  const indexInGroup = tickets
+    .filter((t) => t.billing_id === ticket.billing_id)
+    .findIndex((t) => t === ticket);
 
   return (
-    <input
-      type={type}
-      className={`mx-1 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
-        error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-      } ${inline ? "font-mono" : ""} ${className}`}
-      value={value}
-      size={inline ? value?.length || 5 : undefined}
-      onChange={async (e) => {
-        setValue(e.target.value);
-        if (validate) {
-          const err = await validate(e.target.value);
-          if (err) setError(err);
-          else setError(null);
-        }
-        if (inline) e.target.size = e.target.value.length || 4;
-      }}
-      placeholder={placeholder}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      onBlur={async (e) => {
-        if (value == (defaultValue || "")) {
-          setError(null);
-          return;
-        }
-        const err = validate && (await validate(value));
-        if (err) {
-          e.target.focus();
-          setError(err);
-          toast.error(err, {
-            autoClose: 2000,
-          });
-          setValue(defaultValue || "");
-          return;
-        }
-        setError(null);
-        toast
-          .promise(
-            updateDatabase(value),
-            {
-              pending: "Ukladám...",
-              success: "Uložené",
-              error: "Nastala chyba",
-            },
-            {
+    <Table.Row
+      key={ticket.id}
+      className={`${
+        ticket.payment_status == "zrušené" ? "bg-red-50" : "bg-white"
+      }`}
+    >
+      <Table.Cell
+        className={`whitespace-nowrap p-0 pl-2 ${
+          indexInGroup == 0 && "rounded-tl-md"
+        } ${indexInGroup == groupSize - 1 && "rounded-bl-md"}`}
+      >
+        {indexInEvent} - <span className="text-xs">{indexInGroup + 1}</span>
+      </Table.Cell>
+      <Table.Cell className="p-2 py-0">
+        <select
+          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
+            ticket.type === "VIP"
+              ? "bg-emerald-400 text-black"
+              : ticket.type === "standard"
+                ? "bg-gray-200 text-gray-600"
+                : ""
+          }`}
+          onChange={async (e) => {
+            if (
+              !confirm(
+                `Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.\n\nZmena: ${
+                  ticket.type
+                } => ${e.target.value}\n\nPo zmene bude:\n${e.target.value}: ${
+                  tickets.filter((t) => t.type == e.target.value).length + 1
+                } lístkov\n${ticket.type}: ${
+                  tickets.filter((t) => t.type == ticket.type).length - 1
+                } lístkov`,
+              )
+            )
+              return;
+            const originalType = ticket.type;
+            const originalPrice = ticket.price;
+            setPartialTicket({
+              id: ticket.id,
+              type: e.target.value,
+              price: ticketTypes.find((t) => t.label == e.target.value)!.price,
+            });
+            const r = await updateTicketFields({
+              id: ticket.id,
+              type: e.target.value,
+              price: ticketTypes.find((t) => t.label == e.target.value)!.price,
+            });
+            if (r.error) {
+              setPartialTicket({
+                id: ticket.id,
+                type: originalType,
+                price: originalPrice,
+              });
+              alert(r.error.message);
+              return;
+            }
+          }}
+          value={ticket.type}
+        >
+          {ticketTypes.map((type) => (
+            <option key={type.label} value={type.label}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+      </Table.Cell>
+      <Table.Cell className="text-pretty group border-l p-0">
+        <InstantInput
+          defaultValue={ticket.guest!.name}
+          type="text"
+          inline
+          placeholder="Meno"
+          validate={async (value) =>
+            value == "" ? "Meno nesmie byť prázdne" : null
+          }
+          updateDatabase={async (value) =>
+            updateContactFields({
+              id: ticket.guest_id,
+              name: value,
+            })
+          }
+          setLocalValue={(value) =>
+            setPartialContact({ id: ticket.guest_id, name: value })
+          }
+        />
+        <InstantInput
+          defaultValue={ticket.guest!.phone}
+          type="text"
+          inline
+          placeholder="Telefón"
+          updateDatabase={(value) =>
+            updateContactFields({
+              id: ticket.guest_id,
+              phone: value || null,
+            })
+          }
+          setLocalValue={(value) =>
+            setPartialContact({
+              id: ticket.guest_id,
+              phone: value,
+            })
+          }
+        />
+        <div className="inline-block">
+          <InstantInput
+            defaultValue={ticket.guest!.email}
+            type="email"
+            inline
+            placeholder="Email"
+            validate={(value) =>
+              yupString()
+                .email("Zadajte platný email")
+                .validate(value)
+                .then(() => null)
+                .catch((err) => err.message)
+            }
+            updateDatabase={(value) =>
+              updateContactFields({
+                id: ticket.guest_id,
+                email: value || null,
+              })
+            }
+            setLocalValue={(value) =>
+              setPartialContact({
+                id: ticket.guest_id,
+                email: value,
+              })
+            }
+          />
+          <LinkUnlinkContact
+            identicalContactFound={
+              allContacts
+                .filter((c, i, a) => a.findIndex((c2) => c.id == c2.id) === i)
+                .filter((c) => contactsEqual(c, ticket.guest!)).length
+            }
+            contactUsage={
+              allContacts.filter((c) => c.id == ticket.guest_id).length
+            }
+            groupSize={groupSize}
+            ticket={ticket}
+            type="guest"
+          />
+        </div>
+      </Table.Cell>
+      {indexInGroup == 0 && (
+        <Table.Cell className="group border-x p-1" rowSpan={groupSize}>
+          <div className="flex flex-col">
+            <div className="flex">
+              <InstantInput
+                defaultValue={ticket.billing!.name}
+                type="text"
+                placeholder="Meno"
+                className="grow"
+                validate={async (value) =>
+                  value == "" ? "Meno nesmie byť prázdne" : null
+                }
+                updateDatabase={(value) =>
+                  updateContactFields({
+                    id: ticket.billing_id,
+                    name: value,
+                  })
+                }
+                setLocalValue={(value) =>
+                  setPartialContact({
+                    id: ticket.billing_id,
+                    name: value,
+                  })
+                }
+              />{" "}
+              <LinkUnlinkContact
+                identicalContactFound={
+                  allContacts
+                    .filter(
+                      (c, i, a) => a.findIndex((c2) => c.id == c2.id) === i,
+                    )
+                    .filter((c) => contactsEqual(c, ticket.billing!)).length
+                }
+                contactUsage={
+                  allContacts.filter((c) => c.id == ticket.billing_id).length
+                }
+                groupSize={groupSize}
+                ticket={ticket}
+                type="billing"
+              />
+            </div>
+            <InstantInput
+              defaultValue={ticket.billing!.phone}
+              type="text"
+              placeholder="Telefón"
+              updateDatabase={(value) =>
+                updateContactFields({
+                  id: ticket.billing_id,
+                  phone: value,
+                })
+              }
+              setLocalValue={(value) =>
+                setPartialContact({
+                  id: ticket.billing_id,
+                  phone: value,
+                })
+              }
+            />
+            <InstantInput
+              defaultValue={ticket.billing!.email}
+              type="email"
+              placeholder="Email"
+              validate={(value) =>
+                yupString()
+                  .email("Zadajte platný email")
+                  .validate(value)
+                  .then(() => null)
+                  .catch((err) => err.message)
+              }
+              updateDatabase={(value) =>
+                updateContactFields({
+                  id: ticket.billing_id,
+                  email: value,
+                })
+              }
+              setLocalValue={(value) =>
+                setPartialContact({
+                  id: ticket.billing_id,
+                  email: value,
+                })
+              }
+            />
+          </div>
+        </Table.Cell>
+      )}
+      <Table.Cell className="p-1 text-end">
+        <select
+          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
+            ticket.payment_status === "rezervované"
+              ? "bg-yellow-200 text-yellow-600"
+              : ticket.payment_status === "zaplatené"
+                ? "bg-green-200 text-green-600"
+                : ticket.payment_status === "zrušené"
+                  ? "bg-red-200 text-gray-500"
+                  : ""
+          }`}
+          onChange={async (e) => {
+            let IDs = tickets
+              .filter(
+                (t) =>
+                  t.billing_id == ticket.billing_id &&
+                  t.payment_status == ticket.payment_status,
+              )
+              .map((t) => t.id);
+            if (
+              IDs.length > 1 &&
+              !confirm(
+                `Prajete si zmeniť status všetkých lístkov v tejto skupine s aktuálnym statusom ${ticket.payment_status}? (${IDs.length} lístkov)`,
+              )
+            )
+              IDs = [ticket.id];
+            const toastId = toast.loading("Ukladám...");
+            const originalStatus = ticket.payment_status;
+            setTicketsStatus(IDs, e.target.value);
+            const r = await updateTicketPaymentStatus(IDs, e.target.value);
+            if (r.error) {
+              setTicketsStatus(IDs, originalStatus);
+              toast.update(toastId, {
+                render: r.error.message,
+                type: "error",
+                isLoading: false,
+                closeButton: true,
+              });
+              return;
+            }
+            toast.update(toastId, {
+              render: "Status lístkov zmenený",
+              type: "success",
+              isLoading: false,
               autoClose: 1000,
-              hideProgressBar: true,
-            },
-          )
-          .then((r) => {
-            if (r.error) setValue(value || "");
-            else setLocalValue(e.target.value);
-          });
-      }}
-    />
+            });
+          }}
+          value={ticket.payment_status}
+        >
+          {ticketStatuses.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </Table.Cell>
+      <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
+        <InstantInput
+          type="text"
+          defaultValue={ticket.price.toString()}
+          placeholder="Cena"
+          inline={true}
+          className="me-0"
+          validate={async (value) =>
+            yupNumber()
+              .min(0)
+              .validate(value)
+              .then(() => null)
+              .catch((err) => err.message)
+          }
+          setLocalValue={(value) =>
+            setPartialTicket({
+              id: ticket.id,
+              price: parseFloat(value),
+            })
+          }
+          updateDatabase={(value) =>
+            updateTicketFields({
+              id: ticket.id,
+              price: parseFloat(value),
+            })
+          }
+        />{" "}
+        €
+      </Table.Cell>
+      <Table.Cell
+        className={`whitespace-nowrap p-1 ${
+          indexInGroup == 0 && "rounded-tr-md"
+        } ${indexInGroup == groupSize - 1 && "rounded-br-md"}`}
+      >
+        <Dropdown
+          label=""
+          dismissOnClick={false}
+          renderTrigger={() => (
+            <EllipsisHorizontalIcon className="h-5 w-5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 hover:cursor-pointer hover:bg-gray-200" />
+          )}
+        >
+          <Dropdown.Item onClick={() => alert("Táto funkcia ešte nefunguje")}>
+            Premeň na kupón
+          </Dropdown.Item>
+          <Dropdown.Item
+            className="text-red-500"
+            icon={HiTrash}
+            onClick={async () => {
+              if (!confirm("Naozaj chcete vymazať tento lístok?")) return;
+              const toastId = toast.loading("Vymazávam...");
+              const removedTicket = ticket;
+              removeTicket(ticket.id);
+              const r = await deleteTicket(ticket.id);
+              if (r.error) {
+                addTickets(ticket.event_id, [removedTicket]);
+                toast.update(toastId, {
+                  render: r.error.message,
+                  type: "error",
+                  isLoading: false,
+                  closeButton: true,
+                });
+                return;
+              }
+              toast.update(toastId, {
+                render: "Lístok vymazaný",
+                type: "success",
+                isLoading: false,
+                autoClose: 1000,
+              });
+            }}
+          >
+            Vymazať
+          </Dropdown.Item>
+        </Dropdown>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
 function TicketRows({
-  tickets,
-  setEvent,
+  eventId,
+  cancelled,
 }: {
-  tickets: Tickets[];
-  setEvent: Updater<EventWithTickets>;
+  eventId: number;
+  cancelled: boolean;
 }) {
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const tickets = useStore(store, (state) => {
+    const event = state.events.find((e) => e.id == eventId)!;
+    return cancelled ? event.cancelled_tickets : event.tickets;
+  });
+
   return (
     <>
       {tickets
-        .map((t) => t.billing_name)
+        .map((t) => t.billing_id)
         .filter((v, i, a) => a.indexOf(v) === i)
-        .map((billing_name) => {
-          const groupSize = tickets.filter(
-            (t) => t.billing_name == billing_name,
-          ).length;
-          return (
-            <>
-              <Table.Row key={billing_name} className="h-1"></Table.Row>
-              {tickets
-                .filter((t) => t.billing_name == billing_name)
-                .map((ticket, indexInGroup) => {
-                  return (
-                    <Table.Row
-                      key={ticket.id}
-                      className={`${
-                        ticket.payment_status == "zrušené"
-                          ? "bg-red-50"
-                          : "bg-white"
-                      }`}
-                    >
-                      <Table.Cell
-                        className={`whitespace-nowrap p-0 pl-2 ${
-                          indexInGroup == 0 && "rounded-tl-md"
-                        } ${indexInGroup == groupSize - 1 && "rounded-bl-md"}`}
-                      >
-                        {tickets.findIndex((t) => t === ticket) + 1} -{" "}
-                        <span className="text-xs">{indexInGroup + 1}</span>
-                      </Table.Cell>
-                      <Table.Cell className="p-2 py-0">
-                        <select
-                          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
-                            ticket.type === "VIP"
-                              ? "bg-emerald-400 text-black"
-                              : ticket.type === "standard"
-                                ? "bg-gray-200 text-gray-600"
-                                : ""
-                          }`}
-                          onChange={async (e) => {
-                            if (
-                              !confirm(
-                                `Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.\n\nZmena: ${
-                                  ticket.type
-                                } => ${e.target.value}\n\nPo zmene bude:\n${
-                                  e.target.value
-                                }: ${
-                                  tickets.filter(
-                                    (t) => t.type == e.target.value,
-                                  ).length + 1
-                                } lístkov\n${ticket.type}: ${
-                                  tickets.filter((t) => t.type == ticket.type)
-                                    .length - 1
-                                } lístkov`,
-                              )
-                            )
-                              return;
-                            const originalType = ticket.type;
-                            const originalPrice = ticket.price;
-                            setEvent((draft) => {
-                              const t = draft.tickets.find(
-                                (t) => t.id == ticket.id,
-                              )!;
-                              t.type = e.target.value;
-                              t.price = ticketTypes.find(
-                                (type) => type.label == e.target.value,
-                              )!.price;
-                            });
-                            const r = await updateTicketFields({
-                              id: ticket.id,
-                              type: e.target.value,
-                              price: ticketTypes.find(
-                                (t) => t.label == e.target.value,
-                              )!.price,
-                            });
-                            if (r.error) {
-                              setEvent((draft) => {
-                                draft.tickets.find(
-                                  (t) => t.id == ticket.id,
-                                )!.type = originalType;
-                                draft.tickets.find(
-                                  (t) => t.id == ticket.id,
-                                )!.price = originalPrice;
-                              });
-                              alert(r.error.message);
-                              return;
-                            }
-                          }}
-                          value={ticket.type}
-                        >
-                          {ticketTypes.map((type) => (
-                            <option key={type.label} value={type.label}>
-                              {type.label}
-                            </option>
-                          ))}
-                        </select>
-                      </Table.Cell>
-                      <Table.Cell className="border-l p-0">
-                        <InstantInput
-                          defaultValue={ticket.name}
-                          type="text"
-                          placeholder="Meno"
-                          validate={async (value) =>
-                            value == "" ? "Meno nesmie byť prázdne" : null
-                          }
-                          updateDatabase={(value) =>
-                            updateTicketFields({
-                              id: ticket.id,
-                              name: value,
-                            })
-                          }
-                          setLocalValue={(value) =>
-                            setEvent((draft) => {
-                              draft.tickets.find(
-                                (t) => t.id == ticket.id,
-                              )!.name = value;
-                            })
-                          }
-                        />
-                      </Table.Cell>
-                      <Table.Cell className="p-0">
-                        <InstantInput
-                          defaultValue={ticket.phone}
-                          type="text"
-                          placeholder="Telefón"
-                          updateDatabase={(value) =>
-                            updateTicketFields({
-                              id: ticket.id,
-                              phone: value || null,
-                            })
-                          }
-                          setLocalValue={(value) =>
-                            setEvent((draft) => {
-                              draft.tickets.find(
-                                (t) => t.id == ticket.id,
-                              )!.phone = value;
-                            })
-                          }
-                        />
-                      </Table.Cell>
-                      <Table.Cell className="p-0">
-                        <InstantInput
-                          defaultValue={ticket.email}
-                          type="email"
-                          placeholder="Email"
-                          validate={(value) =>
-                            yupString()
-                              .email("Zadajte platný email")
-                              .validate(value)
-                              .then(() => null)
-                              .catch((err) => err.message)
-                          }
-                          updateDatabase={(value) =>
-                            updateTicketFields({
-                              id: ticket.id,
-                              email: value || null,
-                            })
-                          }
-                          setLocalValue={(value) =>
-                            setEvent((draft) => {
-                              draft.tickets.find(
-                                (t) => t.id == ticket.id,
-                              )!.email = value;
-                            })
-                          }
-                        />
-                      </Table.Cell>
-                      {indexInGroup == 0 && (
-                        <Table.Cell
-                          className="border-x p-1"
-                          rowSpan={groupSize}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <InstantInput
-                              defaultValue={ticket.billing_name}
-                              type="text"
-                              placeholder="Meno"
-                              validate={async (value) =>
-                                value == "" ? "Meno nesmie byť prázdne" : null
-                              }
-                              updateDatabase={(value) =>
-                                updateTicketFields({
-                                  id: ticket.id,
-                                  billing_name: value,
-                                })
-                              }
-                              setLocalValue={(value) =>
-                                setEvent((draft) => {
-                                  draft.tickets.find(
-                                    (t) => t.id == ticket.id,
-                                  )!.billing_name = value;
-                                })
-                              }
-                            />
-                            <InstantInput
-                              defaultValue={ticket.billing_phone}
-                              type="text"
-                              placeholder="Telefón"
-                              updateDatabase={(value) =>
-                                updateTicketFields({
-                                  id: ticket.id,
-                                  billing_phone: value,
-                                })
-                              }
-                              setLocalValue={(value) =>
-                                setEvent((draft) => {
-                                  draft.tickets.find(
-                                    (t) => t.id == ticket.id,
-                                  )!.billing_phone = value;
-                                })
-                              }
-                            />
-                            <InstantInput
-                              defaultValue={ticket.billing_email}
-                              type="email"
-                              placeholder="Email"
-                              validate={(value) =>
-                                yupString()
-                                  .email("Zadajte platný email")
-                                  .validate(value)
-                                  .then(() => null)
-                                  .catch((err) => err.message)
-                              }
-                              updateDatabase={(value) =>
-                                updateTicketFields({
-                                  id: ticket.id,
-                                  billing_email: value,
-                                })
-                              }
-                              setLocalValue={(value) =>
-                                setEvent((draft) => {
-                                  draft.tickets.find(
-                                    (t) => t.id == ticket.id,
-                                  )!.billing_email = value;
-                                })
-                              }
-                            />
-                          </div>
-                        </Table.Cell>
-                      )}
-                      <Table.Cell className="p-1 text-end">
-                        <select
-                          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
-                            ticket.payment_status === "rezervované"
-                              ? "bg-yellow-200 text-yellow-600"
-                              : ticket.payment_status === "zaplatené"
-                                ? "bg-green-200 text-green-600"
-                                : ticket.payment_status === "zrušené"
-                                  ? "bg-red-200 text-gray-500"
-                                  : ""
-                          }`}
-                          onChange={async (e) => {
-                            let IDs = tickets
-                              .filter(
-                                (t) =>
-                                  t.billing_name == ticket.billing_name &&
-                                  t.payment_status == ticket.payment_status,
-                              )
-                              .map((t) => t.id);
-                            if (
-                              IDs.length > 1 &&
-                              !confirm(
-                                `Prajete si zmeniť status všetkých lístkov v tejto skupine s aktuálnym statusom ${ticket.payment_status}? (${IDs.length} lístkov)`,
-                              )
-                            )
-                              IDs = [ticket.id];
-                            const originalStatus = ticket.payment_status;
-                            setEvent((draft) => {
-                              const allTickets = [
-                                ...draft.tickets,
-                                ...draft.cancelled_tickets,
-                              ];
-                              allTickets.forEach((t) => {
-                                if (IDs.includes(t.id))
-                                  t.payment_status = e.target.value;
-                              });
-                              draft.tickets = allTickets.filter(
-                                (t) => t.payment_status != "zrušené",
-                              );
-                              draft.cancelled_tickets = allTickets.filter(
-                                (t) => t.payment_status == "zrušené",
-                              );
-                            });
-
-                            const r = await updateTicketPaymentStatus(
-                              IDs,
-                              e.target.value,
-                            );
-                            if (r.error) {
-                              setEvent((draft) => {
-                                const allTickets = [
-                                  ...draft.tickets,
-                                  ...draft.cancelled_tickets,
-                                ];
-                                allTickets.forEach((t) => {
-                                  if (IDs.includes(t.id))
-                                    t.payment_status = originalStatus;
-                                });
-                                draft.tickets = allTickets.filter(
-                                  (t) => t.payment_status != "zrušené",
-                                );
-                                draft.cancelled_tickets = allTickets.filter(
-                                  (t) => t.payment_status == "zrušené",
-                                );
-                              });
-                              alert(r.error.message);
-                              return;
-                            }
-                          }}
-                          value={ticket.payment_status}
-                        >
-                          {ticketStatuses.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </Table.Cell>
-                      <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
-                        <InstantInput
-                          type="text"
-                          defaultValue={ticket.price.toString()}
-                          placeholder="Cena"
-                          inline={true}
-                          className="me-0"
-                          setLocalValue={(value) =>
-                            setEvent((draft) => {
-                              draft.tickets.find(
-                                (t) => t.id == ticket.id,
-                              )!.price = parseFloat(value);
-                            })
-                          }
-                          updateDatabase={(value) =>
-                            updateTicketFields({
-                              id: ticket.id,
-                              price: parseFloat(value),
-                            })
-                          }
-                          validate={async (value) =>
-                            yupNumber()
-                              .min(0)
-                              .validate(value)
-                              .then(() => null)
-                              .catch((err) => err.message)
-                          }
-                        />{" "}
-                        €
-                      </Table.Cell>
-                      <Table.Cell
-                        className={`whitespace-nowrap p-1 ${
-                          indexInGroup == 0 && "rounded-tr-md"
-                        } ${indexInGroup == groupSize - 1 && "rounded-br-md"}`}
-                      >
-                        <Dropdown
-                          label=""
-                          dismissOnClick={false}
-                          renderTrigger={() => (
-                            <EllipsisHorizontalIcon className="h-5 w-5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 hover:cursor-pointer hover:bg-gray-200" />
-                          )}
-                        >
-                          <Dropdown.Item
-                            onClick={() => alert("Táto funkcia ešte nefunguje")}
-                          >
-                            Premeň na kupón
-                          </Dropdown.Item>
-                          <Dropdown.Item
-                            className="text-red-500"
-                            icon={HiTrash}
-                            onClick={async () => {
-                              if (
-                                !confirm("Naozaj chcete vymazať tento lístok?")
-                              )
-                                return;
-                              const toastId = toast.loading("Vymazávam...");
-                              const removedTicket = tickets.find(
-                                (t) => t.id == ticket.id,
-                              );
-                              const index = tickets.findIndex(
-                                (t) => t.id == ticket.id,
-                              );
-                              setEvent((draft) => {
-                                draft.tickets.splice(
-                                  draft.tickets.findIndex(
-                                    (t) => t.id == ticket.id,
-                                  ),
-                                  1,
-                                );
-                              });
-                              const r = await deleteTicket(ticket.id);
-                              if (r.error) {
-                                setEvent((draft) => {
-                                  draft.tickets.splice(
-                                    index,
-                                    0,
-                                    removedTicket!,
-                                  );
-                                });
-                                toast.update(toastId, {
-                                  render: r.error.message,
-                                  type: "error",
-                                  isLoading: false,
-                                  closeButton: true,
-                                });
-                                return;
-                              }
-                              toast.update(toastId, {
-                                render: "Lístok vymazaný",
-                                type: "success",
-                                isLoading: false,
-                                autoClose: 1000,
-                              });
-                            }}
-                          >
-                            Vymazať
-                          </Dropdown.Item>
-                        </Dropdown>
-                      </Table.Cell>
-                    </Table.Row>
-                  );
-                })}
-            </>
-          );
-        })}
+        .map((billing_id) => (
+          <>
+            <Table.Row key={billing_id} className="h-1"></Table.Row>
+            {tickets
+              .filter((t) => t.billing_id == billing_id)
+              .map((ticket) => (
+                <TicketRow key={ticket.id} ticket={ticket} tickets={tickets} />
+              ))}
+          </>
+        ))}
       {tickets[0].payment_status != "zrušené" && (
         <Table.Row className="h-1">
-          <Table.Cell className="p-1" colSpan={7} />
+          <Table.Cell className="p-1" colSpan={5} />
           <Table.Cell className="p-1 text-end font-bold tracking-wider text-black">
             <hr />
             {tickets.reduce((acc, t) => acc + t.price, 0)} €
@@ -565,19 +607,22 @@ function TicketRows({
   );
 }
 
-function EventRow({
-  event,
-  setEvent,
-  removeEvent,
-}: {
-  event: EventWithTickets;
-  setEvent: Updater<EventWithTickets>;
-  removeEvent: () => void;
-}) {
+function EventRow({ eventId }: { eventId: number }) {
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const event = useStore(
+    store,
+    (state) => state.events.find((e) => e.id == eventId)!,
+  );
+  const { ticketTypes, toggleEventIsPublic, removeEvent, addEvent } = useStore(
+    store,
+    (state) => state,
+  );
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showCancelled, setShowCancelled] = useState<boolean>(false);
+
   return (
-    <li key={event.id} className={`flex flex-col p-1`}>
+    <li key={eventId} className={`flex flex-col p-1`}>
       <div className="mx-2 flex justify-between gap-x-6">
         <div className="flex min-w-0 flex-1 flex-col self-center">
           <p className="flex items-center gap-4 text-sm font-semibold leading-6 text-gray-900">
@@ -643,27 +688,10 @@ function EventRow({
           })}
         </div>
         <div className="flex flex-row items-center justify-start gap-1">
-          <NewTicketModal
-            event={event}
-            ticketTypes={ticketTypes}
-            insertLocalTickets={(tickets) =>
-              setEvent((draft) => {
-                draft.tickets.push(
-                  ...tickets.filter((t) => t.payment_status != "zrušené"),
-                );
-                draft.cancelled_tickets.push(
-                  ...tickets.filter((t) => t.payment_status == "zrušené"),
-                );
-                draft.tickets.sort(ticketSortFunction);
-                draft.cancelled_tickets.sort(ticketSortFunction);
-              })
-            }
-          />
+          <NewTicketModal eventId={eventId} />
           <button
             className="flex justify-center rounded-md bg-gray-200 p-0.5 hover:bg-gray-300"
             onClick={() => setIsExpanded(!isExpanded)}
-            // aria-expanded={isExpanded}
-            // aria-controls={`event-details-${event.id}`}
           >
             <HiChevronDown
               className={`${
@@ -673,11 +701,7 @@ function EventRow({
           </button>
         </div>
       </div>
-
-      {/* Below is the expanded part */}
       <div
-        // id={`event-details-${event.id}`}
-        // role="region"
         className={`grid overflow-y-hidden rounded-xl bg-slate-200 text-sm text-slate-600 transition-all duration-300 ease-in-out ${
           isExpanded
             ? "my-2 grid-rows-[1fr] p-2 opacity-100"
@@ -692,15 +716,13 @@ function EventRow({
             <button
               className="ms-auto rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700"
               onClick={async () => {
-                setEvent((draft) => (draft.is_public = !draft.is_public));
-                const r = await changeEventPublicStatus(
+                toggleEventIsPublic(event.id);
+                const r = await updateEventPublicStatus(
                   event.id,
                   !event.is_public,
                 );
                 if (r.error) {
-                  setEvent((draft) => {
-                    draft.is_public = !event.is_public;
-                  });
+                  toggleEventIsPublic(event.id);
                   alert(r.error.message);
                   return;
                 }
@@ -710,18 +732,46 @@ function EventRow({
             </button>
             <button
               className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700"
-              onClick={removeEvent}
+              onClick={async () => {
+                if (event.tickets.length > 0) {
+                  alert(
+                    "Nemôžete vymazať termín, ktorý má predané lístky. Najprv vymažte lístky.",
+                  );
+                  return;
+                }
+                if (!confirm("Naozaj chcete vymazať tento termín?")) return;
+                const removedEvent = event;
+                removeEvent(event.id);
+                const toastId = toast.loading("Vymazávam...");
+                const r = await deleteEvent(event.id);
+                if (r.error) {
+                  addEvent(removedEvent);
+                  toast.update(toastId, {
+                    render: r.error.message,
+                    type: "error",
+                    isLoading: false,
+                    closeButton: true,
+                  });
+                  return;
+                }
+                toast.update(toastId, {
+                  render: "Termín vymazaný",
+                  type: "success",
+                  isLoading: false,
+                  autoClose: 1000,
+                });
+              }}
             >
               Vymazať
             </button>
           </div>
           {event.tickets.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="w-full overflow-x-auto">
               <Table className="w-full">
                 <Table.Head>
                   <Table.HeadCell className="p-1 px-2">#</Table.HeadCell>
                   <Table.HeadCell className="p-1 px-2">Typ</Table.HeadCell>
-                  <Table.HeadCell className="p-1 text-center" colSpan={3}>
+                  <Table.HeadCell className="p-1 text-center" colSpan={1}>
                     Hostia
                   </Table.HeadCell>
                   <Table.HeadCell className="p-1 text-center">
@@ -736,7 +786,7 @@ function EventRow({
                   </Table.HeadCell>
                 </Table.Head>
                 <Table.Body>
-                  <TicketRows tickets={event.tickets} setEvent={setEvent} />
+                  <TicketRows eventId={eventId} cancelled={false} />
                   {event.cancelled_tickets.length > 0 && (
                     <>
                       <Table.Row className="text-center">
@@ -755,10 +805,7 @@ function EventRow({
                         </Table.Cell>
                       </Table.Row>
                       {showCancelled && (
-                        <TicketRows
-                          tickets={event.cancelled_tickets}
-                          setEvent={setEvent}
-                        />
+                        <TicketRows eventId={eventId} cancelled={true} />
                       )}
                     </>
                   )}
@@ -774,42 +821,23 @@ function EventRow({
   );
 }
 
-export default function EventsAccordion(props: { events: EventWithTickets[] }) {
-  // Create a state for the accordion
-  const [expanded, setExpanded] = useState<Events["id"][]>([]);
-  const [events, setEvents] = useImmer<EventWithTickets[]>(props.events);
-  const getEventSetter =
-    (eventIndex: number) =>
-    (updater: EventWithTickets | DraftFunction<EventWithTickets>) => {
-      setEvents((draft) => {
-        if (typeof updater == "function") updater(draft[eventIndex]);
-        else draft[eventIndex] = updater;
-        draft[eventIndex].tickets.sort(ticketSortFunction);
-        draft[eventIndex].cancelled_tickets.sort(ticketSortFunction);
-      });
-    };
-
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  async function refreshEvents() {
-    setIsRefreshing(true);
-    const r = await fetchEvents();
-    if (r.error) {
-      toast.error(r.error.message);
-      return;
-    }
-    setEvents(r.data);
-    setIsRefreshing(false);
-  }
+export default function EventsAccordion(props: {
+  events: EventWithTickets[];
+  ticketTypes: Awaited<ReturnType<typeof fetchTicketTypes>>["data"];
+}) {
+  const store = useRef(
+    createEventsStore({ events: props.events, ticketTypes: props.ticketTypes }),
+  ).current;
+  const { events, isRefreshing, refresh } = useStore(store, (state) => state);
 
   return (
-    <>
+    <EventsContext.Provider value={store}>
       <div className="flex items-center justify-between">
         <p className="flex items-center gap-4 text-2xl font-bold tracking-wider">
           Termíny Tajomných Variácií
           <button
             className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
-            onClick={refreshEvents}
+            onClick={refresh}
           >
             <ArrowPathIcon
               className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
@@ -817,59 +845,16 @@ export default function EventsAccordion(props: { events: EventWithTickets[] }) {
             Obnoviť
           </button>
         </p>
-        <NewEventModal setEvents={setEvents} />
+        <NewEventModal />
       </div>
       <ul
         role="list"
         className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
       >
-        {events.map((event, eventIndex) => (
-          <EventRow
-            key={event.id}
-            event={event}
-            setEvent={getEventSetter(eventIndex)}
-            removeEvent={async () => {
-              if (event.tickets.length > 0) {
-                alert(
-                  "Nemôžete vymazať termín, ktorý má predané lístky. Najprv vymažte lístky.",
-                );
-                return;
-              }
-              if (!confirm("Naozaj chcete vymazať tento termín?")) return;
-              const removedEvent = event;
-              setEvents((draft) => {
-                draft.splice(eventIndex, 1);
-              });
-              const toastId = toast.loading("Vymazávam...");
-              const r = await deleteEvent(event.id);
-              if (r.error) {
-                setEvents((draft) => {
-                  draft.push(removedEvent!);
-                  draft.sort((a, b) => {
-                    return (
-                      new Date(b.datetime).getTime() -
-                      new Date(a.datetime).getTime()
-                    );
-                  });
-                });
-                toast.update(toastId, {
-                  render: r.error.message,
-                  type: "error",
-                  isLoading: false,
-                  closeButton: true,
-                });
-                return;
-              }
-              toast.update(toastId, {
-                render: "Termín vymazaný",
-                type: "success",
-                isLoading: false,
-                autoClose: 1000,
-              });
-            }}
-          />
+        {events.map((event) => (
+          <EventRow key={event.id} eventId={event.id} />
         ))}
       </ul>
-    </>
+    </EventsContext.Provider>
   );
 }
