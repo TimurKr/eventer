@@ -4,6 +4,7 @@ import { useContext, useRef, useState } from "react";
 import {
   ArrowPathIcon,
   EllipsisHorizontalIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
 import { Badge, Dropdown, Progress, Table, Tooltip } from "flowbite-react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
@@ -28,6 +29,7 @@ import { contactsEqual } from "./utils";
 import { InstantInput } from "@/app/components/FormElements";
 import { EventsContext, createEventsStore } from "./zustand";
 import { useStore } from "zustand";
+import { useSearchParams } from "next/navigation";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -51,7 +53,7 @@ function LinkUnlinkContact({
   return (
     <div className="inline-flex">
       {identicalContactFound > 1 && (
-        <div className={`inline-block p-1 text-green-500`}>
+        <div className={`inline-block p-1 `}>
           <Tooltip
             content={`Máte ${identicalContactFound} rôznych kontaktov s týmito údajmi. Kliknutím ich spojíte do jedného synchronizovaného.`}
           >
@@ -73,12 +75,12 @@ function LinkUnlinkContact({
                   render: "Kontakty spojené",
                   type: "success",
                   isLoading: false,
-                  autoClose: 1000,
+                  autoClose: 1500,
                 });
               }}
             >
               <LiaLinkSolid
-                className={`inline h-4 w-4 hover:scale-105 active:scale-110`}
+                className={`inline h-4 w-4 text-green-500 hover:scale-105 active:scale-110 active:text-green-700`}
               />
             </button>
           </Tooltip>
@@ -152,12 +154,12 @@ function LinkUnlinkContact({
                   render: "Kontakt oddelený",
                   type: "success",
                   isLoading: false,
-                  autoClose: 1000,
+                  autoClose: 1500,
                 });
               }}
             >
               <LiaUnlinkSolid
-                className={`inline h-4 w-4 hover:scale-105 active:scale-110 active:text-red-500`}
+                className={`inline h-4 w-4 hover:scale-105 hover:text-red-500 active:scale-110 active:text-red-700`}
               />
             </button>
           </Tooltip>
@@ -179,6 +181,7 @@ function TicketRow({
 
   const {
     ticketTypes,
+    highlightedTicketIds,
     setPartialTicket,
     setPartialContact,
     setTicketsStatus,
@@ -202,8 +205,19 @@ function TicketRow({
   return (
     <Table.Row
       key={ticket.id}
+      id={"ticket-" + ticket.id}
       className={`${
-        ticket.payment_status == "zrušené" ? "bg-red-50" : "bg-white"
+        ticket.payment_status != "zrušené"
+          ? highlightedTicketIds.length > 0
+            ? highlightedTicketIds.includes(ticket.id)
+              ? "bg-yellow-200"
+              : "bg-gray-100"
+            : "bg-white"
+          : highlightedTicketIds.length > 0
+            ? highlightedTicketIds.includes(ticket.id)
+              ? "bg-orange-300"
+              : "bg-red-50"
+            : "bg-red-100"
       }`}
     >
       <Table.Cell
@@ -431,9 +445,9 @@ function TicketRow({
       )}
       <Table.Cell className="p-1 text-end">
         <select
-          className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
+          className={`border-1 rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
             ticket.payment_status === "rezervované"
-              ? "bg-yellow-200 text-yellow-600"
+              ? "bg-yellow-300 text-yellow-600"
               : ticket.payment_status === "zaplatené"
                 ? "bg-green-200 text-green-600"
                 : ticket.payment_status === "zrušené"
@@ -473,7 +487,7 @@ function TicketRow({
               render: "Status lístkov zmenený",
               type: "success",
               isLoading: false,
-              autoClose: 1000,
+              autoClose: 1500,
             });
           }}
           value={ticket.payment_status}
@@ -552,7 +566,7 @@ function TicketRow({
                 render: "Lístok vymazaný",
                 type: "success",
                 isLoading: false,
-                autoClose: 1000,
+                autoClose: 1500,
               });
             }}
           >
@@ -585,11 +599,18 @@ function TicketRows({
         .filter((v, i, a) => a.indexOf(v) === i)
         .map((billing_id) => (
           <>
-            <Table.Row key={billing_id} className="h-1"></Table.Row>
+            <Table.Row
+              key={"spacing-" + billing_id}
+              className="h-1"
+            ></Table.Row>
             {tickets
               .filter((t) => t.billing_id == billing_id)
               .map((ticket) => (
-                <TicketRow key={ticket.id} ticket={ticket} tickets={tickets} />
+                <TicketRow
+                  key={"ticket-" + ticket.id}
+                  ticket={ticket}
+                  tickets={tickets}
+                />
               ))}
           </>
         ))}
@@ -614,16 +635,19 @@ function EventRow({ eventId }: { eventId: number }) {
     store,
     (state) => state.events.find((e) => e.id == eventId)!,
   );
-  const { ticketTypes, toggleEventIsPublic, removeEvent, addEvent } = useStore(
-    store,
-    (state) => state,
-  );
+  const {
+    ticketTypes,
+    toggleEventIsPublic,
+    removeEvent,
+    addEvent,
+    searchTerm,
+  } = useStore(store, (state) => state);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showCancelled, setShowCancelled] = useState<boolean>(false);
 
   return (
-    <li key={eventId} className={`flex flex-col p-1`}>
-      <div className="mx-2 flex justify-between gap-x-6">
+    <li key={eventId} className={`flex flex-col`}>
+      <div className="flex justify-between gap-x-6 p-1 ps-3">
         <div className="flex min-w-0 flex-1 flex-col self-center">
           <p className="flex items-center gap-4 text-sm font-semibold leading-6 text-gray-900">
             {new Date(event.datetime).toLocaleDateString("sk-SK")}
@@ -687,23 +711,27 @@ function EventRow({ eventId }: { eventId: number }) {
             );
           })}
         </div>
-        <div className="flex flex-row items-center justify-start gap-1">
+        <div className="flex flex-row items-center justify-start">
           <NewTicketModal eventId={eventId} />
           <button
-            className="flex justify-center rounded-md bg-gray-200 p-0.5 hover:bg-gray-300"
+            className="group grid h-full place-content-center ps-2"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            <HiChevronDown
-              className={`${
-                isExpanded ? "rotate-180 transform" : ""
-              } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
-            />
+            <div className="rounded-md border border-slate-200 p-0.5 group-hover:bg-slate-200">
+              <HiChevronDown
+                className={`${
+                  isExpanded || searchTerm != undefined
+                    ? "rotate-180 transform"
+                    : ""
+                } h-4 w-4 transition-transform duration-500 `}
+              />
+            </div>
           </button>
         </div>
       </div>
       <div
         className={`grid overflow-y-hidden rounded-xl bg-slate-200 text-sm text-slate-600 transition-all duration-300 ease-in-out ${
-          isExpanded
+          isExpanded || searchTerm
             ? "my-2 grid-rows-[1fr] p-2 opacity-100"
             : "grid-rows-[0fr] opacity-0"
         }`}
@@ -758,7 +786,7 @@ function EventRow({ eventId }: { eventId: number }) {
                   render: "Termín vymazaný",
                   type: "success",
                   isLoading: false,
-                  autoClose: 1000,
+                  autoClose: 1500,
                 });
               }}
             >
@@ -826,25 +854,55 @@ export default function EventsAccordion(props: {
   ticketTypes: Awaited<ReturnType<typeof fetchTicketTypes>>["data"];
 }) {
   const store = useRef(
-    createEventsStore({ events: props.events, ticketTypes: props.ticketTypes }),
+    createEventsStore({
+      events: props.events,
+      allEvents: props.events,
+      ticketTypes: props.ticketTypes,
+    }),
   ).current;
-  const { events, isRefreshing, refresh } = useStore(store, (state) => state);
+  const { events, isRefreshing, refresh, search, searchTerm } = useStore(
+    store,
+    (state) => state,
+  );
+
+  const searchParams = useSearchParams();
+  if (searchParams.get("search")) search(searchParams.get("search")!);
 
   return (
     <EventsContext.Provider value={store}>
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-4 text-2xl font-bold tracking-wider">
+      <div className="flex items-center justify-between gap-4 pb-2">
+        <span className="text-2xl font-bold tracking-wider">
           Termíny Tajomných Variácií
-          <button
-            className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
-            onClick={refresh}
-          >
-            <ArrowPathIcon
-              className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
-            />
-            Obnoviť
-          </button>
-        </p>
+        </span>
+        <div className="relative grow">
+          <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
+            <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
+          </div>
+          <input
+            type="text"
+            className="z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8"
+            placeholder="Hladať"
+            value={searchTerm}
+            onChange={(e) => search(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key == "Escape") {
+                (e.target as HTMLInputElement).blur();
+              }
+              if (e.key == "Enter") {
+                search(searchTerm);
+              }
+            }}
+          />
+        </div>
+        <button
+          className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
+          onClick={refresh}
+        >
+          <ArrowPathIcon
+            className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
+          />
+          Obnoviť
+        </button>
         <NewEventModal />
       </div>
       <ul

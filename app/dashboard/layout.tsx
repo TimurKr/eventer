@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import AuthButton from "@/app/components/AuthButton";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowLeftStartOnRectangleIcon,
+  ChevronLeftIcon,
+} from "@heroicons/react/24/solid";
 
 export default async function DashboardLayout({
   children,
@@ -26,8 +29,10 @@ export default async function DashboardLayout({
 
   return (
     <section className="flex h-full w-full justify-start overflow-clip bg-slate-200">
-      <nav className="flex w-48 flex-col gap-1 p-2 pe-0">
-        <p className="p-2 text-lg font-bold tracking-wider">Tajomné Variácie</p>
+      <nav className="auto flex flex-none flex-col gap-1 p-2 pe-0">
+        <p className="hidden p-2 text-lg font-bold tracking-wider md:inline">
+          Tajomné Variácie
+        </p>
         <hr className="pb-4" />
         <Links />
         <hr className="mt-2 flex-auto" />
@@ -40,14 +45,17 @@ export default async function DashboardLayout({
         </Link> */}
         <form action={signOut} className="w-auto justify-self-end">
           <button
-            className="w-full rounded-lg bg-red-500 px-4 py-1 pl-2 text-sm text-white hover:bg-red-600"
+            className="w-full rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
             type="submit"
           >
-            Odhlásiť
+            <span className="hidden md:block">Odhlásiť</span>
+            <span className="block md:hidden">
+              <ArrowLeftStartOnRectangleIcon className="h-5 w-5" />
+            </span>
           </button>
         </form>
       </nav>
-      <div className="m-2 w-5/6 overflow-y-auto rounded-xl bg-white p-4 pe-2">
+      <div className="m-2 grow overflow-y-auto rounded-xl bg-white p-4 pe-2">
         {children}
       </div>
     </section>

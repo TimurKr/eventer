@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={font.className}>
       <body className="h-screen bg-background text-foreground">
-        <main className="flex h-full min-h-screen w-full">{children}</main>
+        <main className="h-full min-h-screen w-full">{children}</main>
         <ToastContainer position="top-right" />
       </body>
     </html>

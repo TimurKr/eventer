@@ -149,6 +149,11 @@ export function InstantInput({
           e.preventDefault();
           (e.target as HTMLInputElement).blur();
         }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setValue(defaultValue || "");
+          (e.target as HTMLInputElement).blur();
+        }
       }}
       onBlur={async (e) => {
         if (value == (defaultValue || "")) {
@@ -182,7 +187,7 @@ export function InstantInput({
           render: "Uložené",
           type: "success",
           isLoading: false,
-          autoClose: 1000,
+          autoClose: 1500,
         });
       }}
     />

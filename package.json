@@ -15,6 +15,7 @@
     "flowbite": "^2.2.1",
     "flowbite-react": "^0.7.2",
     "formik": "^2.4.5",
+    "fuse.js": "^7.0.0",
     "geist": "^1.0.0",
     "immer": "^10.0.3",
     "next": "^14.1.0",

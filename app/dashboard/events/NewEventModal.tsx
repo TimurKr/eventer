@@ -47,7 +47,7 @@ export default function NewEventModal() {
       <button
         color="success"
         onClick={() => setIsOpen(true)}
-        className="m-2 flex items-center gap-2 rounded-lg bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
+        className="flex items-center gap-2 rounded-md bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
       >
         <PlusIcon className="h-5 w-5" />
         Nový termín

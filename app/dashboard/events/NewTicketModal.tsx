@@ -34,6 +34,7 @@ import { contactsEqual } from "./utils";
 export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [contacts, setContacts] = useState<Contacts[]>([]);
+  const [errorMess, setErrorMess] = useState<string | undefined>();
 
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -51,7 +52,8 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
     (async () => {
       const { data: contacts, error } = await fetchContacts();
       if (error) {
-        throw error;
+        setErrorMess(error.message);
+        return;
       }
       setContacts(contacts);
     })();
@@ -419,6 +421,11 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                 <div className="flex justify-end">
                   <SubmitButton isSubmitting={isSubmitting} />
                 </div>
+                {errorMess && (
+                  <Alert color="failure" icon={HiExclamationTriangle}>
+                    {errorMess}
+                  </Alert>
+                )}
               </Form>
             )}
           </Formik>
