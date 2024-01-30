@@ -100,7 +100,167 @@ export const GenericTextField = ({
   </>
 );
 
-export function InstantInput({
+type InstantFieldProps<T> = {
+  defaultValue: T;
+  placeholder?: string;
+  className?: string;
+  validate?: (value: T) => Promise<string | null>;
+  updateDatabase: (value: T) => void | Promise<any>;
+  setLocalValue: (value: T) => void | Promise<void>;
+};
+
+export function InstantCheckboxField({
+  defaultValue,
+  className,
+  disabled = false,
+  validate,
+  updateDatabase,
+  setLocalValue,
+}: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
+  const [value, setValue] = useState<boolean>(defaultValue);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  return (
+    <input
+      className={`rounded-md border-gray-400 bg-gray-200 indeterminate:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      disabled={disabled}
+      type={"checkbox"}
+      checked={value}
+      onChange={async (e) => {
+        setValue(e.target.checked);
+        const err = validate && (await validate(e.target.value == "on"));
+        if (err) setError(err);
+        else setError(null);
+        const toastId = toast.loading("Ukladám...", { autoClose: false });
+        const r = await updateDatabase(e.target.checked);
+        if (r.error) {
+          toast.update(toastId, {
+            render: "Nastala chyba: " + r.error.message,
+            type: "error",
+            closeButton: true,
+          });
+          setValue(defaultValue || false);
+          return;
+        }
+        await setLocalValue(e.target.checked);
+        toast.update(toastId, {
+          render: "Uložené",
+          type: "success",
+          isLoading: false,
+          autoClose: 1500,
+        });
+      }}
+    />
+  );
+}
+
+export function InstantTextAreaField({
+  autoexpand,
+  defaultValue,
+  placeholder,
+  className,
+  validate,
+  updateDatabase,
+  setLocalValue,
+}: InstantFieldProps<string | null> & { autoexpand?: boolean }) {
+  const [value, setValue] = useState<string>(defaultValue || "");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue || "");
+  }, [defaultValue]);
+
+  function autosize(target: HTMLTextAreaElement) {
+    target.style.height = "auto";
+    target.style.height = Math.min(target.scrollHeight, 200) + 2 + "px";
+  }
+
+  return (
+    <textarea
+      className={`resize-none rounded-md border-gray-200 bg-gray-50 p-0 px-1 font-mono text-sm text-black hover:z-10 hover:border-gray-400 hover:shadow-lg focus:z-20 focus:border-gray-200 focus:shadow-lg ${
+        error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
+      } ${className}`}
+      value={value}
+      rows={1}
+      placeholder={placeholder}
+      onFocus={(e) => {
+        if (autoexpand) {
+          autosize(e.target);
+        }
+      }}
+      onChange={async (e) => {
+        setValue(e.target.value);
+        if (autoexpand) {
+          autosize(e.target);
+        }
+        if (validate) {
+          const err = await validate(e.target.value);
+          if (err) setError(err);
+          else setError(null);
+        }
+      }}
+      onBlur={async (e) => {
+        e.target.style.height = "auto";
+        if (value == (defaultValue || "")) {
+          return;
+        }
+        const err = validate && (await validate(value));
+        if (err) {
+          e.target.focus();
+          setError(err);
+          toast.error(err, {
+            autoClose: 2000,
+          });
+          return;
+        }
+        setError(null);
+        const toastId = toast.loading("Ukladám...", { autoClose: false });
+        const r = await updateDatabase(value);
+        if (r.error) {
+          toast.update(toastId, {
+            render: "Nastala chyba: " + r.error.message,
+            type: "error",
+            closeButton: true,
+          });
+          setValue(defaultValue || "");
+          return;
+        }
+        await setLocalValue(e.target.value);
+        toast.update(toastId, {
+          render: "Uložené",
+          type: "success",
+          isLoading: false,
+          autoClose: 1500,
+        });
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        }
+        if (e.key === "Escape") {
+          setValue(defaultValue || "");
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      onMouseEnter={(e) => {
+        if (autoexpand) {
+          autosize(e.target as HTMLTextAreaElement);
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (autoexpand && document.activeElement !== e.target) {
+          (e.target as HTMLTextAreaElement).style.height = "auto";
+        }
+      }}
+    />
+  );
+}
+
+export function InstantTextField({
   type = "text",
   defaultValue,
   placeholder = " - ",
@@ -109,15 +269,9 @@ export function InstantInput({
   validate,
   updateDatabase,
   setLocalValue,
-}: {
+}: InstantFieldProps<string | null> & {
   type: "text" | "number" | "email" | "tel";
-  defaultValue?: string | null;
-  placeholder?: string;
   inline?: boolean;
-  className?: string;
-  validate?: (value: string) => Promise<string | null>;
-  updateDatabase: (value: string) => Promise<any>;
-  setLocalValue: (value: string) => void | Promise<void>;
 }) {
   const [value, setValue] = useState<string>(defaultValue || "");
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +287,7 @@ export function InstantInput({
         error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
       } ${inline ? "font-mono" : ""} ${className}`}
       value={value}
+      placeholder={placeholder}
       size={inline ? value?.length || placeholder?.length || 3 : undefined}
       onChange={async (e) => {
         setValue(e.target.value);
@@ -143,21 +298,17 @@ export function InstantInput({
         }
         if (inline) e.target.size = e.target.value.length || 4;
       }}
-      placeholder={placeholder}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
-          e.preventDefault();
           (e.target as HTMLInputElement).blur();
         }
         if (e.key === "Escape") {
-          e.preventDefault();
           setValue(defaultValue || "");
           (e.target as HTMLInputElement).blur();
         }
       }}
       onBlur={async (e) => {
         if (value == (defaultValue || "")) {
-          setError(null);
           return;
         }
         const err = validate && (await validate(value));

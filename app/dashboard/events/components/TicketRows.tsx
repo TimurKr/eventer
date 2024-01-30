@@ -9,7 +9,7 @@ import {
 import { Badge, Dropdown, Progress, Table, Tooltip } from "flowbite-react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import NewTicketModal from "./NewTicketModal";
+import NewTicketModal from "../NewTicketModal";
 import {
   type EventWithTickets,
   deleteEvent,
@@ -21,15 +21,20 @@ import {
   fetchTicketTypes,
   bulkInsertContacts,
   mergeContacts,
-} from "./serverActions";
-import NewEventModal from "./NewEventModal";
+} from "../serverActions";
+import NewEventModal from "../NewEventModal";
 import { toast } from "react-toastify";
 import { string as yupString, number as yupNumber } from "yup";
-import { contactsEqual } from "./utils";
-import { InstantInput } from "@/app/components/FormElements";
-import { EventsContext, createEventsStore } from "./zustand";
+import { contactsEqual } from "../utils";
+import {
+  InstantCheckboxField,
+  InstantTextAreaField,
+  InstantTextField,
+} from "@/app/components/FormElements";
+import { EventsContext, createEventsStore } from "../zustand";
 import { useStore } from "zustand";
 import { useSearchParams } from "next/navigation";
+import React from "react";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -172,9 +177,11 @@ function LinkUnlinkContact({
 function TicketRow({
   ticket,
   tickets,
+  lockedArrived,
 }: {
   ticket: EventWithTickets["tickets"][0];
   tickets: EventWithTickets["tickets"];
+  lockedArrived: boolean;
 }) {
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -226,6 +233,18 @@ function TicketRow({
         } ${indexInGroup == groupSize - 1 && "rounded-bl-md"}`}
       >
         {indexInEvent} - <span className="text-xs">{indexInGroup + 1}</span>
+      </Table.Cell>
+      <Table.Cell className="p-2">
+        <InstantCheckboxField
+          disabled={lockedArrived}
+          defaultValue={ticket.arrived}
+          updateDatabase={(value) =>
+            updateTicketFields({ id: ticket.id, arrived: value })
+          }
+          setLocalValue={(value) =>
+            setPartialTicket({ id: ticket.id, arrived: value })
+          }
+        />
       </Table.Cell>
       <Table.Cell className="p-2 py-0">
         <select
@@ -281,7 +300,7 @@ function TicketRow({
         </select>
       </Table.Cell>
       <Table.Cell className="text-pretty group border-l p-0">
-        <InstantInput
+        <InstantTextField
           defaultValue={ticket.guest!.name}
           type="text"
           inline
@@ -299,7 +318,7 @@ function TicketRow({
             setPartialContact({ id: ticket.guest_id, name: value })
           }
         />
-        <InstantInput
+        <InstantTextField
           defaultValue={ticket.guest!.phone}
           type="text"
           inline
@@ -318,7 +337,7 @@ function TicketRow({
           }
         />
         <div className="inline-block">
-          <InstantInput
+          <InstantTextField
             defaultValue={ticket.guest!.email}
             type="email"
             inline
@@ -362,7 +381,7 @@ function TicketRow({
         <Table.Cell className="group border-x p-1" rowSpan={groupSize}>
           <div className="flex flex-col">
             <div className="flex">
-              <InstantInput
+              <InstantTextField
                 defaultValue={ticket.billing!.name}
                 type="text"
                 placeholder="Meno"
@@ -399,7 +418,7 @@ function TicketRow({
                 type="billing"
               />
             </div>
-            <InstantInput
+            <InstantTextField
               defaultValue={ticket.billing!.phone}
               type="text"
               placeholder="Telefón"
@@ -416,7 +435,7 @@ function TicketRow({
                 })
               }
             />
-            <InstantInput
+            <InstantTextField
               defaultValue={ticket.billing!.email}
               type="email"
               placeholder="Email"
@@ -499,8 +518,27 @@ function TicketRow({
           ))}
         </select>
       </Table.Cell>
+      <Table.Cell className="has-[:focus]:overflow-visible has-[:hover]:overflow-visible relative w-24 overflow-clip p-1 text-end">
+        {/* <InstantTextField
+          type="text" */}
+        <InstantTextAreaField
+          autoexpand
+          className="absolute inset-y-auto end-0 w-full -translate-y-1/2 hover:w-64 focus:w-64"
+          defaultValue={ticket.note}
+          placeholder="Poznámka"
+          setLocalValue={(value) =>
+            setPartialTicket({ id: ticket.id, note: value })
+          }
+          updateDatabase={(value) =>
+            updateTicketFields({
+              id: ticket.id,
+              note: value,
+            })
+          }
+        />
+      </Table.Cell>
       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
-        <InstantInput
+        <InstantTextField
           type="text"
           defaultValue={ticket.price.toString()}
           placeholder="Cena"
@@ -516,13 +554,13 @@ function TicketRow({
           setLocalValue={(value) =>
             setPartialTicket({
               id: ticket.id,
-              price: parseFloat(value),
+              price: value ? parseFloat(value) : undefined,
             })
           }
           updateDatabase={(value) =>
             updateTicketFields({
               id: ticket.id,
-              price: parseFloat(value),
+              price: value ? parseFloat(value) : undefined,
             })
           }
         />{" "}
@@ -537,7 +575,7 @@ function TicketRow({
           label=""
           dismissOnClick={false}
           renderTrigger={() => (
-            <EllipsisHorizontalIcon className="h-5 w-5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 hover:cursor-pointer hover:bg-gray-200" />
+            <EllipsisHorizontalIcon className="h-5 w-5 rounded-md border border-gray-200 bg-gray-50 text-gray-700 hover:cursor-pointer hover:bg-gray-200" />
           )}
         >
           <Dropdown.Item onClick={() => alert("Táto funkcia ešte nefunguje")}>
@@ -578,12 +616,14 @@ function TicketRow({
   );
 }
 
-function TicketRows({
+export default function TicketRows({
   eventId,
   cancelled,
+  lockedArrived,
 }: {
   eventId: number;
   cancelled: boolean;
+  lockedArrived: boolean;
 }) {
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -593,12 +633,14 @@ function TicketRows({
   });
 
   return (
-    <>
+    <React.Fragment key={eventId + (cancelled ? "-cancelled" : "")}>
       {tickets
         .map((t) => t.billing_id)
         .filter((v, i, a) => a.indexOf(v) === i)
         .map((billing_id) => (
-          <>
+          <React.Fragment
+            key={eventId + "-" + billing_id + (cancelled ? "-cancelled" : "")}
+          >
             <Table.Row
               key={"spacing-" + billing_id}
               className="h-1"
@@ -610,9 +652,10 @@ function TicketRows({
                   key={"ticket-" + ticket.id}
                   ticket={ticket}
                   tickets={tickets}
+                  lockedArrived={lockedArrived}
                 />
               ))}
-          </>
+          </React.Fragment>
         ))}
       {tickets[0].payment_status != "zrušené" && (
         <Table.Row className="h-1">
@@ -624,295 +667,6 @@ function TicketRows({
           <Table.Cell className="p-1" colSpan={1} />
         </Table.Row>
       )}
-    </>
-  );
-}
-
-function EventRow({ eventId }: { eventId: number }) {
-  const store = useContext(EventsContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const event = useStore(
-    store,
-    (state) => state.events.find((e) => e.id == eventId)!,
-  );
-  const {
-    ticketTypes,
-    toggleEventIsPublic,
-    removeEvent,
-    addEvent,
-    searchTerm,
-  } = useStore(store, (state) => state);
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [showCancelled, setShowCancelled] = useState<boolean>(false);
-
-  return (
-    <li key={eventId} className={`flex flex-col`}>
-      <div className="flex justify-between gap-x-6 p-1 ps-3">
-        <div className="flex min-w-0 flex-1 flex-col self-center">
-          <p className="flex items-center gap-4 text-sm font-semibold leading-6 text-gray-900">
-            {new Date(event.datetime).toLocaleDateString("sk-SK")}
-            <Badge
-              color={event.is_public ? "blue" : "purple"}
-              className="rounded-md"
-            >
-              {event.is_public ? "Verejné" : "Súkromné"}
-            </Badge>
-          </p>
-          <p className="truncate text-xs leading-5 text-gray-500">
-            {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-          </p>
-        </div>
-        <div className="flex flex-col items-center justify-start gap-1 lg:flex-row lg:gap-4">
-          {ticketTypes.map((type) => {
-            const sold = event.tickets.filter(
-              (t) => t.type == type.label,
-            ).length;
-            return (
-              <div key={type.label} className="w-28">
-                <div
-                  className={`flex items-end text-sm ${
-                    type.label == "VIP"
-                      ? "text-amber-600"
-                      : type.label == "standard"
-                        ? "text-gray-600"
-                        : ""
-                  }`}
-                >
-                  <span className="font-medium">{type.label}</span>
-                  <span
-                    className={`ms-auto text-base font-bold ${
-                      sold > type.max_sold
-                        ? "text-red-600"
-                        : sold == 0
-                          ? "text-gray-400"
-                          : ""
-                    }`}
-                  >
-                    {event.tickets.filter((t) => t.type == type.label).length}
-                  </span>
-                  /<span>{type.max_sold}</span>
-                </div>
-                <Progress
-                  size="sm"
-                  progress={
-                    (event.tickets.filter((t) => t.type == type.label).length /
-                      type.max_sold) *
-                    100
-                  }
-                  color={
-                    sold > type.max_sold
-                      ? "red"
-                      : type.label == "VIP"
-                        ? "yellow"
-                        : "gray"
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex flex-row items-center justify-start">
-          <NewTicketModal eventId={eventId} />
-          <button
-            className="group grid h-full place-content-center ps-2"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <div className="rounded-md border border-slate-200 p-0.5 group-hover:bg-slate-200">
-              <HiChevronDown
-                className={`${
-                  isExpanded || searchTerm != undefined
-                    ? "rotate-180 transform"
-                    : ""
-                } h-4 w-4 transition-transform duration-500 `}
-              />
-            </div>
-          </button>
-        </div>
-      </div>
-      <div
-        className={`grid overflow-y-hidden rounded-xl bg-slate-200 text-sm text-slate-600 transition-all duration-300 ease-in-out ${
-          isExpanded || searchTerm
-            ? "my-2 grid-rows-[1fr] p-2 opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-x-auto overflow-y-hidden">
-          <div className="flex items-start gap-2 pb-1">
-            <p className="ps-2 text-lg font-medium tracking-wider text-gray-900">
-              Lístky
-            </p>
-            <button
-              className="ms-auto rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700"
-              onClick={async () => {
-                toggleEventIsPublic(event.id);
-                const r = await updateEventPublicStatus(
-                  event.id,
-                  !event.is_public,
-                );
-                if (r.error) {
-                  toggleEventIsPublic(event.id);
-                  alert(r.error.message);
-                  return;
-                }
-              }}
-            >
-              {event.is_public ? "Spraviť súkromným" : "Zverejniť"}
-            </button>
-            <button
-              className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700"
-              onClick={async () => {
-                if (event.tickets.length > 0) {
-                  alert(
-                    "Nemôžete vymazať termín, ktorý má predané lístky. Najprv vymažte lístky.",
-                  );
-                  return;
-                }
-                if (!confirm("Naozaj chcete vymazať tento termín?")) return;
-                const removedEvent = event;
-                removeEvent(event.id);
-                const toastId = toast.loading("Vymazávam...");
-                const r = await deleteEvent(event.id);
-                if (r.error) {
-                  addEvent(removedEvent);
-                  toast.update(toastId, {
-                    render: r.error.message,
-                    type: "error",
-                    isLoading: false,
-                    closeButton: true,
-                  });
-                  return;
-                }
-                toast.update(toastId, {
-                  render: "Termín vymazaný",
-                  type: "success",
-                  isLoading: false,
-                  autoClose: 1500,
-                });
-              }}
-            >
-              Vymazať
-            </button>
-          </div>
-          {event.tickets.length > 0 ? (
-            <div className="w-full overflow-x-auto">
-              <Table className="w-full">
-                <Table.Head>
-                  <Table.HeadCell className="p-1 px-2">#</Table.HeadCell>
-                  <Table.HeadCell className="p-1 px-2">Typ</Table.HeadCell>
-                  <Table.HeadCell className="p-1 text-center" colSpan={1}>
-                    Hostia
-                  </Table.HeadCell>
-                  <Table.HeadCell className="p-1 text-center">
-                    Platca
-                  </Table.HeadCell>
-                  <Table.HeadCell className="p-1 text-center">
-                    Status
-                  </Table.HeadCell>
-                  <Table.HeadCell className="p-1 text-end">Cena</Table.HeadCell>
-                  <Table.HeadCell className="p-1">
-                    <span className="sr-only">Edit</span>
-                  </Table.HeadCell>
-                </Table.Head>
-                <Table.Body>
-                  <TicketRows eventId={eventId} cancelled={false} />
-                  {event.cancelled_tickets.length > 0 && (
-                    <>
-                      <Table.Row className="text-center">
-                        <Table.Cell className="p-1" colSpan={9}>
-                          <button
-                            className="flex w-full items-center justify-center hover:underline"
-                            onClick={() => setShowCancelled(!showCancelled)}
-                          >
-                            <HiChevronDown
-                              className={`${
-                                showCancelled ? "rotate-180 transform" : ""
-                              } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
-                            />
-                            Zrušené lístky
-                          </button>
-                        </Table.Cell>
-                      </Table.Row>
-                      {showCancelled && (
-                        <TicketRows eventId={eventId} cancelled={true} />
-                      )}
-                    </>
-                  )}
-                </Table.Body>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-center">Žiadne lístky</p>
-          )}
-        </div>
-      </div>
-    </li>
-  );
-}
-
-export default function EventsAccordion(props: {
-  events: EventWithTickets[];
-  ticketTypes: Awaited<ReturnType<typeof fetchTicketTypes>>["data"];
-}) {
-  const store = useRef(
-    createEventsStore({
-      events: props.events,
-      allEvents: props.events,
-      ticketTypes: props.ticketTypes,
-    }),
-  ).current;
-  const { events, isRefreshing, refresh, search, searchTerm } = useStore(
-    store,
-    (state) => state,
-  );
-
-  const searchParams = useSearchParams();
-  if (searchParams.get("search")) search(searchParams.get("search")!);
-
-  return (
-    <EventsContext.Provider value={store}>
-      <div className="flex items-center justify-between gap-4 pb-2">
-        <span className="text-2xl font-bold tracking-wider">
-          Termíny Tajomných Variácií
-        </span>
-        <div className="relative grow">
-          <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
-            <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
-          </div>
-          <input
-            type="text"
-            className="z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8"
-            placeholder="Hladať"
-            value={searchTerm}
-            onChange={(e) => search(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key == "Escape") {
-                (e.target as HTMLInputElement).blur();
-              }
-              if (e.key == "Enter") {
-                search(searchTerm);
-              }
-            }}
-          />
-        </div>
-        <button
-          className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
-          onClick={refresh}
-        >
-          <ArrowPathIcon
-            className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
-          />
-          Obnoviť
-        </button>
-        <NewEventModal />
-      </div>
-      <ul
-        role="list"
-        className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
-      >
-        {events.map((event) => (
-          <EventRow key={event.id} eventId={event.id} />
-        ))}
-      </ul>
-    </EventsContext.Provider>
+    </React.Fragment>
   );
 }

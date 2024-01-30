@@ -1,4 +1,4 @@
-import EventsAccordion from "./EventsAccordion";
+import EventsAccordion from "./components/EventsAccordion";
 import { fetchEvents, fetchTicketTypes } from "./serverActions";
 
 export default async function Page() {

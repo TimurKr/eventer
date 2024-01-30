@@ -59,31 +59,37 @@ export interface Database {
       };
       tickets: {
         Row: {
+          arrived: boolean;
           billing_id: number;
           created_at: string;
           event_id: number;
           guest_id: number;
           id: string;
+          note: string | null;
           payment_status: string;
           price: number;
           type: string;
         };
         Insert: {
+          arrived?: boolean;
           billing_id: number;
           created_at?: string;
           event_id: number;
           guest_id: number;
           id?: string;
+          note?: string | null;
           payment_status?: string;
           price: number;
           type: string;
         };
         Update: {
+          arrived?: boolean;
           billing_id?: number;
           created_at?: string;
           event_id?: number;
           guest_id?: number;
           id?: string;
+          note?: string | null;
           payment_status?: string;
           price?: number;
           type?: string;
