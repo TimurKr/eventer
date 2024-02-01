@@ -36,6 +36,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      coupons: {
+        Row: {
+          amount: number;
+          code: string;
+          created_at: string;
+          id: number;
+        };
+        Insert: {
+          amount?: number;
+          code: string;
+          created_at?: string;
+          id?: number;
+        };
+        Update: {
+          amount?: number;
+          code?: string;
+          created_at?: string;
+          id?: number;
+        };
+        Relationships: [];
+      };
       events: {
         Row: {
           created_at: string;
@@ -61,6 +82,8 @@ export interface Database {
         Row: {
           arrived: boolean;
           billing_id: number;
+          coupon_created: number | null;
+          coupon_redeemed: number | null;
           created_at: string;
           event_id: number;
           guest_id: number;
@@ -73,6 +96,8 @@ export interface Database {
         Insert: {
           arrived?: boolean;
           billing_id: number;
+          coupon_created?: number | null;
+          coupon_redeemed?: number | null;
           created_at?: string;
           event_id: number;
           guest_id: number;
@@ -85,6 +110,8 @@ export interface Database {
         Update: {
           arrived?: boolean;
           billing_id?: number;
+          coupon_created?: number | null;
+          coupon_redeemed?: number | null;
           created_at?: string;
           event_id?: number;
           guest_id?: number;
@@ -100,6 +127,20 @@ export interface Database {
             columns: ["billing_id"];
             isOneToOne: false;
             referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_coupon_created_fkey";
+            columns: ["coupon_created"];
+            isOneToOne: false;
+            referencedRelation: "coupons";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_coupon_redeemed_fkey";
+            columns: ["coupon_redeemed"];
+            isOneToOne: false;
+            referencedRelation: "coupons";
             referencedColumns: ["id"];
           },
           {
@@ -219,6 +260,10 @@ export type Enums<
 export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
 export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
 export type UpdateContacts = Database["public"]["Tables"]["contacts"]["Update"];
+
+export type Coupons = Database["public"]["Tables"]["coupons"]["Row"];
+export type InsertCoupons = Database["public"]["Tables"]["coupons"]["Insert"];
+export type UpdateCoupons = Database["public"]["Tables"]["coupons"]["Update"];
 
 export type Events = Database["public"]["Tables"]["events"]["Row"];
 export type InsertEvents = Database["public"]["Tables"]["events"]["Insert"];

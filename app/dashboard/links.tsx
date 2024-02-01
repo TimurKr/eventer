@@ -9,7 +9,7 @@ export default function Links() {
 
   return [
     {
-      title: "Predstavenia",
+      title: "Udalosti",
       href: "/dashboard/events",
       icon: <FaTheaterMasks className="h-5 w-5" />,
     },

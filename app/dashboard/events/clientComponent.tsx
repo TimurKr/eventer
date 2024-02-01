@@ -2,39 +2,59 @@
 
 import { useContext, useRef, useState } from "react";
 import {
-  ArrowPathIcon,
-  EllipsisHorizontalIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/solid";
-import { Badge, Dropdown, Progress, Table, Tooltip } from "flowbite-react";
-import { HiChevronDown, HiTrash } from "react-icons/hi2";
-import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import NewTicketModal from "../NewTicketModal";
+  Badge,
+  Button,
+  Checkbox,
+  Dropdown,
+  Progress,
+  Table,
+  Tooltip,
+} from "flowbite-react";
+import { HiChevronDown, HiOutlineTicket, HiTrash } from "react-icons/hi2";
+import NewTicketModal from "./modals/NewTicketModal";
 import {
-  type EventWithTickets,
+  EventWithTickets,
+  TicketTypes,
+  bulkInsertContacts,
   deleteEvent,
-  deleteTicket,
-  updateTicketFields,
-  updateTicketPaymentStatus,
+  deleteTickets,
+  fetchEvents,
+  fetchTicketTypes,
+  mergeContacts,
   updateContactFields,
   updateEventPublicStatus,
-  fetchTicketTypes,
-  bulkInsertContacts,
-  mergeContacts,
-} from "../serverActions";
-import NewEventModal from "../NewEventModal";
+  updateTicketFields,
+  updateTicketPaymentStatus,
+} from "./serverActions";
 import { toast } from "react-toastify";
-import { string as yupString, number as yupNumber } from "yup";
-import { contactsEqual } from "../utils";
+import { EventsContext, createEventsStore } from "./zustand";
+import { useStore } from "zustand";
+import React from "react";
 import {
-  InstantCheckboxField,
+  ArrowPathIcon,
+  EllipsisHorizontalIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  MagnifyingGlassIcon,
+  TicketIcon,
+  TrashIcon,
+} from "@heroicons/react/24/solid";
+import { useSearchParams } from "next/navigation";
+import NewEventModal from "./modals/NewEventModal";
+import {
+  InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
 } from "@/app/components/FormElements";
-import { EventsContext, createEventsStore } from "../zustand";
-import { useStore } from "zustand";
-import { useSearchParams } from "next/navigation";
-import React from "react";
+import { contactsEqual } from "./utils";
+import { string as yupString, number as yupNumber } from "yup";
+import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
+import { removeAllListeners } from "process";
+import ChangeDateModal from "./modals/ChangeDateModal";
+import MoveTicketsToDifferentEventModal from "./modals/MoveTicketsToDifferentEventModal";
+import ConvertToCouponModal from "./modals/ConvertToCouponModal";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -177,11 +197,9 @@ function LinkUnlinkContact({
 function TicketRow({
   ticket,
   tickets,
-  lockedArrived,
 }: {
   ticket: EventWithTickets["tickets"][0];
   tickets: EventWithTickets["tickets"];
-  lockedArrived: boolean;
 }) {
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -189,12 +207,19 @@ function TicketRow({
   const {
     ticketTypes,
     highlightedTicketIds,
+    selectedTicketIds,
     setPartialTicket,
     setPartialContact,
     setTicketsStatus,
-    removeTicket,
+    removeTickets,
     addTickets,
+    toggleSelectedTicket,
   } = useStore(store, (state) => state);
+
+  const event = useStore(
+    store,
+    (state) => state.events.find((e) => e.id == ticket.event_id)!,
+  );
 
   const allContacts = useStore(store, (state) =>
     state.events
@@ -232,19 +257,14 @@ function TicketRow({
           indexInGroup == 0 && "rounded-tl-md"
         } ${indexInGroup == groupSize - 1 && "rounded-bl-md"}`}
       >
+        {ticket.payment_status != "zrušené" && (
+          <Checkbox
+            className="me-2"
+            checked={selectedTicketIds?.includes(ticket.id)}
+            onChange={() => toggleSelectedTicket(ticket.id)}
+          />
+        )}
         {indexInEvent} - <span className="text-xs">{indexInGroup + 1}</span>
-      </Table.Cell>
-      <Table.Cell className="p-2">
-        <InstantCheckboxField
-          disabled={lockedArrived}
-          defaultValue={ticket.arrived}
-          updateDatabase={(value) =>
-            updateTicketFields({ id: ticket.id, arrived: value })
-          }
-          setLocalValue={(value) =>
-            setPartialTicket({ id: ticket.id, arrived: value })
-          }
-        />
       </Table.Cell>
       <Table.Cell className="p-2 py-0">
         <select
@@ -299,7 +319,7 @@ function TicketRow({
           ))}
         </select>
       </Table.Cell>
-      <Table.Cell className="text-pretty group border-l p-0">
+      <Table.Cell className="group text-pretty border-l p-0">
         <InstantTextField
           defaultValue={ticket.guest!.name}
           type="text"
@@ -462,6 +482,33 @@ function TicketRow({
           </div>
         </Table.Cell>
       )}
+      <Table.Cell className="px-auto py-0">
+        {ticket.payment_status != "zrušené" && (
+          <InstantSwitchField
+            disabled={event.lockedArrived}
+            defaultValue={ticket.arrived}
+            updateDatabase={(value) =>
+              updateTicketFields({ id: ticket.id, arrived: value })
+            }
+            setLocalValue={(value) =>
+              setPartialTicket({ id: ticket.id, arrived: value })
+            }
+          />
+        )}
+        {ticket.coupon_created && (
+          <Tooltip
+            content={`Lístok bol premenený na kupón. Kliknutím zobrazíte`}
+          >
+            <Link
+              className="flex items-center justify-center gap-2 text-gray-400 underline hover:text-gray-500 active:text-gray-600"
+              href={"/dashboard/coupons"}
+            >
+              <TicketIcon className="h-4 w-4" />
+              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            </Link>
+          </Tooltip>
+        )}
+      </Table.Cell>
       <Table.Cell className="p-1 text-end">
         <select
           className={`border-1 rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
@@ -518,12 +565,12 @@ function TicketRow({
           ))}
         </select>
       </Table.Cell>
-      <Table.Cell className="has-[:focus]:overflow-visible has-[:hover]:overflow-visible relative w-24 overflow-clip p-1 text-end">
+      <Table.Cell className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
         {/* <InstantTextField
           type="text" */}
         <InstantTextAreaField
           autoexpand
-          className="absolute inset-y-auto end-0 w-full -translate-y-1/2 hover:w-64 focus:w-64"
+          className="transit absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
           defaultValue={ticket.note}
           placeholder="Poznámka"
           setLocalValue={(value) =>
@@ -578,18 +625,27 @@ function TicketRow({
             <EllipsisHorizontalIcon className="h-5 w-5 rounded-md border border-gray-200 bg-gray-50 text-gray-700 hover:cursor-pointer hover:bg-gray-200" />
           )}
         >
-          <Dropdown.Item onClick={() => alert("Táto funkcia ešte nefunguje")}>
+          <Dropdown.Item
+            className="text-cyan-700"
+            icon={HiOutlineTicket}
+            onClick={() => alert("Táto funkcia ešte nefunguje")}
+          >
             Premeň na kupón
           </Dropdown.Item>
           <Dropdown.Item
             className="text-red-500"
             icon={HiTrash}
             onClick={async () => {
-              if (!confirm("Naozaj chcete vymazať tento lístok?")) return;
+              if (
+                !confirm(
+                  "Naozaj chcete vymazať tento lístok? Zvážte iba zmenu statusu na zrušené.",
+                )
+              )
+                return;
               const toastId = toast.loading("Vymazávam...");
               const removedTicket = ticket;
-              removeTicket(ticket.id);
-              const r = await deleteTicket(ticket.id);
+              removeTickets([ticket.id]);
+              const r = await deleteTickets([ticket.id]);
               if (r.error) {
                 addTickets(ticket.event_id, [removedTicket]);
                 toast.update(toastId, {
@@ -616,14 +672,12 @@ function TicketRow({
   );
 }
 
-export default function TicketRows({
+function TicketRows({
   eventId,
   cancelled,
-  lockedArrived,
 }: {
   eventId: number;
   cancelled: boolean;
-  lockedArrived: boolean;
 }) {
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -652,14 +706,13 @@ export default function TicketRows({
                   key={"ticket-" + ticket.id}
                   ticket={ticket}
                   tickets={tickets}
-                  lockedArrived={lockedArrived}
                 />
               ))}
           </React.Fragment>
         ))}
       {tickets[0].payment_status != "zrušené" && (
         <Table.Row className="h-1">
-          <Table.Cell className="p-1" colSpan={5} />
+          <Table.Cell className="p-1" colSpan={7} />
           <Table.Cell className="p-1 text-end font-bold tracking-wider text-black">
             <hr />
             {tickets.reduce((acc, t) => acc + t.price, 0)} €
@@ -670,3 +723,431 @@ export default function TicketRows({
     </React.Fragment>
   );
 }
+
+function EventRow({ eventId }: { eventId: number }) {
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const event = useStore(
+    store,
+    (state) => state.events.find((e) => e.id == eventId)!,
+  );
+  const {
+    ticketTypes,
+    searchTerm,
+    removeEvent,
+    addEvent,
+    removeTickets,
+    addTickets,
+    toggleSelectedTicket,
+    toggleEventIsPublic,
+    toggleEventIsExpanded,
+    toggleEventLockedArrived,
+    toggleEventShowCancelledTickets,
+  } = useStore(store, (state) => state);
+
+  const selectedTickets = useStore(store, (state) =>
+    state.allEvents
+      .find((e) => e.id === eventId)!
+      .tickets.filter((t) => state.selectedTicketIds.includes(t.id)),
+  );
+
+  return (
+    <li key={eventId} className={`flex flex-col`}>
+      <div
+        className={`flex justify-between gap-x-6 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
+          event.isExpanded || searchTerm
+            ? "mt-2 border-x border-t border-cyan-700 pe-4 ps-4 pt-2"
+            : ""
+        }`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col self-center">
+          <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
+            {new Date(event.datetime).toLocaleDateString("sk-SK")}
+            <Badge
+              color={event.is_public ? "blue" : "purple"}
+              className="rounded-md"
+            >
+              {event.is_public ? "Verejné" : "Súkromné"}
+            </Badge>
+          </p>
+          <p className="truncate text-xs leading-5 text-gray-500">
+            {new Date(event.datetime).toLocaleTimeString("sk-SK")}
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
+          {ticketTypes.map((type) => {
+            const sold = event.tickets.filter(
+              (t) => t.type == type.label,
+            ).length;
+            return (
+              <div key={type.label} className="w-28">
+                <div
+                  className={`flex items-end text-sm ${
+                    type.label == "VIP"
+                      ? "text-amber-600"
+                      : type.label == "standard"
+                        ? "text-gray-600"
+                        : ""
+                  }`}
+                >
+                  <span className="font-medium">{type.label}</span>
+                  <span
+                    className={`ms-auto text-base font-bold ${
+                      sold > type.max_sold
+                        ? "text-red-600"
+                        : sold == 0
+                          ? "text-gray-400"
+                          : ""
+                    }`}
+                  >
+                    {sold}
+                  </span>
+                  /<span>{type.max_sold}</span>
+                </div>
+                <Progress
+                  className="mb-1"
+                  size="sm"
+                  progress={(sold / type.max_sold) * 100}
+                  color={
+                    sold > type.max_sold
+                      ? "red"
+                      : type.label == "VIP"
+                        ? "yellow"
+                        : "gray"
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-row items-center justify-start">
+          <NewTicketModal eventId={eventId} />
+          <button
+            className="group grid h-full place-content-center ps-2"
+            onClick={() => toggleEventIsExpanded(event.id)}
+          >
+            <div className="rounded-md border border-slate-200 p-0.5 group-hover:bg-slate-200">
+              <HiChevronDown
+                className={`${
+                  event.isExpanded || searchTerm ? "rotate-180 transform" : ""
+                } h-4 w-4 transition-transform duration-500 `}
+              />
+            </div>
+          </button>
+        </div>
+      </div>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          event.isExpanded || searchTerm
+            ? "mb-2 grid-rows-[1fr] rounded-b-xl border-x border-b border-cyan-700 p-1 opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="flex items-start justify-end gap-2 overflow-y-hidden p-1">
+          <ChangeDateModal event={event} />
+          <Button
+            onClick={async () => {
+              toggleEventIsPublic(event.id);
+              const r = await updateEventPublicStatus(
+                event.id,
+                !event.is_public,
+              );
+              if (r.error) {
+                toggleEventIsPublic(event.id);
+                alert(r.error.message);
+                return;
+              }
+            }}
+            size={"xs"}
+          >
+            {event.is_public ? (
+              <>
+                <span>Spraviť udalosť súkromnou</span>
+                <LockClosedIcon className="ms-2 h-3 w-3"></LockClosedIcon>
+              </>
+            ) : (
+              <>
+                <span>Zverejniť udalosť</span>
+                <LockOpenIcon className="ms-2 h-3 w-3"></LockOpenIcon>
+              </>
+            )}
+          </Button>
+          <Button
+            // disabled={event.tickets.length > 0}
+            onClick={async () => {
+              if (event.tickets.length > 0) {
+                alert(
+                  "Nemôžete vymazať udalosť, ktorá má predané lístky. Najprv vymažte lístky.",
+                );
+                return;
+              }
+              if (!confirm("Naozaj chcete vymazať túto udalosť?")) return;
+              const removedEvent = event;
+              removeEvent(event.id);
+              const toastId = toast.loading("Vymazávam...");
+              const r = await deleteEvent(event.id);
+              if (r.error) {
+                addEvent(removedEvent);
+                toast.update(toastId, {
+                  render: r.error.message,
+                  type: "error",
+                  isLoading: false,
+                  closeButton: true,
+                });
+                return;
+              }
+              toast.update(toastId, {
+                render: "Udalosť vymazaná",
+                type: "success",
+                isLoading: false,
+                autoClose: 1500,
+              });
+            }}
+            size={"xs"}
+            color="failure"
+          >
+            <span>Vymazať udalosť</span>
+            <TrashIcon className="ms-2 h-3 w-3"></TrashIcon>
+          </Button>
+        </div>
+      </div>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          event.isExpanded || searchTerm
+            ? "mb-2 grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-y-hidden">
+          <div className="rounded-xl bg-slate-200 p-2">
+            <div className="flex items-center gap-2 pb-1">
+              <p className="me-auto ps-2 text-lg font-medium tracking-wider text-gray-900">
+                Lístky
+              </p>
+              <p className="text-sm text-gray-600">
+                (Označených: {selectedTickets.length})
+              </p>
+              <MoveTicketsToDifferentEventModal eventId={event.id} />
+              <ConvertToCouponModal eventId={event.id} />
+              <button
+                className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 active:bg-red-800"
+                onClick={async () => {
+                  if (
+                    !confirm(
+                      `POZOR! Táto akcia je nevratná, stratíte všetky údaje. Naozaj chcete vymazať označené lístky (${selectedTickets.length})? Zvážte iba zmenu statusu na zrušené.`,
+                    )
+                  )
+                    return;
+                  const removedTickets = selectedTickets;
+                  const toastId = toast.loading("Vymazávam...");
+                  removeTickets(removedTickets.map((t) => t.id));
+                  const r = await deleteTickets(
+                    removedTickets.map((t) => t.id),
+                  );
+                  if (r.error) {
+                    addTickets(event.id, removedTickets);
+                    toast.update(toastId, {
+                      render: r.error.message,
+                      type: "error",
+                      isLoading: false,
+                      closeButton: true,
+                    });
+                    return;
+                  }
+                  toast.update(toastId, {
+                    render: "Lístky vymazané",
+                    type: "success",
+                    isLoading: false,
+                    autoClose: 1500,
+                  });
+                }}
+              >
+                Vymazať
+              </button>
+            </div>
+            {event.tickets.length > 0 ? (
+              <div className="w-full overflow-x-auto">
+                <Table className="w-full">
+                  <Table.Head>
+                    <Table.HeadCell className="p-1 px-2">
+                      <Checkbox
+                        className="me-2"
+                        checked={event.tickets.every((t) =>
+                          selectedTickets.includes(t),
+                        )}
+                        onChange={() => {
+                          const checked = !event.tickets.every((t) =>
+                            selectedTickets.includes(t),
+                          );
+                          const ticketsToToggle = event.tickets.filter((t) =>
+                            checked ? !selectedTickets.includes(t) : true,
+                          );
+                          ticketsToToggle.forEach((t) =>
+                            toggleSelectedTicket(t.id),
+                          );
+                        }}
+                      />
+                      #
+                    </Table.HeadCell>
+                    <Table.HeadCell className="px-auto p-1">Typ</Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-center" colSpan={1}>
+                      Hostia
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-center">
+                      Platca
+                    </Table.HeadCell>
+                    <Table.HeadCell className="flex items-center justify-center gap-1 p-1 px-0">
+                      <button
+                        className="text-gray-500 hover:text-gray-600 active:text-gray-700"
+                        onClick={() => toggleEventLockedArrived(event.id)}
+                      >
+                        {event.lockedArrived ? (
+                          <LockClosedIcon className="h-3 w-3" />
+                        ) : (
+                          <LockOpenIcon className="h-3 w-3" />
+                        )}
+                      </button>
+                      Dorazil
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-center">
+                      Status
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-center">
+                      Poznámka
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-end">
+                      Cena
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1">
+                      <span className="sr-only">Edit</span>
+                    </Table.HeadCell>
+                  </Table.Head>
+                  <Table.Body>
+                    <TicketRows eventId={eventId} cancelled={false} />
+                    {event.cancelled_tickets.length > 0 && (
+                      <>
+                        <Table.Row className="text-center">
+                          <Table.Cell className="p-1" colSpan={9}>
+                            <button
+                              className="flex w-full items-center justify-center hover:underline"
+                              onClick={() =>
+                                toggleEventShowCancelledTickets(event.id)
+                              }
+                            >
+                              <HiChevronDown
+                                className={`${
+                                  event.showCancelledTickets
+                                    ? "rotate-180 transform"
+                                    : ""
+                                } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
+                              />
+                              Zrušené lístky
+                            </button>
+                          </Table.Cell>
+                        </Table.Row>
+                        {event.showCancelledTickets && (
+                          <TicketRows eventId={eventId} cancelled={true} />
+                        )}
+                      </>
+                    )}
+                  </Table.Body>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center">Žiadne lístky</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+const defaultEventState = {
+  lockedArrived: true,
+  isExpanded: false,
+  showCancelledTickets: false,
+  selectedTicketIds: [],
+};
+
+export default function Events(props: {
+  events: EventWithTickets[];
+  ticketTypes: TicketTypes[];
+}) {
+  const store = useRef(
+    createEventsStore({
+      events: props.events.map((e) => ({
+        ...defaultEventState,
+        ...e,
+      })),
+      allEvents: props.events.map((e) => ({
+        ...defaultEventState,
+        ...e,
+      })),
+      ticketTypes: props.ticketTypes,
+    }),
+  ).current;
+
+  const { events, isRefreshing, refresh, search, searchTerm } = useStore(
+    store,
+    (state) => state,
+  );
+
+  const searchParams = useSearchParams();
+  if (searchParams.get("search")) search(searchParams.get("search")!);
+
+  return (
+    <EventsContext.Provider value={store}>
+      <div className="flex items-center justify-between gap-4 pb-2">
+        <span className="text-2xl font-bold tracking-wider">Udalosti</span>
+        <div className="relative ms-auto max-w-64 grow">
+          <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
+            <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
+          </div>
+          <input
+            type="text"
+            className="z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8"
+            placeholder="Hladať"
+            value={searchTerm}
+            onChange={(e) => search(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key == "Escape") {
+                (e.target as HTMLInputElement).blur();
+              }
+              if (e.key == "Enter") {
+                search(searchTerm);
+              }
+            }}
+          />
+        </div>
+        <button
+          className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
+          onClick={refresh}
+        >
+          <ArrowPathIcon
+            className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
+          />
+          Obnoviť
+        </button>
+        <NewEventModal />
+      </div>
+      <ul
+        role="list"
+        className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
+      >
+        {events.map((event) => (
+          <EventRow key={event.id} eventId={event.id} />
+        ))}
+      </ul>
+    </EventsContext.Provider>
+  );
+}
+
+// export default async function Page() {
+
+//   return (
+//     <div className="flex flex-col">
+//       <EventsAccordion events={events!} ticketTypes={ticketTypes} />
+//     </div>
+//   );
+// }

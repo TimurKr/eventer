@@ -1,24 +1,42 @@
 import { createStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { persist } from "zustand/middleware";
-import { TicketTypes, EventWithTickets, fetchEvents } from "./serverActions";
+import {
+  TicketTypes,
+  EventWithTickets as fetchEventsReturnType,
+  fetchEvents,
+} from "./serverActions";
 import { createContext } from "react";
 import { ticketSortFunction } from "./utils";
 import { Contacts, Events, Tickets } from "@/utils/supabase/database.types";
 import Fuse from "fuse.js";
 
+type ZustandEvents = fetchEventsReturnType & {
+  lockedArrived: boolean;
+  showCancelledTickets: boolean;
+  isExpanded: boolean;
+};
+
 function search(
-  events: EventWithTickets[],
+  events: ZustandEvents[],
   term: string,
-): { events: EventWithTickets[]; highlightedTicketIds: Tickets["id"][] } {
+): { events: ZustandEvents[]; highlightedTicketIds: Tickets["id"][] } {
   if (term === "") {
     return { events: events, highlightedTicketIds: [] };
   }
 
-  const keys = ["guest.name"];
+  const keys = [
+    "id",
+    "guest.name",
+    "guest.email",
+    "guest.phone",
+    "billing.name",
+    "billing.email",
+    "billing.phone",
+  ];
 
   // First find all events that have some mathching tickets
-  const fuse1 = new Fuse<EventWithTickets>(events, {
+  const fuse1 = new Fuse<ZustandEvents>(events, {
     keys: keys.flatMap((k) => ["tickets." + k, "cancelled_tickets." + k]),
     shouldSort: false,
   });
@@ -26,7 +44,7 @@ function search(
   console.log("count: %d", events.length);
 
   // Then for each event find the matching tickets and add tem to highlighted
-  const fuse2 = new Fuse<EventWithTickets["tickets"][0]>([], {
+  const fuse2 = new Fuse<ZustandEvents["tickets"][0]>([], {
     keys: keys,
     shouldSort: false,
   });
@@ -41,29 +59,35 @@ function search(
 }
 
 type State = {
-  events: EventWithTickets[];
-  allEvents: EventWithTickets[];
+  events: ZustandEvents[];
+  allEvents: ZustandEvents[];
   searchTerm: string;
   highlightedTicketIds: Tickets["id"][];
-  ticketTypes: TicketTypes;
+  selectedTicketIds: Tickets["id"][];
+  ticketTypes: TicketTypes[];
   isRefreshing: boolean;
 };
 
 type Actions = {
   refresh: () => Promise<void>;
-  search: (term: string, allEvents?: EventWithTickets[]) => void;
+  search: (term: string, allEvents?: ZustandEvents[]) => void;
 
   addEvent: (event: State["events"][0]) => void;
   removeEvent: (eventId: number) => void;
+  setPartialEvent: (event: Partial<ZustandEvents>) => void;
   toggleEventIsPublic: (eventId: Events["id"]) => void;
+  toggleEventIsExpanded: (eventId: Events["id"]) => void;
+  toggleEventShowCancelledTickets: (eventId: Events["id"]) => void;
+  toggleEventLockedArrived: (eventId: Events["id"]) => void;
+  toggleSelectedTicket: (ticketId: Tickets["id"]) => void;
 
   addTickets: (
     eventId: Events["id"],
     tickets: State["events"][0]["tickets"],
   ) => void;
-  removeTicket: (ticketId: Tickets["id"]) => void;
+  removeTickets: (ticketIds: Tickets["id"][]) => void;
   setPartialTicket: (
-    ticket: Partial<EventWithTickets["tickets"][0]> & {
+    ticket: Partial<ZustandEvents["tickets"][0]> & {
       id: NonNullable<Tickets["id"]>;
     },
   ) => void;
@@ -84,6 +108,7 @@ export const createEventsStore = (props?: Partial<State>) => {
     events: [],
     allEvents: [],
     highlightedTicketIds: [],
+    selectedTicketIds: [],
     searchTerm: "",
     ticketTypes: [],
     isRefreshing: false,
@@ -102,7 +127,10 @@ export const createEventsStore = (props?: Partial<State>) => {
             console.error(error);
           } else {
             set((state) => {
-              state.allEvents = allEvents;
+              state.allEvents = allEvents.map((event) => ({
+                ...state.allEvents.find((e) => e.id === event.id)!,
+                ...event,
+              }));
               state.allEvents.forEach((event) => {
                 event.tickets.sort(ticketSortFunction);
                 event.cancelled_tickets.sort(ticketSortFunction);
@@ -140,7 +168,6 @@ export const createEventsStore = (props?: Partial<State>) => {
             state.highlightedTicketIds = r.highlightedTicketIds;
           });
         },
-
         removeEvent: (eventId) => {
           set((state) => {
             state.allEvents = state.allEvents.filter(
@@ -151,12 +178,79 @@ export const createEventsStore = (props?: Partial<State>) => {
             state.highlightedTicketIds = r.highlightedTicketIds;
           });
         },
+        setPartialEvent: (event) => {
+          set((state) => {
+            const eventIndex = state.allEvents.findIndex(
+              (e) => e.id === event.id,
+            );
+            if (eventIndex === -1) return;
+            state.allEvents[eventIndex] = {
+              ...state.allEvents[eventIndex],
+              ...event,
+            };
+            state.allEvents.sort(
+              (a, b) =>
+                new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
+            );
+            const r = search(state.allEvents, state.searchTerm);
+            state.events = r.events;
+            state.highlightedTicketIds = r.highlightedTicketIds;
+          });
+        },
+
         toggleEventIsPublic: (eventId) => {
           set((state) => {
             const event = state.allEvents.find(
               (event) => event.id === eventId,
             )!;
             event.is_public = !event.is_public;
+            const r = search(state.allEvents, state.searchTerm);
+            state.events = r.events;
+            state.highlightedTicketIds = r.highlightedTicketIds;
+          });
+        },
+        toggleEventIsExpanded: (eventId) => {
+          set((state) => {
+            const event = state.allEvents.find(
+              (event) => event.id === eventId,
+            )!;
+            event.isExpanded = !event.isExpanded;
+            const r = search(state.allEvents, state.searchTerm);
+            state.events = r.events;
+            state.highlightedTicketIds = r.highlightedTicketIds;
+          });
+        },
+        toggleEventShowCancelledTickets: (eventId) => {
+          set((state) => {
+            const event = state.allEvents.find(
+              (event) => event.id === eventId,
+            )!;
+            event.showCancelledTickets = !event.showCancelledTickets;
+            const r = search(state.allEvents, state.searchTerm);
+            state.events = r.events;
+            state.highlightedTicketIds = r.highlightedTicketIds;
+          });
+        },
+        toggleEventLockedArrived: (eventId) => {
+          set((state) => {
+            const event = state.allEvents.find(
+              (event) => event.id === eventId,
+            )!;
+            event.lockedArrived = !event.lockedArrived;
+            const r = search(state.allEvents, state.searchTerm);
+            state.events = r.events;
+            state.highlightedTicketIds = r.highlightedTicketIds;
+          });
+        },
+        toggleSelectedTicket: (ticketId) => {
+          set((state) => {
+            if (state.selectedTicketIds.includes(ticketId)) {
+              state.selectedTicketIds = state.selectedTicketIds.filter(
+                (id) => id !== ticketId,
+              );
+            } else {
+              state.selectedTicketIds.push(ticketId);
+            }
             const r = search(state.allEvents, state.searchTerm);
             state.events = r.events;
             state.highlightedTicketIds = r.highlightedTicketIds;
@@ -181,14 +275,19 @@ export const createEventsStore = (props?: Partial<State>) => {
             state.highlightedTicketIds = r.highlightedTicketIds;
           });
         },
-        removeTicket: (ticketId) => {
+        removeTickets: (ticketIds) => {
           set((state) => {
             state.allEvents.forEach((event) => {
-              event.tickets = event.tickets.filter((t) => t.id !== ticketId);
+              event.tickets = event.tickets.filter(
+                (t) => !ticketIds.includes(t.id),
+              );
               event.cancelled_tickets = event.cancelled_tickets.filter(
-                (t) => t.id !== ticketId,
+                (t) => !ticketIds.includes(t.id),
               );
             });
+            state.selectedTicketIds = state.selectedTicketIds.filter(
+              (id) => !ticketIds.includes(id),
+            );
             const r = search(state.allEvents, state.searchTerm);
             state.events = r.events;
             state.highlightedTicketIds = r.highlightedTicketIds;

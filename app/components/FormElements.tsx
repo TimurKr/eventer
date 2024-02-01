@@ -1,7 +1,7 @@
 "use client";
 
 import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
-import { Badge, Button } from "flowbite-react";
+import { Badge, Button, ToggleSwitch } from "flowbite-react";
 import {
   ErrorMessage,
   Field,
@@ -37,11 +37,13 @@ type GenericTextFieldProps = {
   name: string;
   optional?: boolean;
   vertical?: boolean;
-  type?: "text" | "password" | "email" | "texarea";
+  type?: "text" | "password" | "email" | "texarea" | "number";
   placeHolder?: string;
   label?: string;
   hideErrors?: boolean;
   className?: string;
+  iconStart?: React.ReactNode;
+  iconEnd?: React.ReactNode;
 };
 
 // // Define input types
@@ -54,6 +56,8 @@ export const GenericTextField = ({
   label,
   hideErrors,
   className,
+  iconStart,
+  iconEnd,
 }: GenericTextFieldProps) => (
   <>
     <Field name={name}>
@@ -71,25 +75,30 @@ export const GenericTextField = ({
             )}
             <div className="basis-3/4">
               <div
-                className={`relative w-full items-center rounded-lg bg-white text-sm shadow-md ${
-                  !hideErrors && props.meta.error ? "border border-red-500" : ""
+                className={`relative w-full items-center rounded-lg border border-gray-200 bg-gray-50 text-sm ${
+                  !hideErrors && props.meta.error ? "!border-red-500" : ""
                 } ${className}`}
               >
+                <div className="absolute inset-y-0 left-1 grid items-center p-1">
+                  {iconStart}
+                </div>
+                <div className="absolute inset-y-0 right-1 flex items-center gap-1 p-1">
+                  {iconEnd}
+                  {(!props.field.value || props.field.value.length < 5) &&
+                    (optional ? (
+                      <Badge color={"gray"}>Volitelné</Badge>
+                    ) : (
+                      <Badge color={"red"}>Povinné</Badge>
+                    ))}
+                </div>
                 <input
-                  className={`m-0 w-full flex-row rounded-lg border-none bg-transparent py-1 placeholder:text-gray-400`}
+                  className={`m-0 w-full flex-row rounded-lg border-none bg-transparent py-1 placeholder:text-gray-400 ${
+                    iconStart ? "pl-7" : ""
+                  } ${type === "number" && iconEnd ? "pe-8" : "pe-1"}`}
                   type={type}
                   {...props.field}
                   placeholder={placeHolder}
                 />
-                {(!props.field.value || props.field.value.length < 5) && (
-                  <div className="absolute inset-y-0 right-0 grid items-center p-1">
-                    {optional ? (
-                      <Badge color={"gray"}>Volitelné</Badge>
-                    ) : (
-                      <Badge color={"red"}>Povinné</Badge>
-                    )}
-                  </div>
-                )}
               </div>
               {hideErrors || <CustomErrorMessage fieldMeta={props.meta} />}
             </div>
@@ -108,6 +117,55 @@ type InstantFieldProps<T> = {
   updateDatabase: (value: T) => void | Promise<any>;
   setLocalValue: (value: T) => void | Promise<void>;
 };
+
+export function InstantSwitchField({
+  defaultValue,
+  className,
+  disabled = false,
+  validate,
+  updateDatabase,
+  setLocalValue,
+}: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
+  const [value, setValue] = useState<boolean>(defaultValue);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  return (
+    <ToggleSwitch
+      className={`${className}`}
+      sizing={"sm"}
+      disabled={disabled}
+      checked={value}
+      onChange={async (newValue) => {
+        setValue(newValue);
+        const err = validate && (await validate(newValue));
+        if (err) setError(err);
+        else setError(null);
+        const toastId = toast.loading("Ukladám...", { autoClose: false });
+        const r = await updateDatabase(newValue);
+        if (r.error) {
+          toast.update(toastId, {
+            render: "Nastala chyba: " + r.error.message,
+            type: "error",
+            closeButton: true,
+          });
+          setValue(defaultValue);
+          return;
+        }
+        await setLocalValue(newValue);
+        toast.update(toastId, {
+          render: "Uložené",
+          type: "success",
+          isLoading: false,
+          autoClose: 1500,
+        });
+      }}
+    />
+  );
+}
 
 export function InstantCheckboxField({
   defaultValue,
@@ -143,7 +201,7 @@ export function InstantCheckboxField({
             type: "error",
             closeButton: true,
           });
-          setValue(defaultValue || false);
+          setValue(defaultValue);
           return;
         }
         await setLocalValue(e.target.checked);
@@ -238,9 +296,6 @@ export function InstantTextAreaField({
         });
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          (e.target as HTMLInputElement).blur();
-        }
         if (e.key === "Escape") {
           setValue(defaultValue || "");
           (e.target as HTMLInputElement).blur();

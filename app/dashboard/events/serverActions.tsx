@@ -2,6 +2,7 @@
 
 import {
   Contacts,
+  Events,
   InsertContacts,
   InsertTickets,
   Tickets,
@@ -10,6 +11,7 @@ import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { ticketSortFunction } from "./utils";
+import { randomUUID } from "crypto";
 
 export async function fetchTicketTypes() {
   return {
@@ -21,7 +23,9 @@ export async function fetchTicketTypes() {
   };
 }
 
-export type TicketTypes = Awaited<ReturnType<typeof fetchTicketTypes>>["data"];
+export type TicketTypes = Awaited<
+  ReturnType<typeof fetchTicketTypes>
+>["data"][0];
 
 // Fetch events
 export async function fetchEvents() {
@@ -64,7 +68,9 @@ export type EventWithTickets = NonNullable<
 
 // Fetch all contacts
 export async function fetchContacts() {
-  const r = await createServerSupabase(cookies()).from("contacts").select();
+  const r = await createServerSupabase(cookies(), ["contacts", "tickets"])
+    .from("contacts")
+    .select();
   if (r.error) {
     return r;
   }
@@ -95,6 +101,21 @@ export async function deleteEvent(eventId: number) {
   const result = await supabase.from("events").delete().match({ id: eventId });
   if (!result.error) {
     revalidatePath("/dashboard/events");
+  }
+  return result;
+}
+
+// Update event fields
+export async function updateEventFields(
+  event: Partial<EventWithTickets> & { id: NonNullable<Events["id"]> },
+) {
+  const supabase = createServerSupabase(cookies());
+  const result = await supabase
+    .from("events")
+    .update(event)
+    .match({ id: event.id });
+  if (!result.error) {
+    revalidateTag("events");
   }
   return result;
 }
@@ -165,6 +186,19 @@ export async function updateTicketFields(
   return res;
 }
 
+// Bulk update ticket fields
+export async function bulkUpdateTicketFields(
+  ticketIDs: string[],
+  ticket: Partial<Tickets>,
+) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase.from("tickets").update(ticket).in("id", ticketIDs);
+  if (!res.error) {
+    revalidateTag("tickets");
+  }
+  return res;
+}
+
 // Update contact fields
 export async function updateContactFields(
   contact: Partial<Contacts> & { id: NonNullable<Contacts["id"]> },
@@ -181,9 +215,9 @@ export async function updateContactFields(
 }
 
 // Delete ticket
-export async function deleteTicket(ticketID: string) {
+export async function deleteTickets(ticketIds: Tickets["id"][]) {
   const supabase = createServerSupabase(cookies());
-  const res = await supabase.from("tickets").delete().match({ id: ticketID });
+  const res = await supabase.from("tickets").delete().in("id", ticketIds);
   if (!res.error) {
     revalidateTag("tickets");
   }
@@ -252,4 +286,53 @@ export async function mergeContacts(targetContact: Contacts) {
     return deleteQ;
   }
   return;
+}
+
+// Convert tickets to coupon
+export async function convertTicketsToCoupon(tickets: Tickets[]) {
+  if (tickets.length == 0) {
+    return { error: { message: "No tickets selected" } };
+  }
+
+  const supabase = createServerSupabase(cookies());
+  let code = randomUUID().slice(0, 8).toUpperCase();
+
+  while (true) {
+    const { count } = await supabase
+      .from("coupons")
+      .select("*", { count: "exact", head: true })
+      .eq("code", code);
+    if (count == 0) {
+      break;
+    }
+    code = randomUUID().slice(0, 8).toUpperCase();
+  }
+  const resCreate = await supabase
+    .from("coupons")
+    .insert({
+      amount: tickets.map((t) => t.price).reduce((a, b) => a + b, 0),
+      code: code,
+    })
+    .select();
+  if (resCreate.error) {
+    return resCreate;
+  }
+
+  const resCancel = await supabase
+    .from("tickets")
+    .update({
+      payment_status: "zrušené",
+      coupon_created: resCreate.data[0].id,
+    })
+    .in(
+      "id",
+      tickets.map((t) => t.id),
+    );
+  if (resCancel.error) {
+    return resCancel;
+  }
+
+  revalidateTag("tickets");
+  revalidateTag("coupons");
+  return resCancel;
 }

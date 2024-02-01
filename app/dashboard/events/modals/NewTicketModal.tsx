@@ -24,12 +24,12 @@ import {
   bulkCreateTickets,
   bulkInsertContacts,
   fetchContacts,
-} from "./serverActions";
+} from "../serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { EventsContext } from "./zustand";
+import { EventsContext } from "../zustand";
 import { useStore } from "zustand";
-import { contactsEqual } from "./utils";
+import { contactsEqual } from "../utils";
 
 export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
   const [isOpen, setIsOpen] = useState(false);

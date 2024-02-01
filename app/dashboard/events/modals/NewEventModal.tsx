@@ -2,13 +2,13 @@
 
 import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import { EventWithTickets, createNewEvent } from "./serverActions";
+import { EventWithTickets, createNewEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Updater } from "use-immer";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
-import { EventsContext } from "./zustand";
+import { EventsContext } from "../zustand";
 
 export default function NewEventModal() {
   const [date, setDate] = useState<Date>(new Date());
@@ -37,6 +37,9 @@ export default function NewEventModal() {
         ...data[0],
         tickets: [],
         cancelled_tickets: [],
+        isExpanded: true,
+        lockedArrived: true,
+        showCancelledTickets: false,
       });
       setIsOpen(false);
     });
@@ -50,15 +53,10 @@ export default function NewEventModal() {
         className="flex items-center gap-2 rounded-md bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
       >
         <PlusIcon className="h-5 w-5" />
-        Nový termín
+        Nová udalosť
       </button>
-      <Modal
-        show={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="Nový termín"
-        dismissible
-      >
-        <Modal.Header>Nový termín</Modal.Header>
+      <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
+        <Modal.Header>Nová udalosť</Modal.Header>
         <Modal.Body>
           <form className="flex flex-col" action={submit}>
             <div className="flex flex-col gap-4 md:flex-row">
