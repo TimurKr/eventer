@@ -42,18 +42,24 @@ export interface Database {
           code: string;
           created_at: string;
           id: number;
+          original_amount: number;
+          valid_until: string | null;
         };
         Insert: {
-          amount?: number;
+          amount: number;
           code: string;
           created_at?: string;
           id?: number;
+          original_amount?: number;
+          valid_until?: string | null;
         };
         Update: {
           amount?: number;
           code?: string;
           created_at?: string;
           id?: number;
+          original_amount?: number;
+          valid_until?: string | null;
         };
         Relationships: [];
       };

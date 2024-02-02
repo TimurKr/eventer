@@ -5,10 +5,10 @@ import { useContext, useRef, useState, useTransition } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStore } from "zustand";
-import { CouponsContext } from "./zustand";
+import { CouponsContext } from "../zustand";
 import { v4 as uuidv4 } from "uuid";
 import { Form, Formik } from "formik";
-import { GenericTextField, SubmitButton } from "@/app/components/FormElements";
+import { FormikTextField, SubmitButton } from "@/app/components/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 
@@ -43,7 +43,9 @@ export default function NewCouponModal() {
             }}
             onSubmit={async (values) => {
               try {
-                await addCoupons([values]);
+                await addCoupons([
+                  { ...values, original_amount: values.amount },
+                ]);
               } catch (error) {
                 setErrorMessages((error as Error).message.split("\n"));
                 return;
@@ -61,7 +63,7 @@ export default function NewCouponModal() {
           >
             {(formik) => (
               <Form className="flex flex-col gap-2">
-                <GenericTextField
+                <FormikTextField
                   name="code"
                   label="Kód"
                   iconEnd={
@@ -76,7 +78,7 @@ export default function NewCouponModal() {
                     />
                   }
                 />
-                <GenericTextField
+                <FormikTextField
                   name="amount"
                   label="Suma"
                   type="number"

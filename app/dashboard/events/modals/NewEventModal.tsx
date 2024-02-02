@@ -2,7 +2,7 @@
 
 import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import { EventWithTickets, createNewEvent } from "../serverActions";
+import { EventWithTickets, insertEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Updater } from "use-immer";
@@ -25,7 +25,7 @@ export default function NewEventModal() {
 
   const submit = () => {
     startSubmition(async () => {
-      const { data, error } = await createNewEvent(
+      const { data, error } = await insertEvent(
         new Date(date.toDateString() + " " + time),
         isPublic,
       );

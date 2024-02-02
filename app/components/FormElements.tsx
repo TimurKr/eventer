@@ -33,7 +33,7 @@ export function CustomErrorMessage({
   );
 }
 
-type GenericTextFieldProps = {
+type FormikTextFieldProps = {
   name: string;
   optional?: boolean;
   vertical?: boolean;
@@ -46,8 +46,7 @@ type GenericTextFieldProps = {
   iconEnd?: React.ReactNode;
 };
 
-// // Define input types
-export const GenericTextField = ({
+export const FormikTextField = ({
   name,
   optional = false,
   vertical = false,
@@ -58,7 +57,7 @@ export const GenericTextField = ({
   className,
   iconStart,
   iconEnd,
-}: GenericTextFieldProps) => (
+}: FormikTextFieldProps) => (
   <>
     <Field name={name}>
       {(props: FieldProps) => {
@@ -86,13 +85,17 @@ export const GenericTextField = ({
                   {iconEnd}
                   {(!props.field.value || props.field.value.length < 5) &&
                     (optional ? (
-                      <Badge color={"gray"}>Volitelné</Badge>
+                      <Badge color={"gray"} className="pointer-events-none">
+                        Volitelné
+                      </Badge>
                     ) : (
-                      <Badge color={"red"}>Povinné</Badge>
+                      <Badge color={"red"} className="pointer-events-none">
+                        Povinné
+                      </Badge>
                     ))}
                 </div>
                 <input
-                  className={`m-0 w-full flex-row rounded-lg border-none bg-transparent py-1 placeholder:text-gray-400 ${
+                  className={`z-10 m-0 w-full flex-row rounded-lg border-none bg-transparent py-1 placeholder:text-gray-400 ${
                     iconStart ? "pl-7" : ""
                   } ${type === "number" && iconEnd ? "pe-8" : "pe-1"}`}
                   type={type}
@@ -107,6 +110,22 @@ export const GenericTextField = ({
       }}
     </Field>
   </>
+);
+
+export const FormikSelectField = ({
+  children,
+  name,
+}: {
+  children: React.ReactNode;
+  name: string;
+}) => (
+  <Field
+    name={name}
+    as="select"
+    className="ms-auto rounded-lg border-gray-200 bg-gray-50 py-1"
+  >
+    {children}
+  </Field>
 );
 
 type InstantFieldProps<T> = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   Badge,
   Button,
@@ -751,6 +751,21 @@ function EventRow({ eventId }: { eventId: number }) {
       .tickets.filter((t) => state.selectedTicketIds.includes(t.id)),
   );
 
+  const { higlightedTickets, highlightedCancelledTickets } = useStore(
+    store,
+    (state) => {
+      const e = state.events.find((e) => e.id == eventId)!;
+      return {
+        higlightedTickets: e.tickets.filter((t) =>
+          state.highlightedTicketIds.includes(t.id),
+        ).length,
+        highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
+          state.highlightedTicketIds.includes(t.id),
+        ).length,
+      };
+    },
+  );
+
   return (
     <li key={eventId} className={`flex flex-col`}>
       <div
@@ -921,10 +936,30 @@ function EventRow({ eventId }: { eventId: number }) {
         <div className="overflow-y-hidden">
           <div className="rounded-xl bg-slate-200 p-2">
             <div className="flex items-center gap-2 pb-1">
-              <p className="me-auto ps-2 text-lg font-medium tracking-wider text-gray-900">
+              <p className="ps-2 text-lg font-medium tracking-wider text-gray-900">
                 Lístky
               </p>
-              <p className="text-sm text-gray-600">
+              <div className="flex flex-col text-xs text-gray-500">
+                {higlightedTickets > 0 ||
+                  (highlightedCancelledTickets > 0 && (
+                    <span>
+                      <span className="font-semibold">
+                        {higlightedTickets + highlightedCancelledTickets}{" "}
+                      </span>
+                      nájdených lítkov
+                    </span>
+                  ))}
+                {highlightedCancelledTickets > 0 && (
+                  <span>
+                    z toho{" "}
+                    <span className="font-semibold">
+                      {highlightedCancelledTickets}{" "}
+                    </span>
+                    zrušených
+                  </span>
+                )}
+              </div>
+              <p className="ms-auto text-sm text-gray-600">
                 (Označených: {selectedTickets.length})
               </p>
               <MoveTicketsToDifferentEventModal eventId={event.id} />
@@ -1045,9 +1080,10 @@ function EventRow({ eventId }: { eventId: number }) {
                             </button>
                           </Table.Cell>
                         </Table.Row>
-                        {event.showCancelledTickets && (
-                          <TicketRows eventId={eventId} cancelled={true} />
-                        )}
+                        {event.showCancelledTickets ||
+                          (highlightedCancelledTickets > 0 && (
+                            <TicketRows eventId={eventId} cancelled={true} />
+                          ))}
                       </>
                     )}
                   </Table.Body>
@@ -1085,28 +1121,44 @@ export default function Events(props: {
         ...e,
       })),
       ticketTypes: props.ticketTypes,
+      searchTerm: useSearchParams().get("query") || undefined,
     }),
   ).current;
 
-  const { events, isRefreshing, refresh, search, searchTerm } = useStore(
-    store,
-    (state) => state,
-  );
+  const {
+    events,
+    isRefreshing,
+    refresh,
+    search,
+    searchTerm,
+    highlightedTicketIds,
+  } = useStore(store, (state) => state);
 
-  const searchParams = useSearchParams();
-  if (searchParams.get("search")) search(searchParams.get("search")!);
+  // search once mounted
+  useEffect(() => {
+    if (searchTerm) search(searchTerm);
+  }, []);
 
   return (
     <EventsContext.Provider value={store}>
-      <div className="flex items-center justify-between gap-4 pb-2">
+      <div className="flex items-start justify-between gap-4 pb-2">
         <span className="text-2xl font-bold tracking-wider">Udalosti</span>
         <div className="relative ms-auto max-w-64 grow">
-          <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
+          <div className="pointer-events-none absolute left-0 top-0 grid place-content-center">
             <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
+          </div>
+          <div
+            className={`absolute bottom-0.5 left-8 h-0 overflow-hidden text-xs text-gray-500 ${
+              searchTerm ? "h-4" : ""
+            } transition-all duration-300 ease-in-out`}
+          >
+            {highlightedTicketIds.length} výsledkov
           </div>
           <input
             type="text"
-            className="z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8"
+            className={`z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8 ${
+              searchTerm ? "pb-4" : ""
+            } transition-all duration-300 ease-in-out`}
             placeholder="Hladať"
             value={searchTerm}
             onChange={(e) => search(e.target.value)}
@@ -1135,19 +1187,12 @@ export default function Events(props: {
         role="list"
         className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
       >
-        {events.map((event) => (
-          <EventRow key={event.id} eventId={event.id} />
-        ))}
+        {events.length > 0 ? (
+          events.map((event) => <EventRow key={event.id} eventId={event.id} />)
+        ) : (
+          <p className="text-center">Žiadne udalosti</p>
+        )}
       </ul>
     </EventsContext.Provider>
   );
 }
-
-// export default async function Page() {
-
-//   return (
-//     <div className="flex flex-col">
-//       <EventsAccordion events={events!} ticketTypes={ticketTypes} />
-//     </div>
-//   );
-// }

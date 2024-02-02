@@ -7,5 +7,5 @@ export default async function Page() {
   if (fetchedCouponsResponse.error)
     throw new Error(fetchedCouponsResponse.error.message);
 
-  return <Coupons coupons={fetchedCouponsResponse.data} />;
+  return <Coupons defaultCoupons={fetchedCouponsResponse.data} />;
 }

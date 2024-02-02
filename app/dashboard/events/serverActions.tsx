@@ -78,7 +78,7 @@ export async function fetchContacts() {
 }
 
 // Create new event
-export async function createNewEvent(date: Date, isPublic: boolean) {
+export async function insertEvent(date: Date, isPublic: boolean) {
   const supabase = createServerSupabase(cookies());
   const result = await supabase
     .from("events")
@@ -136,6 +136,7 @@ export async function updateEventPublicStatus(
   return result;
 }
 
+// Create new contacts
 export async function bulkInsertContacts(contacts: InsertContacts[]) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase.from("contacts").insert(contacts).select();
@@ -146,11 +147,38 @@ export async function bulkInsertContacts(contacts: InsertContacts[]) {
 }
 
 // Create new tickets
-export async function bulkCreateTickets(tickets: InsertTickets[]) {
+export async function bulkInsertTickets(tickets: InsertTickets[]) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase.from("tickets").insert(tickets).select();
   if (!res.error) {
     revalidateTag("tickets");
+  }
+  return res;
+}
+
+// Get coupon
+export async function validateCoupon(code: string) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase
+    .from("coupons")
+    .select("*")
+    .eq("code", code)
+    .gt("amount", 0)
+    .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString()}`)
+    .maybeSingle();
+
+  return res;
+}
+
+// Redeem coupon
+export async function redeemCoupon(couponID: number, newAmount: number) {
+  const supabase = createServerSupabase(cookies());
+  const res = await supabase
+    .from("coupons")
+    .update({ amount: newAmount })
+    .match({ id: couponID });
+  if (!res.error) {
+    revalidateTag("coupons");
   }
   return res;
 }

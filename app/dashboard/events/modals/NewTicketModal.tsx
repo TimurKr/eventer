@@ -2,11 +2,12 @@
 
 import {
   CustomErrorMessage,
-  GenericTextField,
+  FormikSelectField,
+  FormikTextField,
   SubmitButton,
 } from "@/app/components/FormElements";
-import { Contacts, Events } from "@/utils/supabase/database.types";
-import { Alert, Button, Modal } from "flowbite-react";
+import { Contacts, Coupons, Events } from "@/utils/supabase/database.types";
+import { Alert, Button, Modal, Spinner } from "flowbite-react";
 import {
   Field,
   FieldArray,
@@ -15,15 +16,17 @@ import {
   FormikHelpers,
   FormikProps,
 } from "formik";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useTransition } from "react";
 import * as Yup from "yup";
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { CurrencyEuroIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import {
   EventWithTickets,
-  bulkCreateTickets,
+  bulkInsertTickets,
   bulkInsertContacts,
   fetchContacts,
+  validateCoupon,
+  redeemCoupon,
 } from "../serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
@@ -35,6 +38,9 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [contacts, setContacts] = useState<Contacts[]>([]);
   const [errorMess, setErrorMess] = useState<string | undefined>();
+  const [code, setCode] = useState<string>("");
+  const [validatingCoupon, startValidatingCoupon] = useTransition();
+  const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -148,7 +154,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
     }
     allContacts = [...allContacts, ...guestContacts];
 
-    const { data: createdTickets, error } = await bulkCreateTickets(
+    const { data: createdTickets, error } = await bulkInsertTickets(
       values.tickets.map((ticket) => ({
         billing_id: billingContact!.id,
         guest_id: allContacts.find((c) =>
@@ -162,11 +168,28 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
         type: ticket.type as string,
         price: ticket.price,
         payment_status: values.paymentStatus as string,
+        coupon_redeemed: coupon?.id || null,
       })),
     );
     if (error) {
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
+    }
+    if (coupon) {
+      const couponAmountUpdate = await redeemCoupon(
+        coupon.id,
+        coupon.amount -
+          Math.min(
+            coupon.amount,
+            createdTickets.map((t) => t.price).reduce((a, b) => a + b, 0),
+          ),
+      );
+      if (couponAmountUpdate.error) {
+        setErrors({
+          tickets: "Chyba pri aplikovaní kupónu: " + couponAmountUpdate.error,
+        });
+        return;
+      }
     }
     addTickets(
       eventId,
@@ -211,13 +234,13 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
               <Form>
                 <p className="ps-1 font-bold text-slate-700">Fakturčné údaje</p>
                 <div className="flex gap-2 rounded-xl bg-slate-200 p-2 shadow-md">
-                  <GenericTextField
+                  <FormikTextField
                     name="billingName"
                     label="Meno"
                     placeHolder="Adam Kováč"
                     vertical
                   />
-                  <GenericTextField
+                  <FormikTextField
                     // type="email"
                     name="billingEmail"
                     label="Email"
@@ -225,7 +248,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                     optional
                     vertical
                   />
-                  <GenericTextField
+                  <FormikTextField
                     name="billingPhone"
                     label="Telefón"
                     placeHolder="0900 123 456"
@@ -239,15 +262,11 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                     >
                       Stav platby
                     </label>
-                    <Field
-                      name="paymentStatus"
-                      as="select"
-                      className=" rounded-lg border-none py-1 shadow-md"
-                    >
+                    <FormikSelectField name="paymentStatus">
                       <option value="zaplatené">Zaplatené</option>
                       <option value="rezervované">Rezervované</option>
                       <option value="zrušené">Zrušené</option>
-                    </Field>
+                    </FormikSelectField>
                     <CustomErrorMessage
                       fieldMeta={getFieldMeta("paymentStatus")}
                     />
@@ -296,7 +315,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                         </Button>
                       </div>
                       {values.tickets && values.tickets.length > 0 ? (
-                        <table className="">
+                        <table className="w-full">
                           <tr>
                             <th className="px-2 text-start text-sm font-normal text-gray-500">
                               Meno
@@ -307,10 +326,10 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                             <th className="px-2 text-start text-sm font-normal text-gray-500">
                               Telefón
                             </th>
-                            <th className="px-2 text-end text-sm font-normal text-gray-500">
+                            <th className="px-2 text-start text-sm font-normal text-gray-500">
                               Typ
                             </th>
-                            <th className="px-2 text-end text-sm font-normal text-gray-500">
+                            <th className="px-2 text-start text-sm font-normal text-gray-500">
                               Cena
                             </th>
                             <th></th>
@@ -319,7 +338,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                             // <div className="flex flex-row items-center gap-2 rounded-xl bg-slate-200 p-2 shadow-md">
                             <tr>
                               <td className="px-1">
-                                <GenericTextField
+                                <FormikTextField
                                   name={`tickets[${index}].name`}
                                   placeHolder={
                                     values.billingName || "Adam Kováč"
@@ -329,7 +348,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                                 />
                               </td>
                               <td className="px-1">
-                                <GenericTextField
+                                <FormikTextField
                                   name={`tickets[${index}].email`}
                                   placeHolder="-"
                                   optional
@@ -337,7 +356,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                                 />
                               </td>
                               <td className="px-1">
-                                <GenericTextField
+                                <FormikTextField
                                   name={`tickets[${index}].phone`}
                                   placeHolder="-"
                                   optional
@@ -345,33 +364,22 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                                 />
                               </td>
                               <td className="px-1">
-                                <Field
+                                <FormikSelectField
                                   name={`tickets[${index}].type`}
-                                  as="select"
-                                  className=" rounded-lg border-none py-1 shadow-md"
                                 >
                                   <option value="standard">Standard</option>
                                   <option value="VIP">VIP</option>
-                                </Field>
+                                </FormikSelectField>
                               </td>
                               <td className="px-1">
-                                <Field
+                                <FormikTextField
                                   name={`tickets[${index}].price`}
                                   type="number"
-                                  className="w-16 rounded-md border-none p-1 text-right shadow-md"
+                                  vertical
+                                  iconEnd={
+                                    <CurrencyEuroIcon className="pointer-events-none h-4 w-4" />
+                                  }
                                 />
-                                {/* {getFieldMeta(`tickets[${index}].price`) &&
-                                  getFieldMeta(`tickets[${index}].price`)
-                                    .touched &&
-                                  getFieldMeta(`tickets[${index}].price`)
-                                    .error && (
-                                    <CustomErrorMessage
-                                      message={
-                                        getFieldMeta(`tickets[${index}].price`)
-                                          .error
-                                      }
-                                    />
-                                  )} */}
                               </td>
                               <td>
                                 <button
@@ -382,19 +390,19 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                                 </button>
                               </td>
                             </tr>
-                            // </div>
                           ))}
-                          <tr>
+                          {/* <tr>
                             <td colSpan={4}></td>
-                            <td className="pt-2 text-end font-bold">
+                            <td className="pt-2 text-end font-medium">
                               <hr />
+                              Spolu:{" "}
                               {values.tickets
                                 .map((t) => t.price)
                                 .reduce((a, b) => a + b, 0)}{" "}
                               €
                             </td>
                             <td></td>
-                          </tr>
+                          </tr> */}
                         </table>
                       ) : (
                         "Žiadne lístky"
@@ -417,9 +425,95 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                     );
                   }
                 })}
-
-                <div className="flex justify-end">
-                  <SubmitButton isSubmitting={isSubmitting} />
+                <hr className="my-8 border-gray-400" />
+                <table className="w-full">
+                  <tr>
+                    <td className="pe-6 ps-2">Lístky</td>
+                    <td className="px-2 text-end">
+                      {values.tickets.reduce((a, b) => a + b.price, 0)} €
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pe-6 ps-2">
+                      <div className="relative me-auto w-40">
+                        <input
+                          type="text"
+                          className={`w-full rounded-lg border-gray-200 bg-gray-50 px-2 py-1 font-mono ${
+                            coupon === null
+                              ? "border-red-500 text-red-500"
+                              : coupon === undefined
+                                ? ""
+                                : "border-green-500 text-green-500"
+                          }`}
+                          placeholder="Kupón"
+                          value={code}
+                          onChange={(e) => {
+                            const newCode = e.target.value.toUpperCase().trim();
+                            if (newCode.length > 8) return;
+                            setCode(newCode);
+                            setCoupon(undefined);
+                            if (newCode.length < 8) return;
+                            startValidatingCoupon(async () => {
+                              const r = await validateCoupon(newCode);
+                              if (r.error) {
+                                setErrorMess(
+                                  "Couldn't validate coupon" + r.error.message,
+                                );
+                                e.target.blur();
+                                return;
+                              }
+                              setCoupon(r.data);
+                              setErrorMess(undefined);
+                              e.target.blur();
+                            });
+                          }}
+                        />
+                        {validatingCoupon ? (
+                          <div className="absolute inset-y-0 end-2 grid place-content-center">
+                            <Spinner />
+                          </div>
+                        ) : coupon ? (
+                          <div className="absolute inset-y-0 end-2 grid place-content-center">
+                            <div className="rounded-md bg-green-500 px-2 py-0.5 font-mono text-xs text-white">
+                              {coupon.amount} €
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pointer-events-none absolute inset-y-0 end-2 grid place-content-center font-mono text-xs text-gray-500">
+                            {code.length}/8
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 text-end">
+                      {coupon
+                        ? -Math.min(
+                            coupon.amount,
+                            values.tickets.reduce((a, b) => a + b.price, 0),
+                          )
+                        : 0}{" "}
+                      €
+                    </td>
+                  </tr>
+                  <tr className="border-t font-bold">
+                    <td className="px-2">Spolu</td>
+                    <td className="px-2 text-end">
+                      {Math.max(
+                        values.tickets.reduce((a, b) => a + b.price, 0) -
+                          (coupon ? coupon.amount : 0),
+                        0,
+                      )}{" "}
+                      €
+                    </td>
+                  </tr>
+                </table>
+                <div className="mt-4 flex items-center justify-end gap-4">
+                  <SubmitButton
+                    isSubmitting={isSubmitting}
+                    label="Vytvoriť"
+                    submittingLabel="Vytváram..."
+                    className="m-0"
+                  />
                 </div>
                 {errorMess && (
                   <Alert color="failure" icon={HiExclamationTriangle}>

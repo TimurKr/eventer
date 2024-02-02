@@ -6,9 +6,10 @@ import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 
 export async function fetchCoupons() {
-  const r = await createServerSupabase(cookies(), ["coupons"])
-    .from("coupons")
-    .select("*");
+  const r = await createServerSupabase(cookies(), ["coupons"]).from("coupons")
+    .select(`*,
+      created_from:tickets!tickets_coupon_created_fkey(id),
+      redeemed_from:tickets!tickets_coupon_redeemed_fkey(id)`);
 
   return r;
 }
