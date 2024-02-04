@@ -25,7 +25,7 @@ import {
   bulkInsertTickets,
   bulkInsertContacts,
   fetchContacts,
-  validateCoupon,
+  validateCouponCode,
   redeemCoupon,
 } from "../serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
@@ -168,7 +168,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
         type: ticket.type as string,
         price: ticket.price,
         payment_status: values.paymentStatus as string,
-        coupon_redeemed: coupon?.id || null,
+        coupon_redeemed_id: coupon?.id || null,
       })),
     );
     if (error) {
@@ -454,7 +454,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                             setCoupon(undefined);
                             if (newCode.length < 8) return;
                             startValidatingCoupon(async () => {
-                              const r = await validateCoupon(newCode);
+                              const r = await validateCouponCode(newCode);
                               if (r.error) {
                                 setErrorMess(
                                   "Couldn't validate coupon" + r.error.message,

@@ -6,6 +6,7 @@ import {
   InsertContacts,
   InsertTickets,
   Tickets,
+  UpdateTickets,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -39,7 +40,9 @@ export async function fetchEvents() {
       `*,
       tickets (*,
         billing:contacts!tickets_billing_id_fkey(*),
-        guest:contacts!tickets_guest_id_fkey(*)
+        guest:contacts!tickets_guest_id_fkey(*),
+        coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
+        coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code)
         )`,
     )
     .order("datetime", { ascending: false });
@@ -149,7 +152,16 @@ export async function bulkInsertContacts(contacts: InsertContacts[]) {
 // Create new tickets
 export async function bulkInsertTickets(tickets: InsertTickets[]) {
   const supabase = createServerSupabase(cookies());
-  const res = await supabase.from("tickets").insert(tickets).select();
+  const res = await supabase
+    .from("tickets")
+    .insert(tickets)
+    .select(
+      `*,
+    billing:contacts!tickets_billing_id_fkey(*),
+    guest:contacts!tickets_guest_id_fkey(*),
+    coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
+    coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code)`,
+    );
   if (!res.error) {
     revalidateTag("tickets");
   }
@@ -157,7 +169,7 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
 }
 
 // Get coupon
-export async function validateCoupon(code: string) {
+export async function validateCouponCode(code: string) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase
     .from("coupons")
@@ -350,7 +362,7 @@ export async function convertTicketsToCoupon(tickets: Tickets[]) {
     .from("tickets")
     .update({
       payment_status: "zrušené",
-      coupon_created: resCreate.data[0].id,
+      coupon_created_id: resCreate.data[0].id,
     })
     .in(
       "id",

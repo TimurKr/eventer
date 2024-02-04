@@ -43,6 +43,7 @@ export interface Database {
           created_at: string;
           id: number;
           original_amount: number;
+          temp_id: string | null;
           valid_until: string | null;
         };
         Insert: {
@@ -51,6 +52,7 @@ export interface Database {
           created_at?: string;
           id?: number;
           original_amount?: number;
+          temp_id?: string | null;
           valid_until?: string | null;
         };
         Update: {
@@ -59,6 +61,7 @@ export interface Database {
           created_at?: string;
           id?: number;
           original_amount?: number;
+          temp_id?: string | null;
           valid_until?: string | null;
         };
         Relationships: [];
@@ -88,8 +91,8 @@ export interface Database {
         Row: {
           arrived: boolean;
           billing_id: number;
-          coupon_created: number | null;
-          coupon_redeemed: number | null;
+          coupon_created_id: number | null;
+          coupon_redeemed_id: number | null;
           created_at: string;
           event_id: number;
           guest_id: number;
@@ -102,8 +105,8 @@ export interface Database {
         Insert: {
           arrived?: boolean;
           billing_id: number;
-          coupon_created?: number | null;
-          coupon_redeemed?: number | null;
+          coupon_created_id?: number | null;
+          coupon_redeemed_id?: number | null;
           created_at?: string;
           event_id: number;
           guest_id: number;
@@ -116,8 +119,8 @@ export interface Database {
         Update: {
           arrived?: boolean;
           billing_id?: number;
-          coupon_created?: number | null;
-          coupon_redeemed?: number | null;
+          coupon_created_id?: number | null;
+          coupon_redeemed_id?: number | null;
           created_at?: string;
           event_id?: number;
           guest_id?: number;
@@ -136,15 +139,15 @@ export interface Database {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_coupon_created_fkey";
-            columns: ["coupon_created"];
+            foreignKeyName: "tickets_coupon_created_id_fkey";
+            columns: ["coupon_created_id"];
             isOneToOne: false;
             referencedRelation: "coupons";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_coupon_redeemed_fkey";
-            columns: ["coupon_redeemed"];
+            foreignKeyName: "tickets_coupon_redeemed_id_fkey";
+            columns: ["coupon_redeemed_id"];
             isOneToOne: false;
             referencedRelation: "coupons";
             referencedColumns: ["id"];

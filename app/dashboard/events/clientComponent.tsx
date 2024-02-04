@@ -7,6 +7,7 @@ import {
   Checkbox,
   Dropdown,
   Progress,
+  Spinner,
   Table,
   Tooltip,
 } from "flowbite-react";
@@ -16,6 +17,7 @@ import {
   EventWithTickets,
   TicketTypes,
   bulkInsertContacts,
+  convertTicketsToCoupon,
   deleteEvent,
   deleteTickets,
   fetchEvents,
@@ -53,8 +55,14 @@ import { removeAllListeners } from "process";
 import ChangeDateModal from "./modals/ChangeDateModal";
 import MoveTicketsToDifferentEventModal from "./modals/MoveTicketsToDifferentEventModal";
 import ConvertToCouponModal from "./modals/ConvertToCouponModal";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  TrashIcon as TrashIconOutline,
+} from "@heroicons/react/24/outline";
 import Link from "next/link";
+import Loading from "./loading";
+import { optimisticUpdate } from "@/utils/misc";
+import { Tickets, UpdateTickets } from "@/utils/supabase/database.types";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -214,6 +222,7 @@ function TicketRow({
     removeTickets,
     addTickets,
     toggleSelectedTicket,
+    refresh,
   } = useStore(store, (state) => state);
 
   const event = useStore(
@@ -495,19 +504,6 @@ function TicketRow({
             }
           />
         )}
-        {ticket.coupon_created && (
-          <Tooltip
-            content={`Lístok bol premenený na kupón. Kliknutím zobrazíte`}
-          >
-            <Link
-              className="flex items-center justify-center gap-2 text-gray-400 underline hover:text-gray-500 active:text-gray-600"
-              href={"/dashboard/coupons"}
-            >
-              <TicketIcon className="h-4 w-4" />
-              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-            </Link>
-          </Tooltip>
-        )}
       </Table.Cell>
       <Table.Cell className="p-1 text-end">
         <select
@@ -566,8 +562,6 @@ function TicketRow({
         </select>
       </Table.Cell>
       <Table.Cell className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
-        {/* <InstantTextField
-          type="text" */}
         <InstantTextAreaField
           autoexpand
           className="transit absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
@@ -583,6 +577,68 @@ function TicketRow({
             })
           }
         />
+      </Table.Cell>
+      <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
+        <div className="flex flex-col gap-2">
+          {ticket.coupon_redeemed && (
+            <div className="group flex items-center gap-2">
+              <Tooltip
+                content={`Na kúpu bol použitý kupón. Kliknutím zobrazíte`}
+                placement="left"
+              >
+                <Link
+                  className="text-green-400 active:text-green-500"
+                  href={{
+                    pathname: "/dashboard/coupons",
+                    query: { query: "=" + ticket.coupon_redeemed.code },
+                  }}
+                >
+                  <TicketIcon className="h-4 w-4 hover:scale-105" />
+                </Link>
+              </Tooltip>
+              <button
+                className="hidden text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600 group-hover:block"
+                onClick={() =>
+                  optimisticUpdate({
+                    value: {},
+                    localUpdate: () =>
+                      setPartialTicket({
+                        id: ticket.id,
+                        coupon_redeemed_id: null,
+                        coupon_redeemed: null,
+                      }),
+                    databaseUpdate: async () =>
+                      updateTicketFields({
+                        id: ticket.id,
+                        coupon_redeemed_id: null,
+                      }),
+                    onFailRefresh: refresh,
+                    confirmation:
+                      "Naozaj chcete zrušiť prepojenie na tento kupón?",
+                  })
+                }
+              >
+                <TrashIconOutline className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {ticket.coupon_created && (
+            <Tooltip
+              content={`Z lístku bol vytvorený kupón. Kliknutím zobrazíte`}
+              placement="left"
+            >
+              <Link
+                className="text-red-500 active:text-red-600"
+                href={{
+                  pathname: "/dashboard/coupons",
+                  query: { query: "=" + ticket.coupon_created.code },
+                }}
+              >
+                <TicketIcon className="h-4 w-4 hover:scale-105" />
+              </Link>
+            </Tooltip>
+          )}
+        </div>
       </Table.Cell>
       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
         <InstantTextField
@@ -625,13 +681,6 @@ function TicketRow({
             <EllipsisHorizontalIcon className="h-5 w-5 rounded-md border border-gray-200 bg-gray-50 text-gray-700 hover:cursor-pointer hover:bg-gray-200" />
           )}
         >
-          <Dropdown.Item
-            className="text-cyan-700"
-            icon={HiOutlineTicket}
-            onClick={() => alert("Táto funkcia ešte nefunguje")}
-          >
-            Premeň na kupón
-          </Dropdown.Item>
           <Dropdown.Item
             className="text-red-500"
             icon={HiTrash}
@@ -712,7 +761,7 @@ function TicketRows({
         ))}
       {tickets[0].payment_status != "zrušené" && (
         <Table.Row className="h-1">
-          <Table.Cell className="p-1" colSpan={7} />
+          <Table.Cell className="p-1" colSpan={8} />
           <Table.Cell className="p-1 text-end font-bold tracking-wider text-black">
             <hr />
             {tickets.reduce((acc, t) => acc + t.price, 0)} €
@@ -1051,6 +1100,9 @@ function EventRow({ eventId }: { eventId: number }) {
                       Poznámka
                     </Table.HeadCell>
                     <Table.HeadCell className="p-1 text-end">
+                      Kupón
+                    </Table.HeadCell>
+                    <Table.HeadCell className="p-1 text-end">
                       Cena
                     </Table.HeadCell>
                     <Table.HeadCell className="p-1">
@@ -1080,10 +1132,10 @@ function EventRow({ eventId }: { eventId: number }) {
                             </button>
                           </Table.Cell>
                         </Table.Row>
-                        {event.showCancelledTickets ||
-                          (highlightedCancelledTickets > 0 && (
-                            <TicketRows eventId={eventId} cancelled={true} />
-                          ))}
+                        {(event.showCancelledTickets ||
+                          highlightedCancelledTickets > 0) && (
+                          <TicketRows eventId={eventId} cancelled={true} />
+                        )}
                       </>
                     )}
                   </Table.Body>
@@ -1099,29 +1151,22 @@ function EventRow({ eventId }: { eventId: number }) {
   );
 }
 
-const defaultEventState = {
-  lockedArrived: true,
-  isExpanded: false,
-  showCancelledTickets: false,
-  selectedTicketIds: [],
-};
-
-export default function Events(props: {
-  events: EventWithTickets[];
-  ticketTypes: TicketTypes[];
-}) {
+export default function Events() {
+  // props: {
+  // events: EventWithTickets[];
+  // ticketTypes: TicketTypes[];}
   const store = useRef(
     createEventsStore({
-      events: props.events.map((e) => ({
-        ...defaultEventState,
-        ...e,
-      })),
-      allEvents: props.events.map((e) => ({
-        ...defaultEventState,
-        ...e,
-      })),
-      ticketTypes: props.ticketTypes,
-      searchTerm: useSearchParams().get("query") || undefined,
+      // events: props.events.map((e) => ({
+      //   ...defaultEventState,
+      //   ...e,
+      // })),
+      // allEvents: props.events.map((e) => ({
+      //   ...defaultEventState,
+      //   ...e,
+      // })),
+      // ticketTypes: props.ticketTypes,
+      isRefreshing: true,
     }),
   ).current;
 
@@ -1134,9 +1179,12 @@ export default function Events(props: {
     highlightedTicketIds,
   } = useStore(store, (state) => state);
 
-  // search once mounted
+  const q = useSearchParams().get("query");
+  // refresh and search once mounted
   useEffect(() => {
-    if (searchTerm) search(searchTerm);
+    refresh().then(() => {
+      if (q) search(q);
+    });
   }, []);
 
   return (
@@ -1187,10 +1235,12 @@ export default function Events(props: {
         role="list"
         className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
       >
-        {events.length > 0 ? (
+        {events != undefined && events.length > 0 ? (
           events.map((event) => <EventRow key={event.id} eventId={event.id} />)
+        ) : isRefreshing ? (
+          <Loading />
         ) : (
-          <p className="text-center">Žiadne udalosti</p>
+          <p className="text-center">Nenašli sa žiadne udalosti</p>
         )}
       </ul>
     </EventsContext.Provider>

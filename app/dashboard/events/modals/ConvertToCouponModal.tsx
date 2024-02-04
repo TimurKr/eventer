@@ -15,8 +15,10 @@ import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 export default function ConvertToCouponModal({
   eventId,
+  disabled,
 }: {
   eventId: Events["id"];
+  disabled?: boolean;
 }) {
   const [isSubmitting, startSubmition] = useTransition();
   const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
@@ -36,12 +38,13 @@ export default function ConvertToCouponModal({
   return (
     <>
       <button
-        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800"
+        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800 disabled:!bg-gray-400"
         onClick={() =>
           selectedTickets.length == 0
             ? alert("Zvolte aspoň jeden lístok")
             : setIsOpen(true)
         }
+        disabled={disabled}
       >
         Premeniť na kupón
       </button>

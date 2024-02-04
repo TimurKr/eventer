@@ -3,8 +3,15 @@ import { immer } from "zustand/middleware/immer";
 import { persist } from "zustand/middleware";
 import { createContext } from "react";
 import Fuse from "fuse.js";
-import { Coupons, fetchCoupons, insertCoupons } from "./serverActions";
+import {
+  Coupons,
+  deleteCoupon,
+  fetchCoupons,
+  insertCoupons,
+} from "./serverActions";
 import { InsertCoupons } from "@/utils/supabase/database.types";
+import moment from "moment";
+import { validateCoupon } from "./utils";
 
 function search(coupons: Coupons[], term: string): Coupons[] {
   if (term === "") {
@@ -12,7 +19,16 @@ function search(coupons: Coupons[], term: string): Coupons[] {
   }
 
   const fuse = new Fuse<Coupons>(coupons, {
-    keys: ["code"],
+    keys: [
+      "code",
+      ["created_from", "redeemed_from"].flatMap((key1) =>
+        ["guest", "billing"].flatMap((key2) =>
+          ["name", "email", "phone"].flatMap((key3) =>
+            [key1, key2, key3].join("."),
+          ),
+        ),
+      ),
+    ].flat(),
     shouldSort: true,
   });
 
@@ -31,17 +47,22 @@ type Actions = {
   search: (term: string, allCoupons?: Coupons[]) => void;
 
   addCoupons: (coupons: InsertCoupons[]) => Promise<void>;
+  removeCoupon: (coupon: { id: Coupons["id"] }) => void;
+
+  setPartialCoupon: (
+    coupon: Partial<Coupons> & NonNullable<{ id: Coupons["id"] }>,
+  ) => Promise<void>;
 };
 
 export type CouponsStore = ReturnType<typeof createCouponsStore>;
 
 export const createCouponsStore = (props?: Partial<State>) => {
-  const defaultProps: State = {
-    coupons: [],
-    allCoupons: [],
+  const defaultProps = {
+    // coupons: [],
+    // allCoupons: [],
     searchTerm: "",
     isRefreshing: false,
-  };
+  } as unknown as State;
   return createStore<State & Actions>()(
     persist(
       immer((set, get) => ({
@@ -51,12 +72,21 @@ export const createCouponsStore = (props?: Partial<State>) => {
           set((state) => {
             state.isRefreshing = !state.isRefreshing;
           });
-          const { data: allCoupons, error } = await fetchCoupons();
-          if (error) {
-            console.error(error);
+          const fetchedCouponsResponse = await fetchCoupons();
+
+          if (fetchedCouponsResponse.error) {
+            throw new Error(fetchedCouponsResponse.error.message);
           } else {
             set((state) => {
-              state.allCoupons = allCoupons;
+              state.allCoupons = fetchedCouponsResponse.data.map((c) => ({
+                ...c,
+                validate() {
+                  return (
+                    this.amount > 0 &&
+                    moment(this.valid_until).endOf("day").isAfter(moment())
+                  );
+                },
+              }));
               state.isRefreshing = false;
               state.coupons = search(state.allCoupons, state.searchTerm);
             });
@@ -80,6 +110,25 @@ export const createCouponsStore = (props?: Partial<State>) => {
           const r = await insertCoupons(coupons);
           if (r.error) throw new Error(r.error.message);
           get().refresh();
+        },
+        removeCoupon: (coupon) => {
+          set((state) => {
+            state.allCoupons = state.allCoupons.filter(
+              (c) => c.id !== coupon.id,
+            );
+            state.coupons = search(state.allCoupons, state.searchTerm);
+          });
+        },
+
+        setPartialCoupon: async (coupon) => {
+          set((state) => {
+            const index = state.allCoupons.findIndex((c) => c.id === coupon.id);
+            state.allCoupons[index] = { ...state.allCoupons[index], ...coupon };
+            state.allCoupons[index].valid = validateCoupon(
+              state.allCoupons[index],
+            );
+            state.coupons = search(state.allCoupons, state.searchTerm);
+          });
         },
       })),
       {
