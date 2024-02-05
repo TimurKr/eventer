@@ -1,8 +1,7 @@
 "use client";
 
-import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
-import { useContext, useRef, useState, useTransition } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { Alert, Modal } from "flowbite-react";
+import { useContext, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStore } from "zustand";
 import { CouponsContext } from "../zustand";
@@ -11,11 +10,10 @@ import { Form, Formik } from "formik";
 import { FormikTextField, SubmitButton } from "@/app/components/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
+import { HiOutlineExclamationCircle } from "react-icons/hi2";
 
 export default function NewCouponModal() {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
-
-  const code = uuidv4().slice(0, 8).toUpperCase();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -95,50 +93,17 @@ export default function NewCouponModal() {
               </Form>
             )}
           </Formik>
-          {/* <form className="flex flex-col" action={submit}>
-            <label className="mb-2" htmlFor="code">
-              Kód
-            </label>
-            <input
-              className="rounded-md border-gray-200 bg-transparent px-2 py-0.5"
-              type="text"
-              name="code"
-              id="code"
-              required
-              defaultValue={code}
-            />
-            <label className="mb-2 mt-4" htmlFor="amount">
-              Suma
-            </label>
-            <input
-              className="rounded-md border-gray-200 bg-transparent px-2 py-0.5"
-              type="number"
-              name="amount"
-              id="amount"
-              required
-              defaultValue="100"
-            />
-
-            <Button
-              type="submit"
-              size="sm"
-              // className="mt-4 rounded-md bg-blue-600 py-1 text-white shadow-md hover:bg-blue-700 hover:shadow-none"
-              isProcessing={isSubmitting}
+          {errorMessages.length > 0 && (
+            <Alert
+              color="failure"
+              className="mt-4"
+              icon={HiOutlineExclamationCircle}
             >
-              {isSubmitting ? "Vytváram..." : "Vytvoriť"}
-            </Button>
-            {errorMessages.length > 0 && (
-              <Alert
-                color="failure"
-                className="mt-4"
-                icon={HiOutlineExclamationCircle}
-              >
-                {errorMessages.map((message) => (
-                  <p>{message}</p>
-                ))}
-              </Alert>
-            )}
-          </form> */}
+              {errorMessages.map((message) => (
+                <p>{message}</p>
+              ))}
+            </Alert>
+          )}
         </Modal.Body>
       </Modal>
     </>

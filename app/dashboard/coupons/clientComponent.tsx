@@ -10,12 +10,10 @@ import {
   MagnifyingGlassIcon,
   XCircleIcon,
   ArrowTopRightOnSquareIcon,
-  ArrowUpRightIcon,
   PlusCircleIcon,
-  PlusIcon,
-  XMarkIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { XCircleIcon as XCircleIconSolid } from "@heroicons/react/24/solid";
 import { Badge, Datepicker } from "flowbite-react";
 import Link from "next/link";
 import Loading from "../events/loading";
@@ -85,9 +83,17 @@ export default function Coupons() {
             <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
               <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
             </div>
+            {searchTerm && (
+              <button
+                onClick={() => search("")}
+                className="absolute right-0 top-0 grid h-full place-content-center px-2 text-gray-400 hover:scale-105 hover:text-gray-500 active:text-gray-600"
+              >
+                <XCircleIconSolid className="h-4 w-4" />
+              </button>
+            )}
             <input
               type="text"
-              className="z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8"
+              className="z-10 w-full rounded-md border-gray-200 bg-transparent px-8 py-0.5"
               placeholder="Hladať"
               value={searchTerm}
               onChange={(e) => search(e.target.value)}
@@ -346,9 +352,9 @@ export default function Coupons() {
                                   ? "\n\nVymazanie tohoto kupónu nijako neovplyvní lískty, na ktoré bol kupón už použitý, alebo z ktorých bol vytvorený."
                                   : ""),
                               value: { id: coupon.id },
-                              onFailRefresh: refresh,
                               localUpdate: removeCoupon,
                               databaseUpdate: deleteCoupon,
+                              localRevert: refresh,
                               loadingMessage: "Vymazávam kupón",
                               successMessage: "Kupón vymazaný",
                             })

@@ -1,30 +1,25 @@
 "use client";
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import {
   Badge,
   Button,
   Checkbox,
   Dropdown,
   Progress,
-  Spinner,
   Table,
   Tooltip,
 } from "flowbite-react";
-import { HiChevronDown, HiOutlineTicket, HiTrash } from "react-icons/hi2";
+import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import NewTicketModal from "./modals/NewTicketModal";
 import {
   EventWithTickets,
-  TicketTypes,
   bulkInsertContacts,
-  convertTicketsToCoupon,
   deleteEvent,
   deleteTickets,
-  fetchEvents,
-  fetchTicketTypes,
   mergeContacts,
   updateContactFields,
-  updateEventPublicStatus,
+  updateEventFields,
   updateTicketFields,
   updateTicketPaymentStatus,
 } from "./serverActions";
@@ -38,8 +33,8 @@ import {
   LockClosedIcon,
   LockOpenIcon,
   MagnifyingGlassIcon,
-  TicketIcon,
   TrashIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/solid";
 import { useSearchParams } from "next/navigation";
 import NewEventModal from "./modals/NewEventModal";
@@ -51,18 +46,12 @@ import {
 import { contactsEqual } from "./utils";
 import { string as yupString, number as yupNumber } from "yup";
 import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import { removeAllListeners } from "process";
 import ChangeDateModal from "./modals/ChangeDateModal";
 import MoveTicketsToDifferentEventModal from "./modals/MoveTicketsToDifferentEventModal";
 import ConvertToCouponModal from "./modals/ConvertToCouponModal";
-import {
-  ArrowTopRightOnSquareIcon,
-  TrashIcon as TrashIconOutline,
-} from "@heroicons/react/24/outline";
-import Link from "next/link";
 import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
-import { Tickets, UpdateTickets } from "@/utils/supabase/database.types";
+import CouponRelationManager from "./modals/CouponRelationManager";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -91,26 +80,17 @@ function LinkUnlinkContact({
             content={`Máte ${identicalContactFound} rôznych kontaktov s týmito údajmi. Kliknutím ich spojíte do jedného synchronizovaného.`}
           >
             <button
-              onClick={async () => {
-                const toastId = toast.loading("Spájam kontakty...");
-                const r = await mergeContacts(ticket[type]!);
-                if (r?.error) {
-                  toast.update(toastId, {
-                    render: r.error.message,
-                    type: "error",
-                    isLoading: false,
-                    closeButton: true,
-                  });
-                  return;
-                }
-                refresh();
-                toast.update(toastId, {
-                  render: "Kontakty spojené",
-                  type: "success",
-                  isLoading: false,
-                  autoClose: 1500,
-                });
-              }}
+              onClick={() =>
+                optimisticUpdate({
+                  value: {},
+                  localUpdate: () => {},
+                  databaseUpdate: () => mergeContacts(ticket[type]!),
+                  localRevert: () => {},
+                  onSuccessfulUpdate: refresh,
+                  loadingMessage: "Spájam kontakty...",
+                  successMessage: "Kontakty spojené",
+                })
+              }
             >
               <LiaLinkSolid
                 className={`inline h-4 w-4 text-green-500 hover:scale-105 active:scale-110 active:text-green-700`}
@@ -136,6 +116,7 @@ function LinkUnlinkContact({
           >
             <button
               onClick={async () => {
+                // TODO: Implement transaction
                 const toastId = toast.loading("Vytváram kópiu kontaktu...");
                 const { id, created_at, ...contactData } = ticket[type]!;
                 const r = await bulkInsertContacts([contactData]);
@@ -222,7 +203,6 @@ function TicketRow({
     removeTickets,
     addTickets,
     toggleSelectedTicket,
-    refresh,
   } = useStore(store, (state) => state);
 
   const event = useStore(
@@ -531,25 +511,13 @@ function TicketRow({
               )
             )
               IDs = [ticket.id];
-            const toastId = toast.loading("Ukladám...");
-            const originalStatus = ticket.payment_status;
-            setTicketsStatus(IDs, e.target.value);
-            const r = await updateTicketPaymentStatus(IDs, e.target.value);
-            if (r.error) {
-              setTicketsStatus(IDs, originalStatus);
-              toast.update(toastId, {
-                render: r.error.message,
-                type: "error",
-                isLoading: false,
-                closeButton: true,
-              });
-              return;
-            }
-            toast.update(toastId, {
-              render: "Status lístkov zmenený",
-              type: "success",
-              isLoading: false,
-              autoClose: 1500,
+            optimisticUpdate({
+              value: {},
+              localUpdate: () => setTicketsStatus(IDs, e.target.value),
+              databaseUpdate: () =>
+                updateTicketPaymentStatus(IDs, e.target.value),
+              localRevert: () => setTicketsStatus(IDs, ticket.payment_status),
+              successMessage: "Status lístkov zmenený",
             });
           }}
           value={ticket.payment_status}
@@ -579,65 +547,9 @@ function TicketRow({
         />
       </Table.Cell>
       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
-        <div className="flex flex-col gap-2">
-          {ticket.coupon_redeemed && (
-            <div className="group flex items-center gap-2">
-              <Tooltip
-                content={`Na kúpu bol použitý kupón. Kliknutím zobrazíte`}
-                placement="left"
-              >
-                <Link
-                  className="text-green-400 active:text-green-500"
-                  href={{
-                    pathname: "/dashboard/coupons",
-                    query: { query: "=" + ticket.coupon_redeemed.code },
-                  }}
-                >
-                  <TicketIcon className="h-4 w-4 hover:scale-105" />
-                </Link>
-              </Tooltip>
-              <button
-                className="hidden text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600 group-hover:block"
-                onClick={() =>
-                  optimisticUpdate({
-                    value: {},
-                    localUpdate: () =>
-                      setPartialTicket({
-                        id: ticket.id,
-                        coupon_redeemed_id: null,
-                        coupon_redeemed: null,
-                      }),
-                    databaseUpdate: async () =>
-                      updateTicketFields({
-                        id: ticket.id,
-                        coupon_redeemed_id: null,
-                      }),
-                    onFailRefresh: refresh,
-                    confirmation:
-                      "Naozaj chcete zrušiť prepojenie na tento kupón?",
-                  })
-                }
-              >
-                <TrashIconOutline className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          {ticket.coupon_created && (
-            <Tooltip
-              content={`Z lístku bol vytvorený kupón. Kliknutím zobrazíte`}
-              placement="left"
-            >
-              <Link
-                className="text-red-500 active:text-red-600"
-                href={{
-                  pathname: "/dashboard/coupons",
-                  query: { query: "=" + ticket.coupon_created.code },
-                }}
-              >
-                <TicketIcon className="h-4 w-4 hover:scale-105" />
-              </Link>
-            </Tooltip>
-          )}
+        <div className="flex flex-col justify-center py-1">
+          <CouponRelationManager ticket={ticket} type={"redeemed"} />
+          <CouponRelationManager ticket={ticket} type={"created"} />
         </div>
       </Table.Cell>
       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
@@ -684,34 +596,18 @@ function TicketRow({
           <Dropdown.Item
             className="text-red-500"
             icon={HiTrash}
-            onClick={async () => {
-              if (
-                !confirm(
+            onClick={() =>
+              optimisticUpdate({
+                confirmation:
                   "Naozaj chcete vymazať tento lístok? Zvážte iba zmenu statusu na zrušené.",
-                )
-              )
-                return;
-              const toastId = toast.loading("Vymazávam...");
-              const removedTicket = ticket;
-              removeTickets([ticket.id]);
-              const r = await deleteTickets([ticket.id]);
-              if (r.error) {
-                addTickets(ticket.event_id, [removedTicket]);
-                toast.update(toastId, {
-                  render: r.error.message,
-                  type: "error",
-                  isLoading: false,
-                  closeButton: true,
-                });
-                return;
-              }
-              toast.update(toastId, {
-                render: "Lístok vymazaný",
-                type: "success",
-                isLoading: false,
-                autoClose: 1500,
-              });
-            }}
+                value: {},
+                localUpdate: () => removeTickets([ticket.id]),
+                databaseUpdate: () => deleteTickets([ticket.id]),
+                localRevert: () => addTickets(event.id, [ticket]),
+                loadingMessage: "Vymazávam...",
+                successMessage: "Lístok vymazaný",
+              })
+            }
           >
             Vymazať
           </Dropdown.Item>
@@ -785,10 +681,10 @@ function EventRow({ eventId }: { eventId: number }) {
     searchTerm,
     removeEvent,
     addEvent,
+    setPartialEvent,
     removeTickets,
     addTickets,
     toggleSelectedTicket,
-    toggleEventIsPublic,
     toggleEventIsExpanded,
     toggleEventLockedArrived,
     toggleEventShowCancelledTickets,
@@ -910,18 +806,17 @@ function EventRow({ eventId }: { eventId: number }) {
         <div className="flex items-start justify-end gap-2 overflow-y-hidden p-1">
           <ChangeDateModal event={event} />
           <Button
-            onClick={async () => {
-              toggleEventIsPublic(event.id);
-              const r = await updateEventPublicStatus(
-                event.id,
-                !event.is_public,
-              );
-              if (r.error) {
-                toggleEventIsPublic(event.id);
-                alert(r.error.message);
-                return;
-              }
-            }}
+            onClick={() =>
+              optimisticUpdate<EventWithTickets, "id">({
+                value: { id: event.id, is_public: !event.is_public },
+                localUpdate: setPartialEvent,
+                databaseUpdate: updateEventFields,
+                localRevert: () => setPartialEvent(event),
+                loadingMessage: "Mením status...",
+                successMessage: "Status zmenený",
+                hideToast: true,
+              })
+            }
             size={"xs"}
           >
             {event.is_public ? (
@@ -937,34 +832,21 @@ function EventRow({ eventId }: { eventId: number }) {
             )}
           </Button>
           <Button
-            // disabled={event.tickets.length > 0}
-            onClick={async () => {
+            onClick={() => {
               if (event.tickets.length > 0) {
                 alert(
                   "Nemôžete vymazať udalosť, ktorá má predané lístky. Najprv vymažte lístky.",
                 );
                 return;
               }
-              if (!confirm("Naozaj chcete vymazať túto udalosť?")) return;
-              const removedEvent = event;
-              removeEvent(event.id);
-              const toastId = toast.loading("Vymazávam...");
-              const r = await deleteEvent(event.id);
-              if (r.error) {
-                addEvent(removedEvent);
-                toast.update(toastId, {
-                  render: r.error.message,
-                  type: "error",
-                  isLoading: false,
-                  closeButton: true,
-                });
-                return;
-              }
-              toast.update(toastId, {
-                render: "Udalosť vymazaná",
-                type: "success",
-                isLoading: false,
-                autoClose: 1500,
+              optimisticUpdate({
+                confirmation: "Naozaj chcete vymazať túto udalosť?",
+                value: {},
+                localUpdate: () => removeEvent(event.id),
+                databaseUpdate: () => deleteEvent(event.id),
+                localRevert: () => addEvent(event),
+                loadingMessage: "Vymazávam...",
+                successMessage: "Udalosť vymazaná",
               });
             }}
             size={"xs"}
@@ -1015,34 +897,21 @@ function EventRow({ eventId }: { eventId: number }) {
               <ConvertToCouponModal eventId={event.id} />
               <button
                 className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 active:bg-red-800"
-                onClick={async () => {
-                  if (
-                    !confirm(
-                      `POZOR! Táto akcia je nevratná, stratíte všetky údaje. Naozaj chcete vymazať označené lístky (${selectedTickets.length})? Zvážte iba zmenu statusu na zrušené.`,
-                    )
-                  )
-                    return;
-                  const removedTickets = selectedTickets;
-                  const toastId = toast.loading("Vymazávam...");
-                  removeTickets(removedTickets.map((t) => t.id));
-                  const r = await deleteTickets(
-                    removedTickets.map((t) => t.id),
-                  );
-                  if (r.error) {
-                    addTickets(event.id, removedTickets);
-                    toast.update(toastId, {
-                      render: r.error.message,
-                      type: "error",
-                      isLoading: false,
-                      closeButton: true,
-                    });
+                onClick={() => {
+                  if (selectedTickets.length === 0) {
+                    alert("Zvolte aspoň jeden lístok");
                     return;
                   }
-                  toast.update(toastId, {
-                    render: "Lístky vymazané",
-                    type: "success",
-                    isLoading: false,
-                    autoClose: 1500,
+                  optimisticUpdate({
+                    confirmation: `POZOR! Táto akcia je nevratná, stratíte všetky údaje. Naozaj chcete vymazať označené lístky (${selectedTickets.length})? Zvážte iba zmenu statusu na zrušené.`,
+                    value: selectedTickets.map((t) => t.id),
+                    localUpdate: () =>
+                      removeTickets(selectedTickets.map((t) => t.id)),
+                    databaseUpdate: () =>
+                      deleteTickets(selectedTickets.map((t) => t.id)),
+                    localRevert: () => addTickets(event.id, selectedTickets),
+                    loadingMessage: "Vymazávam...",
+                    successMessage: "Lístky vymazané",
                   });
                 }}
               >
@@ -1151,21 +1020,9 @@ function EventRow({ eventId }: { eventId: number }) {
   );
 }
 
-export default function Events() {
-  // props: {
-  // events: EventWithTickets[];
-  // ticketTypes: TicketTypes[];}
+export default function EventsComponent() {
   const store = useRef(
     createEventsStore({
-      // events: props.events.map((e) => ({
-      //   ...defaultEventState,
-      //   ...e,
-      // })),
-      // allEvents: props.events.map((e) => ({
-      //   ...defaultEventState,
-      //   ...e,
-      // })),
-      // ticketTypes: props.ticketTypes,
       isRefreshing: true,
     }),
   ).current;
@@ -1179,8 +1036,8 @@ export default function Events() {
     highlightedTicketIds,
   } = useStore(store, (state) => state);
 
-  const q = useSearchParams().get("query");
   // refresh and search once mounted
+  const q = useSearchParams().get("query");
   useEffect(() => {
     refresh().then(() => {
       if (q) search(q);
@@ -1192,9 +1049,17 @@ export default function Events() {
       <div className="flex items-start justify-between gap-4 pb-2">
         <span className="text-2xl font-bold tracking-wider">Udalosti</span>
         <div className="relative ms-auto max-w-64 grow">
-          <div className="pointer-events-none absolute left-0 top-0 grid place-content-center">
-            <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
+          <div className="pointer-events-none absolute left-0 top-0 grid h-full place-content-center px-2">
+            <MagnifyingGlassIcon className="h-4 w-4 text-gray-500" />
           </div>
+          {searchTerm && (
+            <button
+              onClick={() => search("")}
+              className="absolute right-0 top-0 grid h-full place-content-center px-2 text-gray-400 hover:scale-105 hover:text-gray-500 active:text-gray-600"
+            >
+              <XCircleIcon className="h-4 w-4" />
+            </button>
+          )}
           <div
             className={`absolute bottom-0.5 left-8 h-0 overflow-hidden text-xs text-gray-500 ${
               searchTerm ? "h-4" : ""
@@ -1204,7 +1069,7 @@ export default function Events() {
           </div>
           <input
             type="text"
-            className={`z-10 w-full rounded-md border-gray-200 bg-transparent py-0.5 ps-8 ${
+            className={`z-10 w-full rounded-md border-gray-200 bg-transparent px-8 py-0.5 ${
               searchTerm ? "pb-4" : ""
             } transition-all duration-300 ease-in-out`}
             placeholder="Hladať"

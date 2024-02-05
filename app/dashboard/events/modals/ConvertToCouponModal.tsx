@@ -1,13 +1,10 @@
 "use client";
 
-import { Alert, Badge, Modal, Progress, Spinner } from "flowbite-react";
+import { Alert, Modal, Spinner } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import {
-  bulkUpdateTicketFields,
-  convertTicketsToCoupon,
-} from "../serverActions";
+import { convertTicketsToCoupon } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { Events, Tickets } from "@/utils/supabase/database.types";
+import { Events } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { EventsContext } from "../zustand";
 import { SubmitButton } from "@/app/components/FormElements";
@@ -21,14 +18,13 @@ export default function ConvertToCouponModal({
   disabled?: boolean;
 }) {
   const [isSubmitting, startSubmition] = useTransition();
-  const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
   const store = useContext(EventsContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { allEvents, ticketTypes, refresh } = useStore(store, (state) => state);
+  const { ticketTypes, refresh } = useStore(store, (state) => state);
   const selectedTickets = useStore(store, (state) =>
     state.allEvents
       .find((e) => e.id === eventId)!

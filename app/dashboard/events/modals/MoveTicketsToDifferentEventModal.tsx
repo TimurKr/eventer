@@ -16,7 +16,6 @@ export default function MoveTicketsToDifferentEventModal({
 }) {
   const [isSubmitting, startSubmition] = useTransition();
   const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -128,15 +127,16 @@ export default function MoveTicketsToDifferentEventModal({
                           }`}
                         >
                           {hoveringAdd > 0 ? sold + hoveringAdd : sold}
-                          {/* {hoveringAdd > 0 &&
-                            `+${hoveringAdd}=${sold + hoveringAdd}`} */}
                         </span>
                         /<span>{type.max_sold}</span>
                       </div>
                       <Progress
                         className="mb-1"
                         size="sm"
-                        progress={((sold + hoveringAdd) / type.max_sold) * 100}
+                        progress={Math.max(
+                          ((sold + hoveringAdd) / type.max_sold) * 100,
+                          100,
+                        )}
                         color={
                           sold + hoveringAdd > type.max_sold
                             ? "failure"
@@ -144,6 +144,9 @@ export default function MoveTicketsToDifferentEventModal({
                               ? "yellow"
                               : "gray"
                         }
+                        theme={{
+                          bar: "transition-all rounded-full",
+                        }}
                       />
                     </div>
                   );
@@ -151,18 +154,6 @@ export default function MoveTicketsToDifferentEventModal({
               </div>
             </button>
           ))}
-
-          {errorMessages.length > 0 && (
-            <Alert
-              color="failure"
-              className="mt-4"
-              icon={HiOutlineExclamationCircle}
-            >
-              {errorMessages.map((message) => (
-                <p>{message}</p>
-              ))}
-            </Alert>
-          )}
         </Modal.Body>
       </Modal>
     </>

@@ -8,20 +8,12 @@ import {
 } from "@/app/components/FormElements";
 import { Contacts, Coupons, Events } from "@/utils/supabase/database.types";
 import { Alert, Button, Modal, Spinner } from "flowbite-react";
-import {
-  Field,
-  FieldArray,
-  Form,
-  Formik,
-  FormikHelpers,
-  FormikProps,
-} from "formik";
+import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import { useContext, useEffect, useState, useTransition } from "react";
 import * as Yup from "yup";
 import { CurrencyEuroIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import {
-  EventWithTickets,
   bulkInsertTickets,
   bulkInsertContacts,
   fetchContacts,
@@ -33,13 +25,12 @@ import { toast } from "react-toastify";
 import { EventsContext } from "../zustand";
 import { useStore } from "zustand";
 import { contactsEqual } from "../utils";
+import CouponCodeField from "./CouponCodeField";
 
 export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [contacts, setContacts] = useState<Contacts[]>([]);
   const [errorMess, setErrorMess] = useState<string | undefined>();
-  const [code, setCode] = useState<string>("");
-  const [validatingCoupon, startValidatingCoupon] = useTransition();
   const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
   const store = useContext(EventsContext);
@@ -391,18 +382,6 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                               </td>
                             </tr>
                           ))}
-                          {/* <tr>
-                            <td colSpan={4}></td>
-                            <td className="pt-2 text-end font-medium">
-                              <hr />
-                              Spolu:{" "}
-                              {values.tickets
-                                .map((t) => t.price)
-                                .reduce((a, b) => a + b, 0)}{" "}
-                              €
-                            </td>
-                            <td></td>
-                          </tr> */}
                         </table>
                       ) : (
                         "Žiadne lístky"
@@ -425,7 +404,12 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                     );
                   }
                 })}
-                <hr className="my-8 border-gray-400" />
+                <div className="my-6 flex flex-row items-center gap-4">
+                  <span className="shrink text-lg font-medium">
+                    Rekapitulácia
+                  </span>
+                  <div className="h-px grow bg-gray-300" />
+                </div>
                 <table className="w-full">
                   <tr>
                     <td className="pe-6 ps-2">Lístky</td>
@@ -435,55 +419,11 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                   </tr>
                   <tr>
                     <td className="py-2 pe-6 ps-2">
-                      <div className="relative me-auto w-40">
-                        <input
-                          type="text"
-                          className={`w-full rounded-lg border-gray-200 bg-gray-50 px-2 py-1 font-mono ${
-                            coupon === null
-                              ? "border-red-500 text-red-500"
-                              : coupon === undefined
-                                ? ""
-                                : "border-green-500 text-green-500"
-                          }`}
-                          placeholder="Kupón"
-                          value={code}
-                          onChange={(e) => {
-                            const newCode = e.target.value.toUpperCase().trim();
-                            if (newCode.length > 8) return;
-                            setCode(newCode);
-                            setCoupon(undefined);
-                            if (newCode.length < 8) return;
-                            startValidatingCoupon(async () => {
-                              const r = await validateCouponCode(newCode);
-                              if (r.error) {
-                                setErrorMess(
-                                  "Couldn't validate coupon" + r.error.message,
-                                );
-                                e.target.blur();
-                                return;
-                              }
-                              setCoupon(r.data);
-                              setErrorMess(undefined);
-                              e.target.blur();
-                            });
-                          }}
-                        />
-                        {validatingCoupon ? (
-                          <div className="absolute inset-y-0 end-2 grid place-content-center">
-                            <Spinner />
-                          </div>
-                        ) : coupon ? (
-                          <div className="absolute inset-y-0 end-2 grid place-content-center">
-                            <div className="rounded-md bg-green-500 px-2 py-0.5 font-mono text-xs text-white">
-                              {coupon.amount} €
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="pointer-events-none absolute inset-y-0 end-2 grid place-content-center font-mono text-xs text-gray-500">
-                            {code.length}/8
-                          </div>
-                        )}
-                      </div>
+                      <CouponCodeField
+                        coupon={coupon}
+                        setCoupon={setCoupon}
+                        validate={async (code) => validateCouponCode(code)}
+                      />
                     </td>
                     <td className="px-2 text-end">
                       {coupon

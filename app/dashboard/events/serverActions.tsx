@@ -13,6 +13,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { ticketSortFunction } from "./utils";
 import { randomUUID } from "crypto";
+import { validateCoupon } from "../coupons/utils";
 
 export async function fetchTicketTypes() {
   return {
@@ -169,17 +170,24 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
 }
 
 // Get coupon
-export async function validateCouponCode(code: string) {
+export async function fetchCoupon(code: string) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase
     .from("coupons")
     .select("*")
     .eq("code", code)
-    .gt("amount", 0)
-    .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString()}`)
-    .maybeSingle();
+    .single();
 
-  return res;
+  return res.data;
+}
+
+export async function validateCouponCode(code: string) {
+  const coupon = await fetchCoupon(code);
+
+  if (!coupon || !validateCoupon(coupon)) {
+    return null;
+  }
+  return coupon;
 }
 
 // Redeem coupon

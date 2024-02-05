@@ -2,11 +2,9 @@
 
 import { Alert, Button, Checkbox, Datepicker, Modal } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import { EventWithTickets, insertEvent } from "../serverActions";
+import { insertEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { Updater } from "use-immer";
-import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { EventsContext } from "../zustand";
 

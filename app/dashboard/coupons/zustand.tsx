@@ -58,8 +58,6 @@ export type CouponsStore = ReturnType<typeof createCouponsStore>;
 
 export const createCouponsStore = (props?: Partial<State>) => {
   const defaultProps = {
-    // coupons: [],
-    // allCoupons: [],
     searchTerm: "",
     isRefreshing: false,
   } as unknown as State;

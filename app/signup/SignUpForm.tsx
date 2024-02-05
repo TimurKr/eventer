@@ -33,10 +33,21 @@ export default function LoginForm({
         Heslo
       </label>
       <input
-        className="mb-6 rounded-md border-gray-200 py-1"
+        className="mb-2 rounded-md border-gray-200 py-1"
         type="password"
         size={30}
         name="password"
+        placeholder="••••••••"
+        required
+      />
+      <label className="text-md" htmlFor="password">
+        Heslo znovu
+      </label>
+      <input
+        className="mb-6 rounded-md border-gray-200 py-1"
+        type="password"
+        size={30}
+        name="password_again"
         placeholder="••••••••"
         required
       />

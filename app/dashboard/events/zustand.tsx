@@ -78,7 +78,6 @@ type Actions = {
   addEvent: (event: State["events"][0]) => void;
   removeEvent: (eventId: number) => void;
   setPartialEvent: (event: Partial<ZustandEvents>) => void;
-  toggleEventIsPublic: (eventId: Events["id"]) => void;
   toggleEventIsExpanded: (eventId: Events["id"]) => void;
   toggleEventShowCancelledTickets: (eventId: Events["id"]) => void;
   toggleEventLockedArrived: (eventId: Events["id"]) => void;
@@ -179,7 +178,7 @@ export const createEventsStore = (props?: Partial<State>) => {
             state.allEvents.push(event);
             state.allEvents.sort(
               (a, b) =>
-                new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
+                new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
             );
             const r = search(state.allEvents, state.searchTerm);
             state.events = r.events;
@@ -216,17 +215,6 @@ export const createEventsStore = (props?: Partial<State>) => {
           });
         },
 
-        toggleEventIsPublic: (eventId) => {
-          set((state) => {
-            const event = state.allEvents.find(
-              (event) => event.id === eventId,
-            )!;
-            event.is_public = !event.is_public;
-            const r = search(state.allEvents, state.searchTerm);
-            state.events = r.events;
-            state.highlightedTicketIds = r.highlightedTicketIds;
-          });
-        },
         toggleEventIsExpanded: (eventId) => {
           set((state) => {
             const event = state.allEvents.find(
@@ -343,7 +331,11 @@ export const createEventsStore = (props?: Partial<State>) => {
         setTicketsStatus: (ticketIds, newStatus) => {
           set((state) => {
             state.allEvents.forEach((event) => {
-              if (!event.tickets.find((t) => ticketIds.includes(t.id))) return;
+              if (
+                !event.tickets.find((t) => ticketIds.includes(t.id)) &&
+                !event.cancelled_tickets.find((t) => ticketIds.includes(t.id))
+              )
+                return;
               const allTickets = [...event.tickets, ...event.cancelled_tickets];
               allTickets.forEach((ticket) => {
                 if (ticketIds.includes(ticket.id)) {

@@ -1,0 +1,194 @@
+"use client";
+
+import { Tooltip } from "flowbite-react";
+import { useContext, useEffect, useState } from "react";
+import {
+  EventWithTickets,
+  fetchCoupon,
+  updateTicketFields,
+} from "../serverActions";
+import { useStore } from "zustand";
+import { EventsContext } from "../zustand";
+import { SubmitButton } from "@/app/components/FormElements";
+import Link from "next/link";
+import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
+import {
+  TicketIcon as TicketIconOutline,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import { optimisticUpdate } from "@/utils/misc";
+import Loading from "../loading";
+import CouponCodeField from "./CouponCodeField";
+import { Coupons } from "@/utils/supabase/database.types";
+
+export default function CouponRelationManager({
+  ticket,
+  type,
+}: {
+  ticket: EventWithTickets["tickets"][0];
+  type: "created" | "redeemed";
+}) {
+  const [selectedCoupon, setSelectedCoupon] = useState<
+    Coupons | null | undefined
+  >();
+
+  const store = useContext(EventsContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const { setPartialTicket } = useStore(store, (state) => state);
+
+  const objectKey = type === "created" ? "coupon_created" : "coupon_redeemed";
+  const idKey = type === "created" ? "coupon_created_id" : "coupon_redeemed_id";
+
+  useEffect(() => {
+    if (selectedCoupon) {
+      optimisticUpdate({
+        value: {},
+        localUpdate: () =>
+          setPartialTicket({
+            id: ticket.id,
+            [idKey]: selectedCoupon.id,
+            [objectKey]: selectedCoupon,
+          }),
+        databaseUpdate: async () =>
+          updateTicketFields({
+            id: ticket.id,
+            [idKey]: selectedCoupon.id,
+          }),
+        localRevert: () => setPartialTicket(ticket),
+      });
+    }
+  }, [selectedCoupon]);
+
+  return (
+    <>
+      {/* <div className="flex items-center gap-2">
+        {ticket.coupon_redeemed ? (
+          <>
+            <Tooltip
+              content={`Na kúpu bol použitý kupón, kliknutím zobrazíte`}
+              placement="left"
+            >
+              <Link
+                className="text-green-400 active:text-green-500"
+                href={{
+                  pathname: "/dashboard/coupons",
+                  query: { query: "=" + ticket.coupon_redeemed.code },
+                }}
+              >
+                <TicketIconSolid className="h-4 w-4 hover:scale-105" />
+              </Link>
+            </Tooltip>
+            <button
+              className="text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600"
+              onClick={() =>
+                optimisticUpdate({
+                  value: {},
+                  localUpdate: () =>
+                    setPartialTicket({
+                      id: ticket.id,
+                      coupon_redeemed_id: null,
+                      coupon_redeemed: null,
+                    }),
+                  databaseUpdate: async () =>
+                    updateTicketFields({
+                      id: ticket.id,
+                      coupon_redeemed_id: null,
+                    }),
+                  localRevert: () => setPartialTicket(ticket),
+                  confirmation:
+                    "Naozaj chcete vymazať prepojenie na tento kupón?",
+                })
+              }
+            >
+              <TrashIcon className="h-3 w-3" />
+            </button>
+          </>
+        ) : (
+          <Tooltip content={`Pridať kupón k tomuto lístku`} placement="left">
+            <button
+              className="grid h-full place-content-center text-gray-500 hover:scale-105 hover:text-green-500 active:text-green-600"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              <TicketIconOutline className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        )}
+      </div> */}
+      <div className="flex items-center gap-2">
+        {ticket[objectKey] ? (
+          <>
+            <Tooltip
+              content={
+                type === "created"
+                  ? "Lístok bol premenený na kupón, kliknutím zobrazíte"
+                  : "Na kúpu bol použitý kupón, kliknutím zobrazíte"
+              }
+              placement="left"
+            >
+              <Link
+                className={`${
+                  type === "created"
+                    ? "text-red-500 active:text-red-600"
+                    : "text-green-500 active:text-green-600"
+                }`}
+                href={{
+                  pathname: "/dashboard/coupons",
+                  query: { query: "=" + ticket[objectKey]!.code },
+                }}
+              >
+                <TicketIconSolid className="h-4 w-4 hover:scale-105" />
+              </Link>
+            </Tooltip>
+            <button
+              className="text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600"
+              onClick={() =>
+                optimisticUpdate({
+                  value: {},
+                  localUpdate: () =>
+                    setPartialTicket({
+                      id: ticket.id,
+                      [objectKey]: null,
+                      [idKey]: null,
+                    }),
+                  databaseUpdate: async () =>
+                    updateTicketFields({
+                      id: ticket.id,
+                      [idKey]: null,
+                    }),
+                  localRevert: () => setPartialTicket(ticket),
+                  confirmation:
+                    "Naozaj chcete vymazať prepojenie na tento kupón?",
+                })
+              }
+            >
+              <TrashIcon className="h-3 w-3" />
+            </button>
+          </>
+        ) : (
+          (ticket.payment_status === "zrušené" || type === "redeemed") && (
+            <div className="group relative">
+              <div
+                className={`absolute left-0 z-20 hidden -translate-x-full rounded-xl bg-gray-900  p-1 group-hover:block has-[:focus]:block ${
+                  type === "created" ? "top-0" : "bottom-0"
+                }`}
+              >
+                <CouponCodeField
+                  coupon={selectedCoupon}
+                  setCoupon={setSelectedCoupon}
+                  validate={async (code) => fetchCoupon(code)}
+                />
+              </div>
+              <TicketIconOutline
+                className={`h-4 w-4 text-gray-500 group-focus-within:scale-105  group-hover:scale-105 group-hover:text-red-500 ${
+                  type === "created"
+                    ? "group-focus-within:text-red-500 group-hover:text-red-500"
+                    : "group-focus-within:text-green-500 group-hover:text-green-500"
+                }`}
+              />
+            </div>
+          )
+        )}
+      </div>
+    </>
+  );
+}
