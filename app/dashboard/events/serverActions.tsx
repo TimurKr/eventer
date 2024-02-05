@@ -338,6 +338,7 @@ export async function mergeContacts(targetContact: Contacts) {
 
 // Convert tickets to coupon
 export async function convertTicketsToCoupon(tickets: Tickets[]) {
+  // TODO: implement transaction
   if (tickets.length == 0) {
     return { error: { message: "No tickets selected" } };
   }
@@ -359,6 +360,7 @@ export async function convertTicketsToCoupon(tickets: Tickets[]) {
     .from("coupons")
     .insert({
       amount: tickets.map((t) => t.price).reduce((a, b) => a + b, 0),
+      original_amount: tickets.map((t) => t.price).reduce((a, b) => a + b, 0),
       code: code,
     })
     .select();

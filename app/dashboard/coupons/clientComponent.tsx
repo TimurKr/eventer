@@ -18,7 +18,10 @@ import { Badge, Datepicker } from "flowbite-react";
 import Link from "next/link";
 import Loading from "../events/loading";
 import { useSearchParams } from "next/navigation";
-import { InstantTextField } from "@/app/components/FormElements";
+import {
+  InstantTextAreaField,
+  InstantTextField,
+} from "@/app/components/FormElements";
 import { string as yupString, number as yupNumber, ref } from "yup";
 import { toast } from "react-toastify";
 import moment from "moment";
@@ -132,10 +135,11 @@ export default function Coupons() {
                 </th>
                 <th className=" text-center text-sm font-semibold">Stav</th>
                 <th className="pe-2 text-end text-sm font-semibold">
-                  Použité:
+                  Poznámka
                 </th>
+                <th className="pe-2 text-end text-sm font-semibold">Použité</th>
                 <th className="pe-2 text-end text-sm font-semibold">
-                  Vytvorené z:
+                  Vytvorené z
                 </th>
                 <th className=""></th>
               </tr>
@@ -282,6 +286,23 @@ export default function Coupons() {
                           </Badge>
                         </div>
                       )}
+                    </td>
+                    <td className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
+                      <InstantTextAreaField
+                        autoexpand
+                        className="absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
+                        defaultValue={coupon.note}
+                        placeholder="Poznámka"
+                        setLocalValue={(value) =>
+                          setPartialCoupon({ id: coupon.id, note: value })
+                        }
+                        updateDatabase={(value) =>
+                          updateCoupon({
+                            id: coupon.id,
+                            note: value,
+                          })
+                        }
+                      />
                     </td>
                     <td>
                       {coupon.redeemed_from.length > 0 ? (

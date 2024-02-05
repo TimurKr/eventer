@@ -532,7 +532,7 @@ function TicketRow({
       <Table.Cell className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
         <InstantTextAreaField
           autoexpand
-          className="transit absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
+          className="absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
           defaultValue={ticket.note}
           placeholder="Poznámka"
           setLocalValue={(value) =>
@@ -833,7 +833,10 @@ function EventRow({ eventId }: { eventId: number }) {
           </Button>
           <Button
             onClick={() => {
-              if (event.tickets.length > 0) {
+              if (
+                event.tickets.length > 0 ||
+                event.cancelled_tickets.length > 0
+              ) {
                 alert(
                   "Nemôžete vymazať udalosť, ktorá má predané lístky. Najprv vymažte lístky.",
                 );
@@ -918,7 +921,7 @@ function EventRow({ eventId }: { eventId: number }) {
                 Vymazať
               </button>
             </div>
-            {event.tickets.length > 0 ? (
+            {event.tickets.length > 0 || event.cancelled_tickets.length > 0 ? (
               <div className="w-full overflow-x-auto">
                 <Table className="w-full">
                   <Table.Head>
@@ -949,18 +952,20 @@ function EventRow({ eventId }: { eventId: number }) {
                     <Table.HeadCell className="p-1 text-center">
                       Platca
                     </Table.HeadCell>
-                    <Table.HeadCell className="flex items-center justify-center gap-1 p-1 px-0">
-                      <button
-                        className="text-gray-500 hover:text-gray-600 active:text-gray-700"
-                        onClick={() => toggleEventLockedArrived(event.id)}
-                      >
-                        {event.lockedArrived ? (
-                          <LockClosedIcon className="h-3 w-3" />
-                        ) : (
-                          <LockOpenIcon className="h-3 w-3" />
-                        )}
-                      </button>
-                      Dorazil
+                    <Table.HeadCell className="p-1 px-0">
+                      <div className="item-center-justify-center flex gap-1">
+                        <button
+                          className="text-gray-500 hover:text-gray-600 active:text-gray-700"
+                          onClick={() => toggleEventLockedArrived(event.id)}
+                        >
+                          {event.lockedArrived ? (
+                            <LockClosedIcon className="h-3 w-3" />
+                          ) : (
+                            <LockOpenIcon className="h-3 w-3" />
+                          )}
+                        </button>
+                        Dorazil
+                      </div>
                     </Table.HeadCell>
                     <Table.HeadCell className="p-1 text-center">
                       Status
@@ -979,7 +984,9 @@ function EventRow({ eventId }: { eventId: number }) {
                     </Table.HeadCell>
                   </Table.Head>
                   <Table.Body>
-                    <TicketRows eventId={eventId} cancelled={false} />
+                    {event.tickets.length > 0 && (
+                      <TicketRows eventId={eventId} cancelled={false} />
+                    )}
                     {event.cancelled_tickets.length > 0 && (
                       <>
                         <Table.Row className="text-center">

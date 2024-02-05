@@ -61,59 +61,6 @@ export default function CouponRelationManager({
 
   return (
     <>
-      {/* <div className="flex items-center gap-2">
-        {ticket.coupon_redeemed ? (
-          <>
-            <Tooltip
-              content={`Na kúpu bol použitý kupón, kliknutím zobrazíte`}
-              placement="left"
-            >
-              <Link
-                className="text-green-400 active:text-green-500"
-                href={{
-                  pathname: "/dashboard/coupons",
-                  query: { query: "=" + ticket.coupon_redeemed.code },
-                }}
-              >
-                <TicketIconSolid className="h-4 w-4 hover:scale-105" />
-              </Link>
-            </Tooltip>
-            <button
-              className="text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600"
-              onClick={() =>
-                optimisticUpdate({
-                  value: {},
-                  localUpdate: () =>
-                    setPartialTicket({
-                      id: ticket.id,
-                      coupon_redeemed_id: null,
-                      coupon_redeemed: null,
-                    }),
-                  databaseUpdate: async () =>
-                    updateTicketFields({
-                      id: ticket.id,
-                      coupon_redeemed_id: null,
-                    }),
-                  localRevert: () => setPartialTicket(ticket),
-                  confirmation:
-                    "Naozaj chcete vymazať prepojenie na tento kupón?",
-                })
-              }
-            >
-              <TrashIcon className="h-3 w-3" />
-            </button>
-          </>
-        ) : (
-          <Tooltip content={`Pridať kupón k tomuto lístku`} placement="left">
-            <button
-              className="grid h-full place-content-center text-gray-500 hover:scale-105 hover:text-green-500 active:text-green-600"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              <TicketIconOutline className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        )}
-      </div> */}
       <div className="flex items-center gap-2">
         {ticket[objectKey] ? (
           <>
@@ -179,7 +126,7 @@ export default function CouponRelationManager({
                 />
               </div>
               <TicketIconOutline
-                className={`h-4 w-4 text-gray-500 group-focus-within:scale-105  group-hover:scale-105 group-hover:text-red-500 ${
+                className={`h-4 w-4 text-gray-500 group-focus-within:scale-105 group-hover:scale-105 ${
                   type === "created"
                     ? "group-focus-within:text-red-500 group-hover:text-red-500"
                     : "group-focus-within:text-green-500 group-hover:text-green-500"

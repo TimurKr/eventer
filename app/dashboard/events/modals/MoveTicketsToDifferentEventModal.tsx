@@ -133,7 +133,7 @@ export default function MoveTicketsToDifferentEventModal({
                       <Progress
                         className="mb-1"
                         size="sm"
-                        progress={Math.max(
+                        progress={Math.min(
                           ((sold + hoveringAdd) / type.max_sold) * 100,
                           100,
                         )}

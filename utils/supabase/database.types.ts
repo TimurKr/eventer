@@ -42,6 +42,7 @@ export interface Database {
           code: string;
           created_at: string;
           id: number;
+          note: string | null;
           original_amount: number;
           temp_id: string | null;
           valid_until: string | null;
@@ -51,7 +52,8 @@ export interface Database {
           code: string;
           created_at?: string;
           id?: number;
-          original_amount?: number;
+          note?: string | null;
+          original_amount: number;
           temp_id?: string | null;
           valid_until?: string | null;
         };
@@ -60,6 +62,7 @@ export interface Database {
           code?: string;
           created_at?: string;
           id?: number;
+          note?: string | null;
           original_amount?: number;
           temp_id?: string | null;
           valid_until?: string | null;
