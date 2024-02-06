@@ -4,22 +4,22 @@ import { Alert, Modal } from "flowbite-react";
 import { useContext, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStore } from "zustand";
-import { CouponsContext } from "../zustand";
 import { v4 as uuidv4 } from "uuid";
 import { Form, Formik } from "formik";
 import { FormikTextField, SubmitButton } from "@/app/components/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { DashboardContext } from "../../zustand";
 
 export default function NewCouponModal() {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(CouponsContext);
+  const store = useContext(DashboardContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { addCoupons } = useStore(store, (state) => state);
+  const { addCoupons } = useStore(store, (state) => state.coupons);
 
   return (
     <>

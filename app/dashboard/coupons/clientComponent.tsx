@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { CouponsContext, createCouponsStore } from "./zustand";
+import { useContext, useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { type Coupons, updateCoupon, deleteCoupon } from "./serverActions";
 import NewCouponModal from "./modals/NewCouponModal";
@@ -26,9 +25,12 @@ import { string as yupString, number as yupNumber, ref } from "yup";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { optimisticUpdate } from "@/utils/misc";
+import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
+import { DashboardContext } from "../zustand";
 
 export default function Coupons() {
-  const store = useRef(createCouponsStore({ isRefreshing: true })).current;
+  const store = useContext(DashboardContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
 
   const {
     coupons,
@@ -38,7 +40,7 @@ export default function Coupons() {
     refresh,
     setPartialCoupon,
     removeCoupon,
-  } = useStore(store, (s) => s);
+  } = useStore(store, (s) => s.coupons);
 
   const q = useSearchParams().get("query");
   useEffect(() => {
@@ -78,9 +80,9 @@ export default function Coupons() {
   };
 
   return (
-    <CouponsContext.Provider value={store}>
+    <>
       <div>
-        <div className="flex items-center justify-between gap-4 pb-2">
+        <div className="flex items-center justify-between gap-4 pb-2 pt-4">
           <span className="text-2xl font-bold tracking-wider">Kupóny</span>
           <div className="relative ms-auto max-w-64 grow">
             <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
@@ -353,14 +355,7 @@ export default function Coupons() {
                     <td>
                       <div className="flex items-center justify-end gap-2">
                         {coupon.valid && (
-                          <button
-                            className="flex items-center gap-1 rounded-md bg-green-500 px-1.5 py-0.5 text-xs text-white hover:bg-green-600 active:bg-green-700"
-                            onClick={() => {
-                              alert("Not implemented, yet. TODO");
-                            }}
-                          >
-                            Use
-                          </button>
+                          <UseCouponSelectEvent couponCode={coupon.code} />
                         )}
                         <button
                           className="p-2 transition-all duration-100 hover:scale-110 hover:text-red-500 active:text-red-700"
@@ -392,6 +387,6 @@ export default function Coupons() {
           </table>
         </div>
       </div>
-    </CouponsContext.Provider>
+    </>
   );
 }

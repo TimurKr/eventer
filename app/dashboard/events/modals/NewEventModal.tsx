@@ -6,7 +6,7 @@ import { insertEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStore } from "zustand";
-import { EventsContext } from "../zustand";
+import { DashboardContext } from "../../zustand";
 
 export default function NewEventModal() {
   const [date, setDate] = useState<Date>(new Date());
@@ -17,9 +17,9 @@ export default function NewEventModal() {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(EventsContext);
+  const store = useContext(DashboardContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { addEvent } = useStore(store, (state) => state);
+  const { addEvent } = useStore(store, (state) => state.events);
 
   const submit = () => {
     startSubmition(async () => {

@@ -2,87 +2,45 @@
 
 import { Alert, Badge, Modal, Progress, Spinner } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import { bulkUpdateTicketFields } from "../serverActions";
+import {
+  EventWithTickets,
+  bulkUpdateTicketFields,
+} from "../../events/serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
-import { SubmitButton } from "@/app/components/FormElements";
 import { DashboardContext } from "../../zustand";
+import { SubmitButton } from "@/app/components/FormElements";
+import NewTicketModal from "../../events/modals/NewTicketModal";
 
-export default function MoveTicketsToDifferentEventModal({
-  eventId,
+export default function UseCouponSelectEvent({
+  couponCode,
 }: {
-  eventId: Events["id"];
+  couponCode: string;
 }) {
-  const [isSubmitting, startSubmition] = useTransition();
-  const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
-
   const [isOpen, setIsOpen] = useState(false);
 
   const store = useContext(DashboardContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { allEvents, ticketTypes, refresh } = useStore(
-    store,
-    (state) => state.events,
-  );
-  const selectedTickets = useStore(store, (state) =>
-    state.events.allEvents
-      .find((e) => e.id === eventId)!
-      .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-  );
-
-  const submit = (selectedEventId: Events["id"]) => {
-    startSubmition(async () => {
-      bulkUpdateTicketFields(
-        selectedTickets.map((t) => t.id),
-        {
-          event_id: selectedEventId,
-        },
-      );
-      refresh();
-      setIsOpen(false);
-    });
-  };
+  const { allEvents, ticketTypes } = useStore(store, (state) => state.events);
 
   return (
     <>
       <button
-        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800"
-        onClick={() =>
-          selectedTickets.length == 0
-            ? alert("Zvolte aspoň jeden lístok")
-            : setIsOpen(true)
-        }
+        className="rounded-md bg-green-500 px-1.5 py-0.5 text-xs text-white hover:bg-green-600 active:bg-green-700"
+        onClick={() => setIsOpen(true)}
       >
-        Posunúť na inú udalosť
+        Use
       </button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
         <Modal.Header>
-          Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
+          Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
+          kupónom
         </Modal.Header>
         <Modal.Body>
-          <div className="flex flex-wrap gap-2">
-            {ticketTypes.map((type) => (
-              <div className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1">
-                <span className="font-semibold">{type.label}</span>:{" "}
-                <span className="font-bold">
-                  {selectedTickets.filter((t) => t.type == type.label).length}
-                </span>{" "}
-                lístkov
-              </div>
-            ))}
-            {isSubmitting && <Spinner />}
-          </div>
-          <hr className="my-2" />
           {allEvents.map((event) => (
-            <button
-              className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100 ${
-                event.id == eventId && "!bg-red-100"
-              }`}
-              disabled={event.id == eventId || isSubmitting}
-              onMouseEnter={() => setHoveringEvent(event)}
-              onMouseLeave={() => setHoveringEvent(null)}
-              onClick={() => submit(event.id)}
+            <div
+              className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100`}
             >
               <div className="flex min-w-0 flex-1 flex-col items-start self-center">
                 <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
@@ -103,11 +61,6 @@ export default function MoveTicketsToDifferentEventModal({
                   const sold = event.tickets.filter(
                     (t) => t.type == type.label,
                   ).length;
-                  const hoveringAdd =
-                    hoveringEvent?.id == event.id && event.id != eventId
-                      ? selectedTickets.filter((t) => t.type == type.label)
-                          .length
-                      : 0;
                   return (
                     <div key={type.label} className="w-28">
                       <div
@@ -122,40 +75,39 @@ export default function MoveTicketsToDifferentEventModal({
                         <span className="font-medium">{type.label}</span>
                         <span
                           className={`ms-auto text-base font-bold ${
-                            sold + hoveringAdd > type.max_sold
+                            sold > type.max_sold
                               ? "text-red-600"
-                              : sold + hoveringAdd == 0
+                              : sold == 0
                                 ? "text-gray-400"
                                 : ""
                           }`}
                         >
-                          {hoveringAdd > 0 ? sold + hoveringAdd : sold}
+                          {sold}
                         </span>
                         /<span>{type.max_sold}</span>
                       </div>
                       <Progress
                         className="mb-1"
                         size="sm"
-                        progress={Math.min(
-                          ((sold + hoveringAdd) / type.max_sold) * 100,
-                          100,
-                        )}
+                        progress={Math.min((sold / type.max_sold) * 100, 100)}
                         color={
-                          sold + hoveringAdd > type.max_sold
+                          sold > type.max_sold
                             ? "failure"
                             : type.label == "VIP"
                               ? "yellow"
                               : "gray"
                         }
-                        theme={{
-                          bar: "transition-all rounded-full",
-                        }}
                       />
                     </div>
                   );
                 })}
               </div>
-            </button>
+              <NewTicketModal
+                eventId={event.id}
+                couponCode={couponCode}
+                onOpen={() => setIsOpen(false)}
+              />
+            </div>
           ))}
         </Modal.Body>
       </Modal>

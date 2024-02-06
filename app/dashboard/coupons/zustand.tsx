@@ -1,4 +1,4 @@
-import { createStore } from "zustand";
+import { Mutate, StateCreator, StoreApi, createStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { persist } from "zustand/middleware";
 import { createContext } from "react";
@@ -12,6 +12,8 @@ import {
 import { InsertCoupons } from "@/utils/supabase/database.types";
 import moment from "moment";
 import { validateCoupon } from "./utils";
+import { DraftFunction, Updater } from "use-immer";
+import { Draft } from "immer";
 
 function search(coupons: Coupons[], term: string): Coupons[] {
   if (term === "") {
@@ -35,14 +37,14 @@ function search(coupons: Coupons[], term: string): Coupons[] {
   return fuse.search(term).map((r) => r.item);
 }
 
-type State = {
+export type State = {
   coupons: Coupons[];
   allCoupons: Coupons[];
   searchTerm: string;
   isRefreshing: boolean;
 };
 
-type Actions = {
+export type Actions = {
   refresh: () => Promise<void>;
   search: (term: string, allCoupons?: Coupons[]) => void;
 
@@ -54,86 +56,93 @@ type Actions = {
   ) => Promise<void>;
 };
 
-export type CouponsStore = ReturnType<typeof createCouponsStore>;
-
-export const createCouponsStore = (props?: Partial<State>) => {
-  const defaultProps = {
-    searchTerm: "",
-    isRefreshing: false,
-  } as unknown as State;
-  return createStore<State & Actions>()(
-    persist(
-      immer((set, get) => ({
-        ...defaultProps,
-        ...props,
-        refresh: async () => {
-          set((state) => {
-            state.isRefreshing = !state.isRefreshing;
-          });
-          const fetchedCouponsResponse = await fetchCoupons();
-
-          if (fetchedCouponsResponse.error) {
-            throw new Error(fetchedCouponsResponse.error.message);
-          } else {
-            set((state) => {
-              state.allCoupons = fetchedCouponsResponse.data.map((c) => ({
-                ...c,
-                validate() {
-                  return (
-                    this.amount > 0 &&
-                    moment(this.valid_until).endOf("day").isAfter(moment())
-                  );
-                },
-              }));
-              state.isRefreshing = false;
-              state.coupons = search(state.allCoupons, state.searchTerm);
-            });
-          }
-        },
-
-        search: (term, allCoupons) =>
-          set((state) => {
-            state.searchTerm = term;
-            if (term === "") {
-              state.coupons = allCoupons || state.allCoupons;
-              return;
-            }
-            state.coupons = search(
-              allCoupons || state.allCoupons,
-              state.searchTerm,
-            );
-          }),
-
-        addCoupons: async (coupons) => {
-          const r = await insertCoupons(coupons);
-          if (r.error) throw new Error(r.error.message);
-          get().refresh();
-        },
-        removeCoupon: (coupon) => {
-          set((state) => {
-            state.allCoupons = state.allCoupons.filter(
-              (c) => c.id !== coupon.id,
-            );
-            state.coupons = search(state.allCoupons, state.searchTerm);
-          });
-        },
-
-        setPartialCoupon: async (coupon) => {
-          set((state) => {
-            const index = state.allCoupons.findIndex((c) => c.id === coupon.id);
-            state.allCoupons[index] = { ...state.allCoupons[index], ...coupon };
-            state.allCoupons[index].valid = validateCoupon(
-              state.allCoupons[index],
-            );
-            state.coupons = search(state.allCoupons, state.searchTerm);
-          });
-        },
-      })),
-      {
-        name: "coupons-store",
-      },
-    ),
-  );
+const defaultState: State = {
+  coupons: [],
+  allCoupons: [],
+  searchTerm: "",
+  isRefreshing: false,
 };
 
-export const CouponsContext = createContext<CouponsStore | null>(null);
+type Mis = [["zustand/persist", unknown], ["zustand/immer", never]];
+
+export function getActions<
+  S extends { [P in K]: State & Actions },
+  K extends keyof S,
+>(
+  key: K,
+  [setStore, getStore]: Parameters<
+    StateCreator<
+      S,
+      [["zustand/persist", unknown], ["zustand/immer", never]],
+      [],
+      Actions
+    >
+  >,
+): State & Actions {
+  const set = (updater: DraftFunction<State & Actions>) => {
+    setStore((state) => updater((state as S)[key]));
+  };
+  const get = () => getStore()[key];
+
+  return {
+    ...defaultState,
+    refresh: async () => {
+      set((state) => {
+        state.isRefreshing = !state.isRefreshing;
+      });
+      const fetchedCouponsResponse = await fetchCoupons();
+
+      if (fetchedCouponsResponse.error) {
+        throw new Error(fetchedCouponsResponse.error.message);
+      } else {
+        set((state) => {
+          state.allCoupons = fetchedCouponsResponse.data.map((c) => ({
+            ...c,
+            validate() {
+              return (
+                this.amount > 0 &&
+                moment(this.valid_until).endOf("day").isAfter(moment())
+              );
+            },
+          }));
+          state.isRefreshing = false;
+          state.coupons = search(state.allCoupons, state.searchTerm);
+        });
+      }
+    },
+
+    search: (term, allCoupons) =>
+      set((state) => {
+        state.searchTerm = term;
+        if (term === "") {
+          state.coupons = allCoupons || state.allCoupons;
+          return;
+        }
+        state.coupons = search(
+          allCoupons || state.allCoupons,
+          state.searchTerm,
+        );
+      }),
+
+    addCoupons: async (coupons) => {
+      const r = await insertCoupons(coupons);
+      if (r.error) throw new Error(r.error.message);
+      get().refresh();
+    },
+    removeCoupon: (coupon) => {
+      set((state) => {
+        state.allCoupons = state.allCoupons.filter((c) => c.id !== coupon.id);
+        state.coupons = search(state.allCoupons, state.searchTerm);
+      });
+    },
+
+    setPartialCoupon: async (coupon) => {
+      set((state) => {
+        const index = state.allCoupons.findIndex((c) => c.id === coupon.id);
+        state.allCoupons[index] = { ...state.allCoupons[index], ...coupon };
+        state.allCoupons[index].valid = validateCoupon(state.allCoupons[index]);
+        state.coupons = search(state.allCoupons, state.searchTerm);
+      });
+    },
+  };
+}

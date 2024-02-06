@@ -24,8 +24,8 @@ export default function Links() {
       className={
         "grid w-auto place-content-center rounded-lg p-2 md:block md:px-3 md:py-0.5 " +
         (path.startsWith(`${item.href}`)
-          ? "bg-cyan-700/70 font-bold tracking-widest text-white hover:bg-cyan-600"
-          : "hover:bg-cyan-700/30")
+          ? "bg-white font-bold tracking-widest text-black hover:bg-gray-50"
+          : "hover:bg-gray-50")
       }
       href={item.href}
     >

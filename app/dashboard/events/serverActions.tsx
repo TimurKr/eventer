@@ -6,7 +6,6 @@ import {
   InsertContacts,
   InsertTickets,
   Tickets,
-  UpdateTickets,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";

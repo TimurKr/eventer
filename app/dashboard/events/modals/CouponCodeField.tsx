@@ -1,4 +1,10 @@
-import { Dispatch, SetStateAction, useState, useTransition } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
 import { Spinner } from "flowbite-react";
 import { Coupons } from "@/utils/supabase/database.types";
 
@@ -6,13 +12,19 @@ export default function CouponCodeField({
   coupon,
   setCoupon,
   validate,
+  defaultCode,
 }: {
   coupon: Coupons | null | undefined;
   setCoupon: Dispatch<SetStateAction<Coupons | null | undefined>>;
   validate: (code: string) => Promise<Coupons | null | undefined>;
+  defaultCode?: string;
 }) {
   const [code, setCode] = useState("");
   const [isValidating, startValidatingCoupon] = useTransition();
+
+  useEffect(() => {
+    if (defaultCode) setCode(defaultCode);
+  }, []);
 
   return (
     <div className="relative me-auto w-40">

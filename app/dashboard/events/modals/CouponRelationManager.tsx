@@ -8,7 +8,6 @@ import {
   updateTicketFields,
 } from "../serverActions";
 import { useStore } from "zustand";
-import { EventsContext } from "../zustand";
 import { SubmitButton } from "@/app/components/FormElements";
 import Link from "next/link";
 import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
@@ -20,6 +19,7 @@ import { optimisticUpdate } from "@/utils/misc";
 import Loading from "../loading";
 import CouponCodeField from "./CouponCodeField";
 import { Coupons } from "@/utils/supabase/database.types";
+import { DashboardContext } from "../../zustand";
 
 export default function CouponRelationManager({
   ticket,
@@ -32,9 +32,9 @@ export default function CouponRelationManager({
     Coupons | null | undefined
   >();
 
-  const store = useContext(EventsContext);
+  const store = useContext(DashboardContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { setPartialTicket } = useStore(store, (state) => state);
+  const { setPartialTicket } = useStore(store, (state) => state.events);
 
   const objectKey = type === "created" ? "coupon_created" : "coupon_redeemed";
   const idKey = type === "created" ? "coupon_created_id" : "coupon_redeemed_id";

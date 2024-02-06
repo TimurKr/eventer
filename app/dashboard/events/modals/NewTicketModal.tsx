@@ -22,28 +22,36 @@ import {
 } from "../serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { EventsContext } from "../zustand";
 import { useStore } from "zustand";
 import { contactsEqual } from "../utils";
 import CouponCodeField from "./CouponCodeField";
+import { DashboardContext } from "../../zustand";
 
-export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
+export default function NewTicketModal({
+  eventId,
+  onOpen,
+  couponCode,
+}: {
+  eventId: Events["id"];
+  onOpen?: () => void;
+  couponCode?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [contacts, setContacts] = useState<Contacts[]>([]);
   const [errorMess, setErrorMess] = useState<string | undefined>();
   const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
-  const store = useContext(EventsContext);
+  const store = useContext(DashboardContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const ticketTypes = useStore(store, (state) =>
-    state.ticketTypes.map((t) => ({
+    state.events.ticketTypes.map((t) => ({
       ...t,
-      sold: state.events
+      sold: state.events.events
         .find((e) => e.id === eventId)!
         .tickets.filter((ticket) => ticket.type == t.label).length,
     })),
   );
-  const addTickets = useStore(store, (state) => state.addTickets);
+  const addTickets = useStore(store, (state) => state.events.addTickets);
 
   useEffect(() => {
     (async () => {
@@ -198,7 +206,10 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
     <>
       <button
         className="rounded-md bg-green-500 px-2 py-0.5 text-xs text-white hover:bg-green-600"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          onOpen?.();
+          setIsOpen(true);
+        }}
       >
         Vytvoriť lístok
       </button>
@@ -420,6 +431,7 @@ export default function NewTicketModal({ eventId }: { eventId: Events["id"] }) {
                   <tr>
                     <td className="py-2 pe-6 ps-2">
                       <CouponCodeField
+                        defaultCode={couponCode}
                         coupon={coupon}
                         setCoupon={setCoupon}
                         validate={async (code) => validateCouponCode(code)}
