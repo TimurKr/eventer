@@ -10,16 +10,14 @@ import { FormikTextField, SubmitButton } from "@/app/components/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 
 export default function NewCouponModal() {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { addCoupons } = useStore(store, (state) => state.coupons);
+  const { addCoupons } = useStoreContext((state) => state.coupons);
 
   return (
     <>

@@ -7,7 +7,7 @@ import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { SubmitButton } from "@/app/components/FormElements";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 
 export default function ChangeDateModal({ event }: { event: Events }) {
   const [date, setDate] = useState<Date>(new Date(event.datetime));
@@ -16,9 +16,7 @@ export default function ChangeDateModal({ event }: { event: Events }) {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { setPartialEvent } = useStore(store, (state) => state.events);
+  const { setPartialEvent } = useStoreContext((state) => state.events);
 
   const submit = () => {
     startSubmition(async () => {

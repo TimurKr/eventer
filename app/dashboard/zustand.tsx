@@ -1,69 +1,93 @@
 "use client";
 
-import { createStore } from "zustand";
+import { createStore, useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { createContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 
 import * as EventsSlice from "./events/zustand";
 import * as CouponsSlice from "./coupons/zustand";
+import { SliceGenerator } from "@/utils/zustand";
 
-type EventsStore = EventsSlice.State & EventsSlice.Actions;
+function createGlobalStoreContext<
+  StoreState extends { events: ES; coupons: CS },
+  StoreActions extends { events: EA; coupons: CA },
+  ES,
+  EA,
+  CS,
+  CA,
+>(storeSlice1: SliceGenerator<ES, EA>, storeSlice2: SliceGenerator<CS, CA>) {
+  type StoreType = {
+    events: StoreState["events"] & StoreActions["events"];
+    coupons: StoreState["coupons"] & StoreActions["coupons"];
+  };
 
-type CouponsStore = CouponsSlice.State & CouponsSlice.Actions;
+  const createGlobalStore = (initStoreState?: Partial<StoreState>) => {
+    return createStore<StoreType>()(
+      persist(
+        immer((set, get, store) => ({
+          ...storeSlice1(store, "events", initStoreState?.events),
+          ...storeSlice2(store, "coupons", initStoreState?.coupons),
+        })),
+        {
+          name: "dashboard-store",
+          version: 1,
+          merge: (persistedState, defaultState) => {
+            if (!persistedState || typeof persistedState !== "object") {
+              return defaultState;
+            }
 
-type StoreType = { events: EventsStore; coupons: CouponsStore };
+            let resultState: StoreType = { ...defaultState };
+            const keys = Object.keys(defaultState) as (keyof StoreType)[];
 
-type StoreState = { events: EventsSlice.State; coupons: CouponsSlice.State };
+            keys.forEach((key) => {
+              if (key in persistedState) {
+                // @ts-ignore // TypeScript currently don't recognize that key exists in localState
+                const state = persistedState[key];
+                if (!!state) {
+                  resultState = {
+                    ...resultState,
+                    [key]: { ...defaultState[key], ...state },
+                  };
+                }
+              }
+            });
 
-export const createDashboardStore = (initStoreState?: Partial<StoreState>) => {
-  return createStore<StoreType>()(
-    persist(
-      immer((set, get, store) => ({
-        events: {
-          ...initStoreState?.events,
-          ...EventsSlice.getActions<StoreType, "events">("events", [
-            set,
-            get,
-            store,
-          ]),
+            return resultState;
+          },
         },
-        coupons: {
-          ...initStoreState?.coupons,
-          ...CouponsSlice.getActions<StoreType, "coupons">("coupons", [
-            set,
-            get,
-            store,
-          ]),
-        },
-      })),
-      {
-        name: "dashboard-store",
-        version: 1,
-      },
-    ),
-  );
-};
+      ),
+    );
+  };
 
-type DashboardStore = ReturnType<typeof createDashboardStore>;
+  type Store = ReturnType<typeof createGlobalStore>;
 
-export const DashboardContext = createContext<DashboardStore | null>(null);
+  const Context = createContext<Store | null>(null);
 
-export default function DashboardContextProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const store = useRef(createDashboardStore()).current;
-  useEffect(() => {
-    const state = store.getState();
-    state.events.refresh();
-    state.coupons.refresh();
-  }, []);
+  return {
+    ContextProvider: function DashboardContextProvider({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      const store = useRef(createGlobalStore()).current;
 
-  return (
-    <DashboardContext.Provider value={store}>
-      {children}
-    </DashboardContext.Provider>
-  );
+      return <Context.Provider value={store}>{children}</Context.Provider>;
+    },
+
+    useStoreContext: function useContextStore<U>(
+      selector: (state: StoreType) => U,
+    ) {
+      const store = useContext(Context);
+      if (!store) {
+        throw new Error("useContextStore must be used within a context");
+      }
+      return useStore(store, selector);
+    },
+  };
 }
+
+export const { ContextProvider, useStoreContext } = createGlobalStoreContext(
+  EventsSlice.storeSlice,
+  CouponsSlice.storeSlice,
+);

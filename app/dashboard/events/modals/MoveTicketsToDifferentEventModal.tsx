@@ -7,7 +7,7 @@ import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { SubmitButton } from "@/app/components/FormElements";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 
 export default function MoveTicketsToDifferentEventModal({
   eventId,
@@ -19,16 +19,13 @@ export default function MoveTicketsToDifferentEventModal({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { allEvents, ticketTypes, refresh } = useStore(
-    store,
-    (state) => state.events,
-  );
-  const selectedTickets = useStore(store, (state) =>
-    state.events.allEvents
-      .find((e) => e.id === eventId)!
-      .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+  const { allEvents, ticketTypes, refresh, selectedTickets } = useStoreContext(
+    (state) => ({
+      ...state.events,
+      selectedTickets: state.events.allEvents
+        .find((e) => e.id === eventId)!
+        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+    }),
   );
 
   const submit = (selectedEventId: Events["id"]) => {

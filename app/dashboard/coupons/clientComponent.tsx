@@ -1,7 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef } from "react";
-import { useStore } from "zustand";
+import { useEffect } from "react";
 import { type Coupons, updateCoupon, deleteCoupon } from "./serverActions";
 import NewCouponModal from "./modals/NewCouponModal";
 import {
@@ -26,12 +25,9 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import { optimisticUpdate } from "@/utils/misc";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
-import { DashboardContext } from "../zustand";
+import { useStoreContext } from "../zustand";
 
 export default function Coupons() {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
   const {
     coupons,
     searchTerm,
@@ -40,13 +36,17 @@ export default function Coupons() {
     refresh,
     setPartialCoupon,
     removeCoupon,
-  } = useStore(store, (s) => s.coupons);
+  } = useStoreContext((s) => s.coupons);
 
   const q = useSearchParams().get("query");
   useEffect(() => {
+    // if (refresh) {
     refresh().then(() => {
       if (q) search(q);
     });
+    // } else {
+    //   console.log("No refresh function");
+    // }
   }, []);
 
   const changeDate = async (coupon: Coupons, date: Date | null) => {

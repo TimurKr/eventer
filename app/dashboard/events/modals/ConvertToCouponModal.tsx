@@ -8,7 +8,7 @@ import { Events } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { SubmitButton } from "@/app/components/FormElements";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 
 export default function ConvertToCouponModal({
   eventId,
@@ -22,14 +22,13 @@ export default function ConvertToCouponModal({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
-  const { ticketTypes, refresh } = useStore(store, (state) => state.events);
-  const selectedTickets = useStore(store, (state) =>
-    state.events.allEvents
-      .find((e) => e.id === eventId)!
-      .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+  const { ticketTypes, refresh, selectedTickets } = useStoreContext(
+    (state) => ({
+      ...state.events,
+      selectedTickets: state.events.allEvents
+        .find((e) => e.id === eventId)!
+        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+    }),
   );
 
   return (

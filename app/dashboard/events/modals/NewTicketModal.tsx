@@ -25,7 +25,7 @@ import { toast } from "react-toastify";
 import { useStore } from "zustand";
 import { contactsEqual } from "../utils";
 import CouponCodeField from "./CouponCodeField";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 
 export default function NewTicketModal({
   eventId,
@@ -41,17 +41,15 @@ export default function NewTicketModal({
   const [errorMess, setErrorMess] = useState<string | undefined>();
   const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const ticketTypes = useStore(store, (state) =>
-    state.events.ticketTypes.map((t) => ({
+  const { addTickets, ticketTypes } = useStoreContext((state) => ({
+    ...state.events,
+    ticketTypes: state.events.ticketTypes.map((t) => ({
       ...t,
       sold: state.events.events
         .find((e) => e.id === eventId)!
         .tickets.filter((ticket) => ticket.type == t.label).length,
     })),
-  );
-  const addTickets = useStore(store, (state) => state.events.addTickets);
+  }));
 
   useEffect(() => {
     (async () => {

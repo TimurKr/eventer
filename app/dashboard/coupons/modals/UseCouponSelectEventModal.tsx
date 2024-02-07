@@ -9,7 +9,7 @@ import {
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
-import { DashboardContext } from "../../zustand";
+import { useStoreContext } from "../../zustand";
 import { SubmitButton } from "@/app/components/FormElements";
 import NewTicketModal from "../../events/modals/NewTicketModal";
 
@@ -20,9 +20,7 @@ export default function UseCouponSelectEvent({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { allEvents, ticketTypes } = useStore(store, (state) => state.events);
+  const { allEvents, ticketTypes } = useStoreContext((state) => state.events);
 
   return (
     <>

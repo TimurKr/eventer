@@ -8,7 +8,7 @@ import {
   ArrowLeftStartOnRectangleIcon,
   ChevronLeftIcon,
 } from "@heroicons/react/24/solid";
-import DashboardContextProvider from "./zustand";
+import { ContextProvider } from "./zustand";
 
 export default async function DashboardLayout({
   children,
@@ -29,7 +29,7 @@ export default async function DashboardLayout({
   };
 
   return (
-    <DashboardContextProvider>
+    <ContextProvider>
       <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
         <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
           <p className="hidden px-4 text-lg font-bold tracking-wider md:inline">
@@ -52,6 +52,6 @@ export default async function DashboardLayout({
           <div className="rounded-xl bg-white p-4 pt-0">{children}</div>
         </div>
       </section>
-    </DashboardContextProvider>
+    </ContextProvider>
   );
 }

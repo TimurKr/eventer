@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   Badge,
   Button,
@@ -51,7 +51,7 @@ import ConvertToCouponModal from "./modals/ConvertToCouponModal";
 import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
-import { createDashboardStore, DashboardContext } from "../zustand";
+import { useStoreContext } from "../zustand";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -68,10 +68,7 @@ function LinkUnlinkContact({
   ticket: EventWithTickets["tickets"][0];
   type: "guest" | "billing";
 }) {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const { refresh, setPartialTicket } = useStore(
-    store,
+  const { refresh, setPartialTicket } = useStoreContext(
     (state) => state.events,
   );
   if (identicalContactFound < 2 && contactUsage < 2) return null;
@@ -193,9 +190,6 @@ function TicketRow({
   ticket: EventWithTickets["tickets"][0];
   tickets: EventWithTickets["tickets"];
 }) {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
   const {
     ticketTypes,
     highlightedTicketIds,
@@ -206,18 +200,16 @@ function TicketRow({
     removeTickets,
     addTickets,
     toggleSelectedTicket,
-  } = useStore(store, (state) => state.events);
-
-  const event = useStore(
-    store,
-    (state) => state.events.events.find((e) => e.id == ticket.event_id)!,
-  );
-
-  const allContacts = useStore(store, (state) =>
-    state.events.events
+    event,
+    allContacts,
+  } = useStoreContext((state) => ({
+    ...state.events,
+    event: state.events.events.find((e) => e.id == ticket.event_id)!,
+    allContacts: state.events.events
       .flatMap((event) => event.tickets)
       .flatMap((ticket) => [ticket.guest!, ticket.billing!]),
-  );
+  }));
+
   const indexInEvent = tickets.findIndex((t) => t === ticket);
   const groupSize = tickets.filter(
     (t) => t.billing_id === ticket.billing_id,
@@ -627,9 +619,7 @@ function TicketRows({
   eventId: number;
   cancelled: boolean;
 }) {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const tickets = useStore(store, (state) => {
+  const tickets = useStoreContext((state) => {
     const event = state.events.events.find((e) => e.id == eventId)!;
     return cancelled ? event.cancelled_tickets : event.tickets;
   });
@@ -673,12 +663,6 @@ function TicketRows({
 }
 
 function EventRow({ eventId }: { eventId: number }) {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const event = useStore(
-    store,
-    (state) => state.events.events.find((e) => e.id == eventId)!,
-  );
   const {
     ticketTypes,
     searchTerm,
@@ -691,28 +675,26 @@ function EventRow({ eventId }: { eventId: number }) {
     toggleEventIsExpanded,
     toggleEventLockedArrived,
     toggleEventShowCancelledTickets,
-  } = useStore(store, (state) => state.events);
-
-  const selectedTickets = useStore(store, (state) =>
-    state.events.allEvents
-      .find((e) => e.id === eventId)!
-      .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-  );
-
-  const { higlightedTickets, highlightedCancelledTickets } = useStore(
-    store,
-    (state) => {
-      const e = state.events.events.find((e) => e.id == eventId)!;
-      return {
-        higlightedTickets: e.tickets.filter((t) =>
-          state.events.highlightedTicketIds.includes(t.id),
-        ).length,
-        highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
-          state.events.highlightedTicketIds.includes(t.id),
-        ).length,
-      };
-    },
-  );
+    event,
+    selectedTickets,
+    higlightedTickets,
+    highlightedCancelledTickets,
+  } = useStoreContext((state) => {
+    const e = state.events.events.find((e) => e.id == eventId)!;
+    return {
+      ...state.events,
+      event: e,
+      selectedTickets: state.events.allEvents
+        .find((e) => e.id === eventId)!
+        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+      higlightedTickets: e.tickets.filter((t) =>
+        state.events.highlightedTicketIds.includes(t.id),
+      ).length,
+      highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
+        state.events.highlightedTicketIds.includes(t.id),
+      ).length,
+    };
+  });
 
   return (
     <li key={eventId} className={`flex flex-col`}>
@@ -1031,9 +1013,6 @@ function EventRow({ eventId }: { eventId: number }) {
 }
 
 export default function EventsComponent() {
-  const store = useContext(DashboardContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
   const {
     events,
     isRefreshing,
@@ -1041,12 +1020,14 @@ export default function EventsComponent() {
     search,
     searchTerm,
     highlightedTicketIds,
-  } = useStore(store, (state) => state.events);
+  } = useStoreContext((state) => state.events);
 
   // refresh and search once mounted
   const q = useSearchParams().get("query");
   useEffect(() => {
+    console.log("mounted");
     refresh().then(() => {
+      console.log("refreshed");
       if (q) search(q);
     });
   }, []);
