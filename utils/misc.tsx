@@ -31,7 +31,7 @@ export async function optimisticUpdate<T, K extends keyof T>({
   if (!hideToast) toastId = toast.loading(loadingMessage || "Ukladám...");
   localUpdate(value);
   const res = await databaseUpdate(value);
-  if (res.error) {
+  if (res?.error) {
     localRevert();
     if (toastId)
       toast.update(toastId, {

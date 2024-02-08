@@ -332,7 +332,7 @@ export async function mergeContacts(targetContact: Contacts) {
   if (deleteQ.error) {
     return deleteQ;
   }
-  return;
+  return deleteQ;
 }
 
 // Convert tickets to coupon
