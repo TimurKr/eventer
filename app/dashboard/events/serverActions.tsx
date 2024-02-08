@@ -5,6 +5,7 @@ import {
   Events,
   InsertContacts,
   InsertTickets,
+  Services,
   Tickets,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
@@ -81,7 +82,11 @@ export async function fetchContacts() {
 }
 
 // Create new event
-export async function insertEvent(date: Date, isPublic: boolean) {
+export async function insertEvent(
+  date: Date,
+  isPublic: boolean,
+  service: Services,
+) {
   const supabase = createServerSupabase(cookies());
   const result = await supabase
     .from("events")
@@ -89,6 +94,7 @@ export async function insertEvent(date: Date, isPublic: boolean) {
       {
         datetime: date.toISOString(),
         is_public: isPublic,
+        service_id: service.id,
       },
     ])
     .select();

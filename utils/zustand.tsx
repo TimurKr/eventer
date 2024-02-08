@@ -49,7 +49,13 @@ export function createGlobalStoreContext<
   Slices extends { [K in keyof Slices]: SliceGenerator<any, any> },
   StoreState extends { [K in keyof Slices]: ReturnType<Slices[K]> },
 >(slices: Slices) {
-  const createGlobalStore = (initStoreState?: Partial<StoreState>) => {
+  // type InitialState = Partial<{
+  //   [K in keyof Slices]: Partial<ReturnType<Slices[K]>>;
+  // }>;
+  type InitialState = Partial<{
+    [K in keyof Slices]: Parameters<Slices[K]>[2];
+  }>;
+  const createGlobalStore = (initStoreState?: InitialState) => {
     return createStore<StoreState>()(
       persist(
         immer((set, get, store) => {
@@ -69,14 +75,14 @@ export function createGlobalStoreContext<
         }),
         {
           name: "dashboard-store",
-          version: 1,
-          merge: (persistedState, defaultState) => {
+          version: 3,
+          merge: (persistedState, currentState) => {
             if (!persistedState || typeof persistedState !== "object") {
-              return defaultState;
+              return currentState;
             }
 
-            let resultState: StoreState = { ...defaultState };
-            const keys = Object.keys(defaultState) as (keyof StoreState)[];
+            let resultState: StoreState = { ...currentState };
+            const keys = Object.keys(currentState) as (keyof StoreState)[];
 
             keys.forEach((key) => {
               if (key in persistedState) {
@@ -84,7 +90,7 @@ export function createGlobalStoreContext<
                 if (!!state) {
                   resultState = {
                     ...resultState,
-                    [key]: { ...defaultState[key], ...state },
+                    [key]: { ...currentState[key], ...state },
                   };
                 }
               }
@@ -106,14 +112,19 @@ export function createGlobalStoreContext<
       children,
       initStoreState,
     }: {
-      children: React.ReactNode;
-      initStoreState?: Partial<StoreState>;
+      children: JSX.Element | ((state: StoreState) => JSX.Element);
+      initStoreState?: InitialState;
     }) => {
       "use client";
 
       const store = useRef(createGlobalStore(initStoreState)).current;
+      const state = useStore(store, (state) => state);
 
-      return <Context.Provider value={store}>{children}</Context.Provider>;
+      return (
+        <Context.Provider value={store}>
+          {typeof children === "function" ? children(state) : children}
+        </Context.Provider>
+      );
     },
 
     useStoreContext: function useContextStore<U>(

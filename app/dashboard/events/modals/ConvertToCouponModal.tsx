@@ -52,7 +52,10 @@ export default function ConvertToCouponModal({
           <div className="flex flex-wrap items-center gap-2">
             <p className="p-2">Zvolené lístky:</p>
             {ticketTypes.map((type) => (
-              <div className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1">
+              <div
+                key={type.label}
+                className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1"
+              >
                 <span className="font-semibold">{type.label}</span>:{" "}
                 <span className="font-bold">
                   {selectedTickets.filter((t) => t.type == type.label).length}

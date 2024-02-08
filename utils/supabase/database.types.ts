@@ -45,6 +45,7 @@ export interface Database {
           note: string | null;
           original_amount: number;
           temp_id: string | null;
+          user_id: string;
           valid_until: string | null;
         };
         Insert: {
@@ -55,6 +56,7 @@ export interface Database {
           note?: string | null;
           original_amount: number;
           temp_id?: string | null;
+          user_id?: string;
           valid_until?: string | null;
         };
         Update: {
@@ -65,9 +67,18 @@ export interface Database {
           note?: string | null;
           original_amount?: number;
           temp_id?: string | null;
+          user_id?: string;
           valid_until?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "coupons_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       events: {
         Row: {
@@ -75,20 +86,60 @@ export interface Database {
           datetime: string;
           id: number;
           is_public: boolean;
+          service_id: number;
         };
         Insert: {
           created_at?: string;
           datetime: string;
           id?: number;
           is_public?: boolean;
+          service_id: number;
         };
         Update: {
           created_at?: string;
           datetime?: string;
           id?: number;
           is_public?: boolean;
+          service_id?: number;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      services: {
+        Row: {
+          created_at: string;
+          id: number;
+          name: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          name: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "services_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       tickets: {
         Row: {
@@ -167,6 +218,29 @@ export interface Database {
             columns: ["guest_id"];
             isOneToOne: false;
             referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      users: {
+        Row: {
+          created_at: string;
+          id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "users_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
@@ -281,6 +355,14 @@ export type Events = Database["public"]["Tables"]["events"]["Row"];
 export type InsertEvents = Database["public"]["Tables"]["events"]["Insert"];
 export type UpdateEvents = Database["public"]["Tables"]["events"]["Update"];
 
+export type Services = Database["public"]["Tables"]["services"]["Row"];
+export type InsertServices = Database["public"]["Tables"]["services"]["Insert"];
+export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
+
 export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
 export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];
 export type UpdateTickets = Database["public"]["Tables"]["tickets"]["Update"];
+
+export type Users = Database["public"]["Tables"]["users"]["Row"];
+export type InsertUsers = Database["public"]["Tables"]["users"]["Insert"];
+export type UpdateUsers = Database["public"]["Tables"]["users"]["Update"];

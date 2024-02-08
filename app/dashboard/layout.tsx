@@ -15,8 +15,21 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (!(await getServerUser(cookies()))) {
-    redirect("/login");
+  const supabase = createServerSupabase(cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return redirect("/login");
+  }
+
+  const { data: services, error } = await supabase
+    .from("services")
+    .select("*")
+    .order("name");
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
   const signOut = async () => {
@@ -29,11 +42,18 @@ export default async function DashboardLayout({
   };
 
   return (
-    <ContextProvider>
+    <ContextProvider
+      initStoreState={{
+        services: {
+          services: services,
+          selectedService: services[0] || null,
+        },
+      }}
+    >
       <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
         <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
           <p className="hidden px-4 text-lg font-bold tracking-wider md:inline">
-            Tajomné Variácie
+            Tajomné variácie
           </p>
           <Links />
           <form action={signOut} className="ms-auto w-auto">

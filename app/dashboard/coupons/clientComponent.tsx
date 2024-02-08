@@ -124,43 +124,41 @@ export default function Coupons() {
           <NewCouponModal />
         </div>
         <div>
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-slate-200 *:px-3 *:py-0.5 first:*:rounded-tl-lg last:*:rounded-tr-lg">
-                <th className="px-2 text-start text-sm font-semibold">Kód</th>
-                <th className="text-end text-sm font-semibold">Suma</th>
-                <th className="text-end text-sm font-semibold">
-                  Platí do:{" "}
-                  <span className="text-xs font-light text-gray-500">
-                    (vrátane)
-                  </span>
-                </th>
-                <th className=" text-center text-sm font-semibold">Stav</th>
-                <th className="pe-2 text-end text-sm font-semibold">
-                  Poznámka
-                </th>
-                <th className="pe-2 text-end text-sm font-semibold">Použité</th>
-                <th className="pe-2 text-end text-sm font-semibold">
-                  Vytvorené z
-                </th>
-                <th className=""></th>
-              </tr>
-            </thead>
-            <tbody>
-              {coupons === undefined ? (
-                <tr>
-                  <td colSpan={6} className="text-center">
-                    <Loading />
-                  </td>
+          {coupons.length === 0 ? (
+            isRefreshing ? (
+              <div className="block w-full p-4">
+                <Loading />
+              </div>
+            ) : (
+              <div className="block w-full p-4 text-center">Žiadne kupóny</div>
+            )
+          ) : (
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="bg-slate-200 *:px-3 *:py-0.5 first:*:rounded-tl-lg last:*:rounded-tr-lg">
+                  <th className="px-2 text-start text-sm font-semibold">Kód</th>
+                  <th className="text-end text-sm font-semibold">Suma</th>
+                  <th className="text-end text-sm font-semibold">
+                    Platí do:{" "}
+                    <span className="text-xs font-light text-gray-500">
+                      (vrátane)
+                    </span>
+                  </th>
+                  <th className=" text-center text-sm font-semibold">Stav</th>
+                  <th className="pe-2 text-end text-sm font-semibold">
+                    Poznámka
+                  </th>
+                  <th className="pe-2 text-end text-sm font-semibold">
+                    Použité
+                  </th>
+                  <th className="pe-2 text-end text-sm font-semibold">
+                    Vytvorené z
+                  </th>
+                  <th className=""></th>
                 </tr>
-              ) : coupons.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center">
-                    Žiadne kupóny
-                  </td>
-                </tr>
-              ) : (
-                coupons.map((coupon) => (
+              </thead>
+              <tbody>
+                {coupons.map((coupon) => (
                   <tr key={coupon.id} className="border-t first:border-none">
                     <td className="p-1 px-2">{coupon.code}</td>
                     <td className="whitespace-nowrap px-2 text-end">
@@ -381,10 +379,10 @@ export default function Coupons() {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>

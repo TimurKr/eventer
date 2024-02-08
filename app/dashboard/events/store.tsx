@@ -18,7 +18,12 @@ type Events = fetchEventsReturnType & {
 function search(
   events: Events[],
   term: string,
+  service_id?: Events["service_id"],
 ): { events: Events[]; highlightedTicketIds: Tickets["id"][] } {
+  if (service_id) {
+    events = events.filter((event) => event.service_id === service_id);
+  }
+
   if (term === "") {
     return { events: events, highlightedTicketIds: [] };
   }

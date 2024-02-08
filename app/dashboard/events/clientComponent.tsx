@@ -1014,23 +1014,32 @@ function EventRow({ eventId }: { eventId: number }) {
 
 export default function EventsComponent() {
   const {
-    events,
-    isRefreshing,
-    refresh,
-    search,
-    searchTerm,
-    highlightedTicketIds,
-  } = useStoreContext((state) => state.events);
+    events: {
+      events,
+      isRefreshing,
+      refresh,
+      search,
+      searchTerm,
+      highlightedTicketIds,
+    },
+    services: { selectedService, services },
+  } = useStoreContext((state) => state);
 
   // refresh and search once mounted
   const q = useSearchParams().get("query");
   useEffect(() => {
-    console.log("mounted");
     refresh().then(() => {
-      console.log("refreshed");
       if (q) search(q);
     });
   }, []);
+
+  if (!selectedService)
+    return (
+      <p>
+        Prosím vyberte službu:{" "}
+        {services ? services.map((s) => s.name) : "none..."}
+      </p>
+    );
 
   return (
     <>
