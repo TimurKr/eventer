@@ -51,7 +51,7 @@ import ConvertToCouponModal from "./modals/ConvertToCouponModal";
 import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
-import { useStoreContext } from "../zustand";
+import { useStoreContext } from "../store";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 

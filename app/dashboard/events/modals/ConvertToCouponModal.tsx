@@ -8,7 +8,7 @@ import { Events } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { SubmitButton } from "@/app/components/FormElements";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function ConvertToCouponModal({
   eventId,

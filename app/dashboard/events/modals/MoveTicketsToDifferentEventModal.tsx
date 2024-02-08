@@ -7,7 +7,7 @@ import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
 import { SubmitButton } from "@/app/components/FormElements";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function MoveTicketsToDifferentEventModal({
   eventId,

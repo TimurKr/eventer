@@ -8,7 +8,7 @@ import {
   ArrowLeftStartOnRectangleIcon,
   ChevronLeftIcon,
 } from "@heroicons/react/24/solid";
-import { ContextProvider } from "./zustand";
+import { ContextProvider } from "./store";
 
 export default async function DashboardLayout({
   children,

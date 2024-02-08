@@ -9,7 +9,7 @@ import {
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events, Tickets } from "@/utils/supabase/database.types";
 import { useStore } from "zustand";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 import { SubmitButton } from "@/app/components/FormElements";
 import NewTicketModal from "../../events/modals/NewTicketModal";
 

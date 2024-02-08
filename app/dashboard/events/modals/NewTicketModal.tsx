@@ -25,7 +25,7 @@ import { toast } from "react-toastify";
 import { useStore } from "zustand";
 import { contactsEqual } from "../utils";
 import CouponCodeField from "./CouponCodeField";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function NewTicketModal({
   eventId,

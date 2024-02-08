@@ -58,7 +58,7 @@ function search(
   };
 }
 
-export type State = {
+type State = {
   events: Events[];
   allEvents: Events[];
   searchTerm: string;
@@ -68,7 +68,7 @@ export type State = {
   isRefreshing: boolean;
 };
 
-export type Actions = {
+type Actions = {
   refresh: () => Promise<void>;
   search: (term: string, allEvents?: Events[]) => void;
 
@@ -107,7 +107,7 @@ const defaultState: State = {
   isRefreshing: false,
 };
 
-export const storeSlice = createStoreSlice<State, Actions>((set, get) => ({
+const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
   ...defaultState,
   refresh: async () => {
     set((state) => {
@@ -356,3 +356,5 @@ export const storeSlice = createStoreSlice<State, Actions>((set, get) => ({
     });
   },
 }));
+
+export default eventsSlice;

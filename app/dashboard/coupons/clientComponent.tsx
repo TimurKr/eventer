@@ -25,7 +25,7 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import { optimisticUpdate } from "@/utils/misc";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
-import { useStoreContext } from "../zustand";
+import { useStoreContext } from "../store";
 
 export default function Coupons() {
   const {

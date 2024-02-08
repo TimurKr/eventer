@@ -13,6 +13,8 @@ function search(coupons: Coupons[], term: string): Coupons[] {
   const fuse = new Fuse<Coupons>(coupons, {
     keys: [
       "code",
+      "note",
+      "amount",
       ["created_from", "redeemed_from"].flatMap((key1) =>
         ["guest", "billing"].flatMap((key2) =>
           ["name", "email", "phone"].flatMap((key3) =>
@@ -27,14 +29,14 @@ function search(coupons: Coupons[], term: string): Coupons[] {
   return fuse.search(term).map((r) => r.item);
 }
 
-export type State = {
+type State = {
   coupons: Coupons[];
   allCoupons: Coupons[];
   searchTerm: string;
   isRefreshing: boolean;
 };
 
-export type Actions = {
+type Actions = {
   refresh: () => Promise<void>;
   search: (term: string, allCoupons?: Coupons[]) => void;
 
@@ -46,7 +48,7 @@ export type Actions = {
   ) => Promise<void>;
 };
 
-export const storeSlice = createStoreSlice<State, Actions>((set, get) => ({
+const couponsSlice = createStoreSlice<State, Actions>((set, get) => ({
   coupons: [],
   allCoupons: [],
   searchTerm: "",
@@ -107,3 +109,5 @@ export const storeSlice = createStoreSlice<State, Actions>((set, get) => ({
     });
   },
 }));
+
+export default couponsSlice;

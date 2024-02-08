@@ -19,7 +19,7 @@ import { optimisticUpdate } from "@/utils/misc";
 import Loading from "../loading";
 import CouponCodeField from "./CouponCodeField";
 import { Coupons } from "@/utils/supabase/database.types";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function CouponRelationManager({
   ticket,

@@ -6,7 +6,7 @@ import { insertEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStore } from "zustand";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function NewEventModal() {
   const [date, setDate] = useState<Date>(new Date());

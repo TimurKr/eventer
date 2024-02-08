@@ -10,7 +10,7 @@ import { FormikTextField, SubmitButton } from "@/app/components/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { useStoreContext } from "../../zustand";
+import { useStoreContext } from "../../store";
 
 export default function NewCouponModal() {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
