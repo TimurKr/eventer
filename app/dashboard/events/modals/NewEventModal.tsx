@@ -17,13 +17,17 @@ export default function NewEventModal() {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { addEvent } = useStoreContext((state) => state.events);
+  const {
+    events: { addEvent },
+    services: { selectedService },
+  } = useStoreContext((state) => state);
 
   const submit = () => {
     startSubmition(async () => {
       const { data, error } = await insertEvent(
         new Date(date.toDateString() + " " + time),
         isPublic,
+        selectedService!,
       );
       if (error) {
         setErrorMessages(error.message.split("\n"));
@@ -47,6 +51,7 @@ export default function NewEventModal() {
         color="success"
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-2 rounded-md bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
+        disabled={!selectedService}
       >
         <PlusIcon className="h-5 w-5" />
         Nová udalosť
