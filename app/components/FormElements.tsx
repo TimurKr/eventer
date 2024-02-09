@@ -8,6 +8,7 @@ import {
   FieldMetaProps,
   FieldProps,
   GenericFieldHTMLAttributes,
+  useField,
 } from "formik";
 import { HTMLInputTypeAttribute, useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -115,18 +116,27 @@ export const FormikTextField = ({
 export const FormikSelectField = ({
   children,
   name,
+  className,
 }: {
   children: React.ReactNode;
   name: string;
-}) => (
-  <Field
-    name={name}
-    as="select"
-    className="ms-auto rounded-lg border-gray-200 bg-gray-50 py-1"
-  >
-    {children}
-  </Field>
-);
+  className?: string;
+}) => {
+  const [field, meta, helpers] = useField(name);
+  return (
+    <>
+      <select
+        {...field}
+        className={`ms-auto w-full rounded-lg border-gray-200 bg-gray-50 py-1 ${
+          className || ""
+        }`}
+      >
+        {children}
+      </select>
+      <CustomErrorMessage fieldMeta={meta} />
+    </>
+  );
+};
 
 type InstantFieldProps<T> = {
   defaultValue: T;

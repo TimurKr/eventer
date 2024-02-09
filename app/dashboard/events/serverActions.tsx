@@ -4,8 +4,8 @@ import {
   Contacts,
   Events,
   InsertContacts,
+  InsertEvents,
   InsertTickets,
-  Services,
   Tickets,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
@@ -75,29 +75,13 @@ export async function fetchContacts() {
   const r = await createServerSupabase(cookies(), ["contacts", "tickets"])
     .from("contacts")
     .select();
-  if (r.error) {
-    return r;
-  }
   return r;
 }
 
 // Create new event
-export async function insertEvent(
-  date: Date,
-  isPublic: boolean,
-  service: Services,
-) {
+export async function insertEvents(events: InsertEvents[]) {
   const supabase = createServerSupabase(cookies());
-  const result = await supabase
-    .from("events")
-    .insert([
-      {
-        datetime: date.toISOString(),
-        is_public: isPublic,
-        service_id: service.id,
-      },
-    ])
-    .select();
+  const result = await supabase.from("events").insert(events).select();
   if (!result.error) {
     revalidateTag("events");
   }

@@ -665,7 +665,7 @@ function TicketRows({
 
 function EventRow({ eventId }: { eventId: number }) {
   const {
-    services: { services },
+    services: { allServices },
     events: {
       ticketTypes,
       searchTerm,
@@ -714,7 +714,7 @@ function EventRow({ eventId }: { eventId: number }) {
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-            {services.find((s) => s.id == event.service_id)?.name}
+            {allServices.find((s) => s.id == event.service_id)?.name}
             <Badge
               color={event.is_public ? "blue" : "purple"}
               className="rounded-md"
@@ -1042,7 +1042,6 @@ export default function EventsComponent() {
       searchTerm,
       highlightedTicketIds,
     },
-    services: { selectedService, services },
   } = useStoreContext((state) => state);
 
   // refresh and search once mounted
@@ -1052,14 +1051,6 @@ export default function EventsComponent() {
       if (q) search(q);
     });
   }, []);
-
-  if (!selectedService)
-    return (
-      <p>
-        Prosím vyberte službu:{" "}
-        {services ? services.map((s) => s.name) : "none..."}
-      </p>
-    );
 
   return (
     <>

@@ -10,6 +10,8 @@ import {
 } from "@heroicons/react/24/solid";
 import { ContextProvider } from "./store";
 import Navbar from "./Navbar";
+import { fetchServices } from "./serverActions";
+import { useEffect } from "react";
 
 export default async function DashboardLayout({
   children,
@@ -21,31 +23,17 @@ export default async function DashboardLayout({
     return redirect("/login");
   }
 
-  const supabase = createServerSupabase(cookies());
-  const { data: services, error } = await supabase
-    .from("services")
-    .select("*")
-    .order("name");
-
+  const { data: services, error } = await fetchServices();
   if (error) {
     return <div>Error: {error.message}</div>;
   }
-
-  const signOut = async () => {
-    "use server";
-
-    const cookieStore = cookies();
-    const supabase = createServerSupabase(cookieStore);
-    await supabase.auth.signOut();
-    return redirect("/login");
-  };
 
   return (
     <ContextProvider
       initStoreState={{
         services: {
           services: services,
-          selectedService: services[0] || null,
+          allServices: services,
         },
       }}
     >

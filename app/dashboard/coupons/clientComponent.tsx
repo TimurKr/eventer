@@ -126,11 +126,9 @@ export default function Coupons() {
         <div>
           {coupons.length === 0 ? (
             isRefreshing ? (
-              <div className="block w-full p-4">
-                <Loading />
-              </div>
+              <Loading />
             ) : (
-              <div className="block w-full p-4 text-center">Žiadne kupóny</div>
+              <div className="w-full p-4 text-center">Žiadne kupóny</div>
             )
           ) : (
             <table className="w-full table-auto">

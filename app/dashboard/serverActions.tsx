@@ -9,3 +9,8 @@ export async function signOut() {
   await supabase.auth.signOut();
   return redirect("/login");
 }
+
+export async function fetchServices() {
+  const supabase = createServerSupabase(cookies());
+  return await supabase.from("services").select("*").order("name");
+}

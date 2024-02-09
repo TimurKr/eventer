@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { FaTheaterMasks, FaTicketAlt } from "react-icons/fa";
 import { signOut } from "./serverActions";
 import { Users } from "@/utils/supabase/database.types";
+import { HiCalendarDays } from "react-icons/hi2";
 
 export default function Navbar({ profile }: { profile?: Users }) {
   const path = usePathname();
@@ -17,9 +18,14 @@ export default function Navbar({ profile }: { profile?: Users }) {
       </p>
       {[
         {
+          title: "Predstavenia",
+          href: "/dashboard/services",
+          icon: <FaTheaterMasks className="h-5 w-5" />,
+        },
+        {
           title: "Udalosti",
           href: "/dashboard/events",
-          icon: <FaTheaterMasks className="h-5 w-5" />,
+          icon: <HiCalendarDays className="h-5 w-5" />,
         },
         {
           title: "Kupóny",
