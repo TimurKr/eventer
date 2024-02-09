@@ -48,10 +48,7 @@ export function createStoreSlice<State extends object, Actions extends object>(
 export function createGlobalStoreContext<
   Slices extends { [K in keyof Slices]: SliceGenerator<any, any> },
   StoreState extends { [K in keyof Slices]: ReturnType<Slices[K]> },
->(slices: Slices) {
-  // type InitialState = Partial<{
-  //   [K in keyof Slices]: Partial<ReturnType<Slices[K]>>;
-  // }>;
+>(slices: Slices, version?: number) {
   type InitialState = Partial<{
     [K in keyof Slices]: Parameters<Slices[K]>[2];
   }>;
@@ -75,7 +72,7 @@ export function createGlobalStoreContext<
         }),
         {
           name: "dashboard-store",
-          version: 3,
+          version: version,
           merge: (persistedState, currentState) => {
             if (!persistedState || typeof persistedState !== "object") {
               return currentState;

@@ -52,6 +52,7 @@ import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
 import { useStoreContext } from "../store";
+import moment from "moment";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -664,35 +665,41 @@ function TicketRows({
 
 function EventRow({ eventId }: { eventId: number }) {
   const {
-    ticketTypes,
-    searchTerm,
-    removeEvent,
-    addEvent,
-    setPartialEvent,
-    removeTickets,
-    addTickets,
-    toggleSelectedTicket,
-    toggleEventIsExpanded,
-    toggleEventLockedArrived,
-    toggleEventShowCancelledTickets,
-    event,
-    selectedTickets,
-    higlightedTickets,
-    highlightedCancelledTickets,
+    services: { services },
+    events: {
+      ticketTypes,
+      searchTerm,
+      removeEvent,
+      addEvent,
+      setPartialEvent,
+      removeTickets,
+      addTickets,
+      toggleSelectedTicket,
+      toggleEventIsExpanded,
+      toggleEventLockedArrived,
+      toggleEventShowCancelledTickets,
+      event,
+      selectedTickets,
+      higlightedTickets,
+      highlightedCancelledTickets,
+    },
   } = useStoreContext((state) => {
     const e = state.events.events.find((e) => e.id == eventId)!;
     return {
-      ...state.events,
-      event: e,
-      selectedTickets: state.events.allEvents
-        .find((e) => e.id === eventId)!
-        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-      higlightedTickets: e.tickets.filter((t) =>
-        state.events.highlightedTicketIds.includes(t.id),
-      ).length,
-      highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
-        state.events.highlightedTicketIds.includes(t.id),
-      ).length,
+      services: state.services,
+      events: {
+        ...state.events,
+        event: e,
+        selectedTickets: state.events.allEvents
+          .find((e) => e.id === eventId)!
+          .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+        higlightedTickets: e.tickets.filter((t) =>
+          state.events.highlightedTicketIds.includes(t.id),
+        ).length,
+        highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
+          state.events.highlightedTicketIds.includes(t.id),
+        ).length,
+      },
     };
   });
 
@@ -705,9 +712,9 @@ function EventRow({ eventId }: { eventId: number }) {
             : ""
         }`}
       >
-        <div className="flex min-w-0 flex-1 flex-col self-center">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-            {new Date(event.datetime).toLocaleDateString("sk-SK")}
+            {services.find((s) => s.id == event.service_id)?.name}
             <Badge
               color={event.is_public ? "blue" : "purple"}
               className="rounded-md"
@@ -715,9 +722,22 @@ function EventRow({ eventId }: { eventId: number }) {
               {event.is_public ? "Verejné" : "Súkromné"}
             </Badge>
           </p>
-          <p className="truncate text-xs leading-5 text-gray-500">
-            {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-          </p>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-sm font-bold ${
+                moment(event.datetime).isSame(moment(), "day")
+                  ? "text-cyan-700"
+                  : ""
+              }`}
+            >
+              {moment(event.datetime).isSame(moment(), "day")
+                ? "Dnes"
+                : new Date(event.datetime).toLocaleDateString("sk-SK")}
+            </span>
+            <span className="text-xs text-gray-500">
+              {new Date(event.datetime).toLocaleTimeString("sk-SK")}
+            </span>
+          </div>
         </div>
         <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
           {ticketTypes.map((type) => {
@@ -788,7 +808,7 @@ function EventRow({ eventId }: { eventId: number }) {
             : "grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="flex items-start justify-end gap-2 overflow-y-hidden p-1">
+        <div className="flex items-start justify-end gap-2 overflow-y-hidden">
           <ChangeDateModal event={event} />
           <Button
             onClick={() =>

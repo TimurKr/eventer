@@ -1,4 +1,4 @@
-import 'server-only';
+import "server-only";
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -7,7 +7,10 @@ import { Database } from "@/utils/supabase/database.types";
 // Do not cache
 export const revalidate = 0;
 
-export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>, tags?: string[]) => {
+export const createServerSupabase = (
+  cookieStore: ReturnType<typeof cookies>,
+  tags?: string[],
+) => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,20 +38,36 @@ export const createServerSupabase = (cookieStore: ReturnType<typeof cookies>, ta
           }
         },
       },
-      global:{
+      global: {
         fetch: (input: RequestInfo | URL, init?: RequestInit) => {
           return fetch(input, {
             ...init,
-            next: {tags: tags}
+            next: { tags: tags },
           });
-        }
-      }
+        },
+      },
     },
   );
 };
 
-export const getServerUser = async (cooieStore: ReturnType<typeof cookies>) => {
-  const supabase = createServerSupabase(cooieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+export const getServerUser = async (
+  cookieStore: ReturnType<typeof cookies>,
+) => {
+  const supabase = createServerSupabase(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user?.id)
+    .single();
+
+  if (profileError) {
+    throw profileError;
+  }
+  return { ...user, ...profile };
+};

@@ -4,7 +4,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f"
+    "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",

@@ -224,14 +224,17 @@ export interface Database {
       };
       users: {
         Row: {
+          business_name: string | null;
           created_at: string;
           id: string;
         };
         Insert: {
+          business_name?: string | null;
           created_at?: string;
           id: string;
         };
         Update: {
+          business_name?: string | null;
           created_at?: string;
           id?: string;
         };
