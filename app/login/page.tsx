@@ -36,24 +36,10 @@ export default async function Login({
     <div className="grid h-full w-full place-content-center">
       <LoginForm action={signIn} />
       <Link
-        href="/"
-        className="group absolute left-8 top-8 flex items-center rounded-md bg-btn-background px-4 py-2 text-sm text-foreground no-underline hover:bg-btn-background-hover"
+        href="/signup"
+        className="animate-in mt-2 rounded-lg p-2 text-center text-sm tracking-wide text-gray-500 transition-all hover:text-gray-700 hover:underline"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>{" "}
-        Back
+        Vytvoriť účet
       </Link>
     </div>
   );
