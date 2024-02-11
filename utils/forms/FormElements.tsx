@@ -65,7 +65,7 @@ export const FormikTextField = ({
         return (
           <div
             className={`w-full ${
-              vertical ? "" : "flex flex-row justify-between gap-8"
+              vertical ? "" : "flex flex-row items-center justify-between gap-8"
             }`}
           >
             {label && (
@@ -117,14 +117,27 @@ export const FormikSelectField = ({
   children,
   name,
   className,
+  vertical = false,
+  label,
 }: {
   children: React.ReactNode;
   name: string;
   className?: string;
+  vertical?: boolean;
+  label?: string;
 }) => {
   const [field, meta, helpers] = useField(name);
   return (
-    <>
+    <div
+      className={`w-full ${
+        vertical ? "" : "flex flex-row items-center justify-between gap-8"
+      }`}
+    >
+      {label && (
+        <label className="p-1 text-gray-700" htmlFor={field.name}>
+          {label}
+        </label>
+      )}
       <select
         {...field}
         className={`ms-auto w-full rounded-lg border-gray-200 bg-gray-50 py-1 ${
@@ -134,7 +147,7 @@ export const FormikSelectField = ({
         {children}
       </select>
       <CustomErrorMessage fieldMeta={meta} />
-    </>
+    </div>
   );
 };
 

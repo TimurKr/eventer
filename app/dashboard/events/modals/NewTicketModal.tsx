@@ -28,11 +28,11 @@ import { useStoreContext } from "../../store";
 
 export default function NewTicketModal({
   eventId,
-  onOpen,
+  onSuccess,
   couponCode,
 }: {
   eventId: Events["id"];
-  onOpen?: () => void;
+  onSuccess?: () => void;
   couponCode?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,15 +40,18 @@ export default function NewTicketModal({
   const [errorMess, setErrorMess] = useState<string | undefined>();
   const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
-  const { addTickets, ticketTypes } = useStoreContext((state) => ({
-    ...state.events,
-    ticketTypes: state.events.ticketTypes.map((t) => ({
-      ...t,
-      sold: state.events.events
-        .find((e) => e.id === eventId)!
-        .tickets.filter((ticket) => ticket.type == t.label).length,
-    })),
-  }));
+  const { addTickets, ticketTypes, setPartialCoupon } = useStoreContext(
+    (state) => ({
+      addTickets: state.events.addTickets,
+      ticketTypes: state.events.ticketTypes.map((t) => ({
+        ...t,
+        sold: state.events.events
+          .find((e) => e.id === eventId)!
+          .tickets.filter((ticket) => ticket.type == t.label).length,
+      })),
+      setPartialCoupon: state.coupons.setPartialCoupon,
+    }),
+  );
 
   useEffect(() => {
     (async () => {
@@ -171,6 +174,14 @@ export default function NewTicketModal({
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
     }
+    addTickets(
+      eventId,
+      createdTickets.map((t) => ({
+        ...t,
+        billing: allContacts.find((c) => c.id == t.billing_id)!,
+        guest: allContacts.find((c) => c.id == t.guest_id)!,
+      })),
+    );
     if (coupon) {
       const couponAmountUpdate = await redeemCoupon(
         coupon.id,
@@ -186,16 +197,19 @@ export default function NewTicketModal({
         });
         return;
       }
+      setPartialCoupon({
+        id: coupon.id,
+        amount:
+          coupon.amount -
+          Math.min(
+            coupon.amount,
+            createdTickets.map((t) => t.price).reduce((a, b) => a + b, 0),
+          ),
+      });
     }
-    addTickets(
-      eventId,
-      createdTickets.map((t) => ({
-        ...t,
-        billing: allContacts.find((c) => c.id == t.billing_id)!,
-        guest: allContacts.find((c) => c.id == t.guest_id)!,
-      })),
-    );
+
     toast.success("Lístky boli vytvorené");
+    onSuccess?.();
     setIsOpen(false);
   };
 
@@ -203,10 +217,7 @@ export default function NewTicketModal({
     <>
       <button
         className="rounded-md bg-green-500 px-2 py-0.5 text-xs text-white hover:bg-green-600"
-        onClick={() => {
-          onOpen?.();
-          setIsOpen(true);
-        }}
+        onClick={() => setIsOpen(true)}
       >
         Vytvoriť lístok
       </button>
@@ -254,22 +265,22 @@ export default function NewTicketModal({
                     optional
                     vertical
                   />
-                  <div className="flex-0">
+                  <FormikSelectField name="paymentStatus" label="Stav" vertical>
+                    <option value="zaplatené">Zaplatené</option>
+                    <option value="rezervované">Rezervované</option>
+                    <option value="zrušené">Zrušené</option>
+                  </FormikSelectField>
+                  {/* <div className="flex-0">
                     <label
                       className="p-1 text-gray-700"
                       htmlFor="paymentStatus"
                     >
                       Stav platby
                     </label>
-                    <FormikSelectField name="paymentStatus">
-                      <option value="zaplatené">Zaplatené</option>
-                      <option value="rezervované">Rezervované</option>
-                      <option value="zrušené">Zrušené</option>
-                    </FormikSelectField>
                     <CustomErrorMessage
                       fieldMeta={getFieldMeta("paymentStatus")}
                     />
-                  </div>
+                  </div> */}
                 </div>
                 <FieldArray name="tickets">
                   {(ticketsProps) => (

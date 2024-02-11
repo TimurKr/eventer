@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Button, Datepicker, Modal } from "flowbite-react";
-import { useContext, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { updateEventFields } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events } from "@/utils/supabase/database.types";

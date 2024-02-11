@@ -1,9 +1,10 @@
 "use client";
 
-import { Alert, Badge, Modal, Progress, Spinner } from "flowbite-react";
-import { useContext, useState, useTransition } from "react";
+import { Badge, Modal, Progress } from "flowbite-react";
+import { useState } from "react";
 import { useStoreContext } from "../../store";
 import NewTicketModal from "../../events/modals/NewTicketModal";
+import moment from "moment";
 
 export default function UseCouponSelectEvent({
   couponCode,
@@ -11,8 +12,12 @@ export default function UseCouponSelectEvent({
   couponCode: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const { allEvents, ticketTypes } = useStoreContext((state) => state.events);
+  const {
+    events: { allEvents, ticketTypes },
+    services: { allServices },
+  } = useStoreContext((state) => state);
 
   return (
     <>
@@ -22,7 +27,12 @@ export default function UseCouponSelectEvent({
       >
         Use
       </button>
-      <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
+      <Modal
+        show={isOpen}
+        onClose={() => setIsOpen(false)}
+        dismissible
+        size={"4xl"}
+      >
         <Modal.Header>
           Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
           kupónom
@@ -30,11 +40,11 @@ export default function UseCouponSelectEvent({
         <Modal.Body>
           {allEvents.map((event) => (
             <div
-              className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100`}
+              className={`my-0.5 flex w-full items-center justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100`}
             >
-              <div className="flex min-w-0 flex-1 flex-col items-start self-center">
+              <div className="flex min-w-0 flex-1 flex-col gap-1 self-center py-0.5">
                 <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-                  {new Date(event.datetime).toLocaleDateString("sk-SK")}
+                  {allServices.find((s) => s.id == event.service_id)?.name}
                   <Badge
                     color={event.is_public ? "blue" : "purple"}
                     className="rounded-md"
@@ -42,9 +52,22 @@ export default function UseCouponSelectEvent({
                     {event.is_public ? "Verejné" : "Súkromné"}
                   </Badge>
                 </p>
-                <p className="truncate text-xs leading-5 text-gray-500">
-                  {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-bold ${
+                      moment(event.datetime).isSame(moment(), "day")
+                        ? "text-cyan-700"
+                        : ""
+                    }`}
+                  >
+                    {moment(event.datetime).isSame(moment(), "day")
+                      ? "Dnes"
+                      : new Date(event.datetime).toLocaleDateString("sk-SK")}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(event.datetime).toLocaleTimeString("sk-SK")}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
                 {ticketTypes.map((type) => {
@@ -79,10 +102,10 @@ export default function UseCouponSelectEvent({
                       <Progress
                         className="mb-1"
                         size="sm"
-                        progress={Math.min((sold / type.max_sold) * 100, 100)}
+                        progress={(sold / type.max_sold) * 100}
                         color={
                           sold > type.max_sold
-                            ? "failure"
+                            ? "red"
                             : type.label == "VIP"
                               ? "yellow"
                               : "gray"
@@ -92,11 +115,7 @@ export default function UseCouponSelectEvent({
                   );
                 })}
               </div>
-              <NewTicketModal
-                eventId={event.id}
-                couponCode={couponCode}
-                onOpen={() => setIsOpen(false)}
-              />
+              <NewTicketModal eventId={event.id} couponCode={couponCode} />
             </div>
           ))}
         </Modal.Body>

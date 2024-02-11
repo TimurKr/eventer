@@ -23,7 +23,13 @@ export default function CouponCodeField({
   const [isValidating, startValidatingCoupon] = useTransition();
 
   useEffect(() => {
-    if (defaultCode) setCode(defaultCode);
+    if (defaultCode) {
+      setCode(defaultCode);
+      startValidatingCoupon(async () => {
+        const coupon = await validate(defaultCode);
+        setCoupon(coupon);
+      });
+    }
   }, []);
 
   return (
