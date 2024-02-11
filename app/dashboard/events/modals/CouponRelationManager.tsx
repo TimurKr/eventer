@@ -1,14 +1,12 @@
 "use client";
 
 import { Tooltip } from "flowbite-react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   EventWithTickets,
   fetchCoupon,
   updateTicketFields,
 } from "../serverActions";
-import { useStore } from "zustand";
-import { SubmitButton } from "@/app/components/FormElements";
 import Link from "next/link";
 import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
 import {
@@ -16,7 +14,6 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { optimisticUpdate } from "@/utils/misc";
-import Loading from "../loading";
 import CouponCodeField from "./CouponCodeField";
 import { Coupons } from "@/utils/supabase/database.types";
 import { useStoreContext } from "../../store";

@@ -1,17 +1,9 @@
-import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
-import Links from "./Navbar";
+import { getServerUser } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import AuthButton from "@/app/components/AuthButton";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import {
-  ArrowLeftStartOnRectangleIcon,
-  ChevronLeftIcon,
-} from "@heroicons/react/24/solid";
 import { ContextProvider } from "./store";
 import Navbar from "./Navbar";
 import { fetchServices } from "./serverActions";
-import { useEffect } from "react";
 
 export default async function DashboardLayout({
   children,

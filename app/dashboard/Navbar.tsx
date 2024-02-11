@@ -4,12 +4,14 @@ import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaTheaterMasks, FaTicketAlt } from "react-icons/fa";
-import { signOut } from "./serverActions";
 import { Users } from "@/utils/supabase/database.types";
 import { HiCalendarDays } from "react-icons/hi2";
+import { logOutClient } from "../auth/clientActions";
+import { useStoreContext } from "./store";
 
 export default function Navbar({ profile }: { profile?: Users }) {
   const path = usePathname();
+  const store = useStoreContext();
 
   return (
     <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
@@ -46,7 +48,10 @@ export default function Navbar({ profile }: { profile?: Users }) {
           <span className="block md:hidden">{item.icon}</span>
         </Link>
       ))}
-      <form action={signOut} className="ms-auto w-auto">
+      <form
+        action={() => logOutClient(store.persist.clearStorage)}
+        className="ms-auto w-auto"
+      >
         <button
           className="w-full rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
           type="submit"

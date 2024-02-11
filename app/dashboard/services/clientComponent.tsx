@@ -3,10 +3,17 @@
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import { useStoreContext } from "../store";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Services() {
   const { services, searchTerm, search, refresh, isRefreshing } =
     useStoreContext((state) => state.services);
+
+  const q = useSearchParams().get("query");
+  useEffect(() => {
+    if (q) search(q);
+  }, []);
 
   return (
     <>

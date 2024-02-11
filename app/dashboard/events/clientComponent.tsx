@@ -24,7 +24,6 @@ import {
   updateTicketPaymentStatus,
 } from "./serverActions";
 import { toast } from "react-toastify";
-import { useStore } from "zustand";
 import React from "react";
 import {
   ArrowPathIcon,
@@ -41,7 +40,7 @@ import {
   InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
-} from "@/app/components/FormElements";
+} from "@/utils/forms/FormElements";
 import { contactsEqual } from "./utils";
 import { string as yupString, number as yupNumber } from "yup";
 import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
@@ -1047,9 +1046,8 @@ export default function EventsComponent() {
   // refresh and search once mounted
   const q = useSearchParams().get("query");
   useEffect(() => {
-    refresh().then(() => {
-      if (q) search(q);
-    });
+    if (q) search(q);
+    refresh();
   }, []);
 
   return (

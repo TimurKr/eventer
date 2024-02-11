@@ -1,7 +1,7 @@
 import { Services } from "@/utils/supabase/database.types";
-import { createStoreSlice } from "@/utils/zustand";
 import Fuse from "fuse.js";
 import { fetchServices } from "../serverActions";
+import { createStoreSlice } from "zimmer-context";
 
 type State = {
   services: Services[];

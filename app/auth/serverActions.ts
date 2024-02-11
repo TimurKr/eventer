@@ -2,8 +2,10 @@
 
 import { createServerSupabase } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export async function fetchServices() {
+export async function logOutServer() {
   const supabase = createServerSupabase(cookies());
-  return await supabase.from("services").select("*").order("name");
+  await supabase.auth.signOut();
+  return redirect("/login");
 }

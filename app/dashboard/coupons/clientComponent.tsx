@@ -19,7 +19,7 @@ import { useSearchParams } from "next/navigation";
 import {
   InstantTextAreaField,
   InstantTextField,
-} from "@/app/components/FormElements";
+} from "@/utils/forms/FormElements";
 import { string as yupString, number as yupNumber, ref } from "yup";
 import { toast } from "react-toastify";
 import moment from "moment";
@@ -40,13 +40,8 @@ export default function Coupons() {
 
   const q = useSearchParams().get("query");
   useEffect(() => {
-    // if (refresh) {
-    refresh().then(() => {
-      if (q) search(q);
-    });
-    // } else {
-    //   console.log("No refresh function");
-    // }
+    if (q) search(q);
+    refresh();
   }, []);
 
   const changeDate = async (coupon: Coupons, date: Date | null) => {

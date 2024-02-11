@@ -2,15 +2,7 @@
 
 import { Alert, Badge, Modal, Progress, Spinner } from "flowbite-react";
 import { useContext, useState, useTransition } from "react";
-import {
-  EventWithTickets,
-  bulkUpdateTicketFields,
-} from "../../events/serverActions";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { Events, Tickets } from "@/utils/supabase/database.types";
-import { useStore } from "zustand";
 import { useStoreContext } from "../../store";
-import { SubmitButton } from "@/app/components/FormElements";
 import NewTicketModal from "../../events/modals/NewTicketModal";
 
 export default function UseCouponSelectEvent({

@@ -1,9 +1,9 @@
 "use client";
 
-import { createGlobalStoreContext } from "@/utils/zustand";
 import eventsSlice from "./events/store";
 import couponsSlice from "./coupons/store";
 import servicesSlice from "./services/store";
+import { createGlobalStoreContext } from "zimmer-context";
 
 export const { ContextProvider, useStoreContext } = createGlobalStoreContext(
   {

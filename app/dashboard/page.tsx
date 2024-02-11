@@ -1,5 +1,15 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useStoreContext } from "./store";
 
 export default function Page() {
-  redirect("/dashboard/events");
+  const router = useRouter();
+
+  const { allServices } = useStoreContext((state) => state.services);
+
+  if (allServices.length === 0) {
+    return router.push("/dashboard/services");
+  }
+  return router.push("/dashboard/events");
 }

@@ -5,8 +5,7 @@ import { useContext, useState, useTransition } from "react";
 import { updateEventFields } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { Events } from "@/utils/supabase/database.types";
-import { useStore } from "zustand";
-import { SubmitButton } from "@/app/components/FormElements";
+import { SubmitButton } from "@/utils/forms/FormElements";
 import { useStoreContext } from "../../store";
 
 export default function ChangeDateModal({ event }: { event: Events }) {

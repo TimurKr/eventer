@@ -3,7 +3,7 @@ import { Coupons, fetchCoupons, insertCoupons } from "./serverActions";
 import { InsertCoupons } from "@/utils/supabase/database.types";
 import moment from "moment";
 import { validateCoupon } from "./utils";
-import { createStoreSlice } from "@/utils/zustand";
+import { createStoreSlice } from "zimmer-context";
 
 function search(coupons: Coupons[], term: string): Coupons[] {
   if (term === "") {

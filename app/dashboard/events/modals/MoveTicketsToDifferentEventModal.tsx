@@ -1,12 +1,9 @@
 "use client";
 
-import { Alert, Badge, Modal, Progress, Spinner } from "flowbite-react";
-import { useContext, useState, useTransition } from "react";
+import { Badge, Modal, Progress, Spinner } from "flowbite-react";
+import { useState, useTransition } from "react";
 import { bulkUpdateTicketFields } from "../serverActions";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { Events, Tickets } from "@/utils/supabase/database.types";
-import { useStore } from "zustand";
-import { SubmitButton } from "@/app/components/FormElements";
+import { Events } from "@/utils/supabase/database.types";
 import { useStoreContext } from "../../store";
 
 export default function MoveTicketsToDifferentEventModal({

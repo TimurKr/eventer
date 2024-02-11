@@ -1,3 +1,4 @@
+import { createStoreSlice } from "zimmer-context";
 import {
   TicketTypes,
   EventWithTickets as fetchEventsReturnType,
@@ -7,7 +8,6 @@ import {
 import { ticketSortFunction } from "./utils";
 import { Contacts, Tickets } from "@/utils/supabase/database.types";
 import Fuse from "fuse.js";
-import { createStoreSlice } from "@/utils/zustand";
 
 type Events = fetchEventsReturnType & {
   lockedArrived: boolean;
