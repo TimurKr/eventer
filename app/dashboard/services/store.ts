@@ -1,6 +1,6 @@
 import { Services } from "@/utils/supabase/database.types";
 import Fuse from "fuse.js";
-import { fetchServices } from "../serverActions";
+import { fetchServices, insertServices } from "./serverActions";
 import { createStoreSlice } from "zimmer-context";
 
 type State = {
@@ -13,6 +13,12 @@ type State = {
 type Actions = {
   refresh: () => void;
   search: (query: string, save?: boolean, services?: Services[]) => Services[];
+
+  addServices: (services: Services[]) => void;
+  setPartialService: (
+    service: Partial<Services> & NonNullable<{ id: Services["id"] }>,
+  ) => void;
+  removeService: (id: Services["id"]) => void;
 };
 
 const servicesSlice = createStoreSlice<State, Actions>((set, get) => ({
@@ -52,6 +58,31 @@ const servicesSlice = createStoreSlice<State, Actions>((set, get) => ({
       });
     }
     return r;
+  },
+  addServices: async (services) => {
+    set((state) => {
+      state.allServices = [...state.allServices, ...services].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+      state.services = state.search(state.searchTerm, false, state.allServices);
+    });
+  },
+  setPartialService: (service) => {
+    set((state) => {
+      const index = state.allServices.findIndex((s) => s.id === service.id);
+      if (index === -1) {
+        console.error("Service with id", service.id, "not found.");
+        return;
+      }
+      state.allServices[index] = { ...state.allServices[index], ...service };
+      state.services = state.search(state.searchTerm, false, state.allServices);
+    });
+  },
+  removeService: (id) => {
+    set((state) => {
+      state.allServices = state.allServices.filter((s) => s.id !== id);
+      state.services = state.search(state.searchTerm, false, state.allServices);
+    });
   },
 }));
 

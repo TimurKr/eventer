@@ -42,7 +42,7 @@ export default function UseCouponSelectEvent({
             <div
               className={`my-0.5 flex w-full items-center justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100`}
             >
-              <div className="flex min-w-0 flex-1 flex-col gap-1 self-center py-0.5">
+              <div className="flex min-w-0 flex-col gap-1 self-center py-0.5">
                 <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
                   {allServices.find((s) => s.id == event.service_id)?.name}
                   <Badge

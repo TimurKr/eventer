@@ -9,14 +9,15 @@ import { FormikTextField, SubmitButton } from "@/utils/forms/FormElements";
 import * as Yup from "yup";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { useStoreContext } from "../store";
+import { useStoreContext } from "../../store";
+import { insertServices } from "../serverActions";
 
-export default function NewCouponModal() {
+export default function NewServiceModal() {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { addCoupons } = useStoreContext((state) => state.coupons);
+  const { addServices } = useStoreContext((state) => state.services);
 
   return (
     <>
@@ -26,59 +27,31 @@ export default function NewCouponModal() {
         className="flex items-center gap-2 rounded-md bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
       >
         <PlusIcon className="h-5 w-5" />
-        Nový kupón
+        Nové predstavenie
       </button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-        <Modal.Header>Vytvorte nový kupón</Modal.Header>
+        <Modal.Header>Vytvorte si nové predstavenie</Modal.Header>
         <Modal.Body>
           <Formik
             initialValues={{
-              code: uuidv4().slice(0, 8).toUpperCase(),
-              amount: 100,
+              name: "",
             }}
             onSubmit={async (values) => {
-              try {
-                await addCoupons([
-                  { ...values, original_amount: values.amount },
-                ]);
-              } catch (error) {
-                setErrorMessages((error as Error).message.split("\n"));
+              const r = await insertServices([values]);
+              if (r.error) {
+                setErrorMessages(r.error.message.split("\n"));
                 return;
               }
+              addServices(r.data);
               setIsOpen(false);
             }}
             validationSchema={Yup.object().shape({
-              code: Yup.string()
-                .required("Kód je povinný")
-                .length(8, "Kód musí mať 8 znakov"),
-              amount: Yup.number()
-                .required("Suma je povinná")
-                .min(0, "Suma musí byť kladná"),
+              name: Yup.string().required("Názov je povinný"),
             })}
           >
             {(formik) => (
               <Form className="flex flex-col gap-2">
-                <FormikTextField
-                  name="code"
-                  label="Kód"
-                  iconEnd={
-                    <ArrowPathIcon
-                      className="h-4 w-4 hover:scale-105 hover:cursor-pointer"
-                      onClick={() =>
-                        formik.setFieldValue(
-                          "code",
-                          uuidv4().slice(0, 8).toUpperCase(),
-                        )
-                      }
-                    />
-                  }
-                />
-                <FormikTextField
-                  name="amount"
-                  label="Suma"
-                  type="number"
-                  iconStart={<CurrencyEuroIcon className="h-4 w-4" />}
-                />
+                <FormikTextField name="name" label="Názov" type="text" />
                 <div>
                   <SubmitButton
                     className="ms-auto"

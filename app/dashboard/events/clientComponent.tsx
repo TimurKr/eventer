@@ -52,6 +52,9 @@ import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
 import { useStoreContext } from "../store";
 import moment from "moment";
+import Link from "next/link";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import NewServiceModal from "../services/modals/NewServiceModal";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -524,7 +527,7 @@ function TicketRow({
           ))}
         </select>
       </Table.Cell>
-      <Table.Cell className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
+      <Table.Cell className="relative w-36 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
         <InstantTextAreaField
           autoexpand
           className="absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
@@ -705,13 +708,13 @@ function EventRow({ eventId }: { eventId: number }) {
   return (
     <li key={eventId} className={`flex flex-col`}>
       <div
-        className={`flex justify-between gap-x-6 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
+        className={`flex flex-wrap justify-between gap-x-6 gap-y-4 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
           event.isExpanded || searchTerm
             ? "mt-2 border-x border-t border-cyan-700 pe-4 ps-4 pt-2"
             : ""
         }`}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-1 self-center py-0.5">
+        <div className="flex min-w-0 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
             {allServices.find((s) => s.id == event.service_id)?.name}
             <Badge
@@ -784,7 +787,7 @@ function EventRow({ eventId }: { eventId: number }) {
             );
           })}
         </div>
-        <div className="flex flex-row items-center justify-start">
+        <div className="ms-auto flex flex-row items-center justify-start">
           <NewTicketModal eventId={eventId} />
           <button
             className="group grid h-full place-content-center ps-2"
@@ -1041,6 +1044,7 @@ export default function EventsComponent() {
       searchTerm,
       highlightedTicketIds,
     },
+    services: { allServices },
   } = useStoreContext((state) => state);
 
   // refresh and search once mounted
@@ -1102,18 +1106,28 @@ export default function EventsComponent() {
         </button>
         <NewEventModal />
       </div>
-      <ul
-        role="list"
-        className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
-      >
-        {events != undefined && events.length > 0 ? (
-          events.map((event) => <EventRow key={event.id} eventId={event.id} />)
-        ) : isRefreshing ? (
-          <Loading />
-        ) : (
-          <p className="text-center">Nenašli sa žiadne udalosti</p>
-        )}
-      </ul>
+      {events.length > 0 ? (
+        <ul
+          role="list"
+          className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
+        >
+          {events.map((event) => (
+            <EventRow key={event.id} eventId={event.id} />
+          ))}
+        </ul>
+      ) : isRefreshing ? (
+        <Loading />
+      ) : allServices.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
+          Namáte žiadne vytvorené predstavenia
+          <NewServiceModal />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
+          Namáte žiadne vytvorené udalosti
+          <NewEventModal />
+        </div>
+      )}
     </>
   );
 }

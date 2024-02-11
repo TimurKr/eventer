@@ -119,13 +119,7 @@ export default function Coupons() {
           <NewCouponModal />
         </div>
         <div>
-          {coupons.length === 0 ? (
-            isRefreshing ? (
-              <Loading />
-            ) : (
-              <div className="w-full p-4 text-center">Žiadne kupóny</div>
-            )
-          ) : (
+          {coupons.length > 0 ? (
             <table className="w-full table-auto">
               <thead>
                 <tr className="bg-slate-200 *:px-3 *:py-0.5 first:*:rounded-tl-lg last:*:rounded-tr-lg">
@@ -375,6 +369,13 @@ export default function Coupons() {
                 ))}
               </tbody>
             </table>
+          ) : isRefreshing ? (
+            <Loading />
+          ) : (
+            <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
+              Namáte žiadne vytvorené kupóny
+              <NewCouponModal />
+            </div>
           )}
         </div>
       </div>

@@ -158,6 +158,8 @@ type InstantFieldProps<T> = {
   validate?: (value: T) => Promise<string | null>;
   updateDatabase: (value: T) => void | Promise<any>;
   setLocalValue: (value: T) => void | Promise<void>;
+  onBlur?: () => void;
+  autoFocus?: boolean;
 };
 
 export function InstantSwitchField({
@@ -167,6 +169,7 @@ export function InstantSwitchField({
   validate,
   updateDatabase,
   setLocalValue,
+  onBlur,
 }: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
   const [value, setValue] = useState<boolean>(defaultValue);
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +207,7 @@ export function InstantSwitchField({
           isLoading: false,
           autoClose: 1500,
         });
+        onBlur && onBlur();
       }}
     />
   );
@@ -216,6 +220,7 @@ export function InstantCheckboxField({
   validate,
   updateDatabase,
   setLocalValue,
+  onBlur,
 }: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
   const [value, setValue] = useState<boolean>(defaultValue);
   const [error, setError] = useState<string | null>(null);
@@ -253,6 +258,7 @@ export function InstantCheckboxField({
           isLoading: false,
           autoClose: 1500,
         });
+        onBlur && onBlur();
       }}
     />
   );
@@ -266,6 +272,7 @@ export function InstantTextAreaField({
   validate,
   updateDatabase,
   setLocalValue,
+  onBlur,
 }: InstantFieldProps<string | null> & { autoexpand?: boolean }) {
   const [value, setValue] = useState<string>(defaultValue || "");
   const [error, setError] = useState<string | null>(null);
@@ -283,7 +290,7 @@ export function InstantTextAreaField({
     <textarea
       className={`resize-none rounded-md border-gray-200 bg-gray-50 p-0 px-1 font-mono text-sm text-black hover:z-10 hover:border-gray-400 hover:shadow-lg focus:z-20 focus:border-gray-200 focus:shadow-lg ${
         error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-      } ${className}`}
+      } ${autoexpand ? "overflow-hidden" : ""} ${className}`}
       value={value}
       rows={1}
       placeholder={placeholder}
@@ -336,6 +343,7 @@ export function InstantTextAreaField({
           isLoading: false,
           autoClose: 1500,
         });
+        onBlur && onBlur();
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -366,9 +374,13 @@ export function InstantTextField({
   validate,
   updateDatabase,
   setLocalValue,
+  onBlur,
+  autoFocus,
+  trim = false,
 }: InstantFieldProps<string | null> & {
   type: "text" | "number" | "email" | "tel";
   inline?: boolean;
+  trim?: boolean;
 }) {
   const [value, setValue] = useState<string>(defaultValue || "");
   const [error, setError] = useState<string | null>(null);
@@ -385,6 +397,7 @@ export function InstantTextField({
       } ${inline ? "font-mono" : ""} ${className}`}
       value={value}
       placeholder={placeholder}
+      autoFocus={autoFocus}
       size={inline ? value?.length || placeholder?.length || 3 : undefined}
       onChange={async (e) => {
         setValue(e.target.value);
@@ -406,9 +419,11 @@ export function InstantTextField({
       }}
       onBlur={async (e) => {
         if (value == (defaultValue || "")) {
+          onBlur && onBlur();
           return;
         }
-        const err = validate && (await validate(value));
+        const newValue = trim ? value.trim() : value;
+        const err = validate && (await validate(newValue));
         if (err) {
           e.target.focus();
           setError(err);
@@ -420,7 +435,7 @@ export function InstantTextField({
         }
         setError(null);
         const toastId = toast.loading("Ukladám...", { autoClose: false });
-        const r = await updateDatabase(value);
+        const r = await updateDatabase(newValue);
         if (r.error) {
           toast.update(toastId, {
             render: "Nastala chyba: " + r.error.message,
@@ -430,13 +445,14 @@ export function InstantTextField({
           setValue(defaultValue || "");
           return;
         }
-        await setLocalValue(e.target.value);
+        await setLocalValue(newValue);
         toast.update(toastId, {
           render: "Uložené",
           type: "success",
           isLoading: false,
           autoClose: 1500,
         });
+        onBlur && onBlur();
       }}
     />
   );

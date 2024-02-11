@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContextProvider } from "./store";
 import Navbar from "./Navbar";
-import { fetchServices } from "./serverActions";
+import { fetchServices } from "./services/serverActions";
 
 export default async function DashboardLayout({
   children,

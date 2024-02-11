@@ -78,7 +78,7 @@ export default function MoveTicketsToDifferentEventModal({
               onMouseLeave={() => setHoveringEvent(null)}
               onClick={() => submit(event.id)}
             >
-              <div className="flex min-w-0 flex-1 flex-col items-start self-center">
+              <div className="flex min-w-0 flex-col items-start self-center">
                 <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
                   {new Date(event.datetime).toLocaleDateString("sk-SK")}
                   <Badge
