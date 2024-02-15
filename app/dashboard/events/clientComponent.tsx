@@ -717,12 +717,15 @@ function EventRow({ eventId }: { eventId: number }) {
         <div className="flex min-w-0 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
             {allServices.find((s) => s.id == event.service_id)?.name}
-            <Badge
-              color={event.is_public ? "blue" : "purple"}
-              className="rounded-md"
-            >
-              {event.is_public ? "Verejné" : "Súkromné"}
-            </Badge>
+            {event.is_public ? (
+              <Badge color="blue" className="rounded-md">
+                Verejné
+              </Badge>
+            ) : (
+              <Badge color="purple" className="rounded-md">
+                Súkromné
+              </Badge>
+            )}
           </p>
           <div className="flex items-center gap-2">
             <span

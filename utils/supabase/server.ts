@@ -61,7 +61,7 @@ export const getServerUser = async (
     return null;
   }
   const { data: profile, error: profileError } = await supabase
-    .from("users")
+    .from("businesses")
     .select("*")
     .eq("id", user?.id)
     .single();

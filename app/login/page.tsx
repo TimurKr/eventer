@@ -33,11 +33,11 @@ export default async function Login({
   };
 
   return (
-    <div className="grid h-full w-full place-content-center">
+    <div className="animate-in grid h-full w-full place-content-center">
       <LoginForm action={signIn} />
       <Link
         href="/signup"
-        className="animate-in mt-2 rounded-lg p-2 text-center text-sm tracking-wide text-gray-500 transition-all hover:text-gray-700 hover:underline"
+        className="mt-2 rounded-lg p-2 text-center text-sm tracking-wide text-gray-500 transition-all hover:text-gray-700 hover:underline"
       >
         Vytvoriť účet
       </Link>

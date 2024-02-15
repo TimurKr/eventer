@@ -9,9 +9,36 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      businesses: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          name?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "users_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contacts: {
         Row: {
           address: string | null;
+          business_id: string | null;
           created_at: string;
           email: string | null;
           id: number;
@@ -20,6 +47,7 @@ export interface Database {
         };
         Insert: {
           address?: string | null;
+          business_id?: string | null;
           created_at?: string;
           email?: string | null;
           id?: number;
@@ -28,54 +56,63 @@ export interface Database {
         };
         Update: {
           address?: string | null;
+          business_id?: string | null;
           created_at?: string;
           email?: string | null;
           id?: number;
           name?: string | null;
           phone?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "public_contacts_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       coupons: {
         Row: {
           amount: number;
+          business_id: string;
           code: string;
           created_at: string;
           id: number;
           note: string | null;
           original_amount: number;
           temp_id: string | null;
-          user_id: string;
           valid_until: string | null;
         };
         Insert: {
           amount: number;
+          business_id?: string;
           code: string;
           created_at?: string;
           id?: number;
           note?: string | null;
           original_amount: number;
           temp_id?: string | null;
-          user_id?: string;
           valid_until?: string | null;
         };
         Update: {
           amount?: number;
+          business_id?: string;
           code?: string;
           created_at?: string;
           id?: number;
           note?: string | null;
           original_amount?: number;
           temp_id?: string | null;
-          user_id?: string;
           valid_until?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: "coupons_user_id_fkey";
-            columns: ["user_id"];
+            columns: ["business_id"];
             isOneToOne: false;
-            referencedRelation: "users";
+            referencedRelation: "businesses";
             referencedColumns: ["id"];
           },
         ];
@@ -114,29 +151,29 @@ export interface Database {
       };
       services: {
         Row: {
+          business_id: string;
           created_at: string;
           id: number;
           name: string;
-          user_id: string;
         };
         Insert: {
+          business_id?: string;
           created_at?: string;
           id?: number;
           name: string;
-          user_id?: string;
         };
         Update: {
+          business_id?: string;
           created_at?: string;
           id?: number;
           name?: string;
-          user_id?: string;
         };
         Relationships: [
           {
             foreignKeyName: "services_user_id_fkey";
-            columns: ["user_id"];
+            columns: ["business_id"];
             isOneToOne: false;
-            referencedRelation: "users";
+            referencedRelation: "businesses";
             referencedColumns: ["id"];
           },
         ];
@@ -218,32 +255,6 @@ export interface Database {
             columns: ["guest_id"];
             isOneToOne: false;
             referencedRelation: "contacts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      users: {
-        Row: {
-          business_name: string | null;
-          created_at: string;
-          id: string;
-        };
-        Insert: {
-          business_name?: string | null;
-          created_at?: string;
-          id: string;
-        };
-        Update: {
-          business_name?: string | null;
-          created_at?: string;
-          id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "users_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
-            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
@@ -346,6 +357,12 @@ export type Enums<
 
 // Schema: public
 // Tables
+export type Businesses = Database["public"]["Tables"]["businesses"]["Row"];
+export type InsertBusinesses =
+  Database["public"]["Tables"]["businesses"]["Insert"];
+export type UpdateBusinesses =
+  Database["public"]["Tables"]["businesses"]["Update"];
+
 export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
 export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
 export type UpdateContacts = Database["public"]["Tables"]["contacts"]["Update"];
@@ -365,7 +382,3 @@ export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
 export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
 export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];
 export type UpdateTickets = Database["public"]["Tables"]["tickets"]["Update"];
-
-export type Users = Database["public"]["Tables"]["users"]["Row"];
-export type InsertUsers = Database["public"]["Tables"]["users"]["Insert"];
-export type UpdateUsers = Database["public"]["Tables"]["users"]["Update"];

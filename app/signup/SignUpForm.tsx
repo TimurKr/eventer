@@ -14,7 +14,7 @@ export default function LoginForm({
   const [errorMess, setErrorMess] = useState<string | undefined>(undefined);
   return (
     <form
-      className="animate-in flex w-full flex-1 flex-col justify-center gap-1 text-foreground"
+      className="flex w-full flex-1 flex-col justify-center gap-1 text-foreground"
       action={(e) => {
         startSubmition(async () => setErrorMess(await action(e)));
       }}
@@ -53,8 +53,8 @@ export default function LoginForm({
       />
       <SubmitButton
         isSubmitting={isSubmitting}
-        label="Prihlásiť"
-        submittingLabel="Prihlasujem..."
+        label="Vytvoriť účet"
+        submittingLabel="Vytváram..."
       />
       {errorMess && (
         <Alert color="failure" icon={HiExclamationCircle} className="mt-2">
