@@ -42,7 +42,7 @@ export default function NewServiceModal() {
                 setErrorMessages(r.error.message.split("\n"));
                 return;
               }
-              addServices(r.data);
+              addServices(r.data.map((d) => ({ ...d, ticket_types: [] })));
               setIsOpen(false);
             }}
             validationSchema={Yup.object().shape({

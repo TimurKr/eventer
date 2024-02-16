@@ -3,17 +3,17 @@
 import { Alert, Modal, Spinner } from "flowbite-react";
 import { convertTicketsToCoupon } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { Events } from "@/utils/supabase/database.types";
 import { SubmitButton } from "@/utils/forms/FormElements";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useStoreContext } from "../../store";
 import { useState, useTransition } from "react";
+import { Events } from "../store";
 
 export default function ConvertToCouponModal({
-  eventId,
+  event,
   disabled,
 }: {
-  eventId: Events["id"];
+  event: Events;
   disabled?: boolean;
 }) {
   const [isSubmitting, startSubmition] = useTransition();
@@ -21,12 +21,15 @@ export default function ConvertToCouponModal({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { ticketTypes, refresh, selectedTickets } = useStoreContext(
+  const { refresh, selectedTickets, ticketTypes } = useStoreContext(
     (state) => ({
       ...state.events,
       selectedTickets: state.events.allEvents
-        .find((e) => e.id === eventId)!
+        .find((e) => e.id === event.id)!
         .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+      ticketTypes: state.services.allServices.find(
+        (s) => s.id === event.service_id,
+      )!.ticket_types,
     }),
   );
 
@@ -57,7 +60,7 @@ export default function ConvertToCouponModal({
               >
                 <span className="font-semibold">{type.label}</span>:{" "}
                 <span className="font-bold">
-                  {selectedTickets.filter((t) => t.type == type.label).length}
+                  {selectedTickets.filter((t) => t.type_id == type.id).length}
                 </span>{" "}
                 lístkov
               </div>

@@ -33,7 +33,7 @@ export default async function Login({
   };
 
   return (
-    <div className="animate-in grid h-full w-full place-content-center">
+    <div className="grid h-full w-full animate-in place-content-center">
       <LoginForm action={signIn} />
       <Link
         href="/signup"

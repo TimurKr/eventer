@@ -1,7 +1,6 @@
 "use server";
 
 import {
-  Contacts,
   Events,
   InsertContacts,
   InsertEvents,
@@ -15,20 +14,6 @@ import { ticketSortFunction } from "./utils";
 import { randomUUID } from "crypto";
 import { validateCoupon } from "../coupons/utils";
 
-export async function fetchTicketTypes() {
-  return {
-    data: [
-      { label: "VIP", max_sold: 6, price: 100 },
-      { label: "standard", max_sold: 24, price: 80 },
-    ],
-    error: null,
-  };
-}
-
-export type TicketTypes = Awaited<
-  ReturnType<typeof fetchTicketTypes>
->["data"][0];
-
 // Fetch events
 export async function fetchEvents() {
   const r = await createServerSupabase(cookies(), [
@@ -40,11 +25,12 @@ export async function fetchEvents() {
     .select(
       `*,
       tickets (*,
-        billing:contacts!tickets_billing_id_fkey(*),
-        guest:contacts!tickets_guest_id_fkey(*),
         coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
-        coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code)
+        coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
+        type:ticket_types!public_tickets_ticket_type_fkey(*)
         )`,
+      // billing:contacts!tickets_billing_id_fkey(*),
+      // guest:contacts!tickets_guest_id_fkey(*),
     )
     .order("datetime", { ascending: false });
   if (r.error) {
@@ -55,12 +41,14 @@ export async function fetchEvents() {
     data: r.data.map((event) => {
       return {
         ...event,
-        tickets: [
-          ...event.tickets.filter((t) => t.payment_status != "zrušené"),
-        ].sort(ticketSortFunction),
+        tickets: [...event.tickets.filter((t) => t.payment_status != "zrušené")]
+          .map((t) => ({ ...t, type: t.type! }))
+          .sort(ticketSortFunction),
         cancelled_tickets: [
           ...event.tickets.filter((t) => t.payment_status == "zrušené"),
-        ].sort(ticketSortFunction),
+        ]
+          .map((t) => ({ ...t, type: t.type! }))
+          .sort(ticketSortFunction),
       };
     }),
   };
@@ -72,11 +60,32 @@ export type EventWithTickets = NonNullable<
 
 // Fetch all contacts
 export async function fetchContacts() {
-  const r = await createServerSupabase(cookies(), ["contacts", "tickets"])
-    .from("contacts")
-    .select();
-  return r;
+  const r = await createServerSupabase(cookies(), ["contacts"]).from("contacts")
+    .select(`*,
+      guest_usage:tickets!tickets_guest_id_fkey(count),
+      billing_usage:tickets!tickets_billing_id_fkey(count)
+      `);
+  if (r.error) {
+    return r;
+  }
+  return {
+    ...r,
+    data: r.data?.map((c) => {
+      const { guest_usage, billing_usage, ...rest } = c;
+      return {
+        ...rest,
+        // @ts-expect-error - Supabase doesnt infer count correctly
+        usage_count: (c.guest_usage[0].count +
+          // @ts-expect-error - Supabase doesnt infer count correctly
+          c.billing_usage[0].count) as number,
+      };
+    }),
+  };
 }
+
+export type Contacts = NonNullable<
+  Awaited<ReturnType<typeof fetchContacts>>["data"]
+>[0];
 
 // Create new event
 export async function insertEvents(events: InsertEvents[]) {
@@ -130,9 +139,25 @@ export async function updateEventPublicStatus(
 }
 
 // Create new contacts
-export async function bulkInsertContacts(contacts: InsertContacts[]) {
+// export async function bulkInsertContacts(contacts: InsertContacts[]) {
+//   const supabase = createServerSupabase(cookies());
+//   const res = await supabase.from("contacts").insert(contacts).select();
+//   if (!res.error) {
+//     revalidateTag("contacts");
+//   }
+//   return res;
+// }
+
+// bulk Upsert contacts
+export async function bulkUpsertContacts(contacts: InsertContacts[]) {
   const supabase = createServerSupabase(cookies());
-  const res = await supabase.from("contacts").insert(contacts).select();
+  const res = await supabase
+    .from("contacts")
+    .upsert(contacts, {
+      onConflict: "name,email,phone,address",
+      ignoreDuplicates: false,
+    })
+    .select();
   if (!res.error) {
     revalidateTag("contacts");
   }
@@ -147,10 +172,12 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
     .insert(tickets)
     .select(
       `*,
-    billing:contacts!tickets_billing_id_fkey(*),
-    guest:contacts!tickets_guest_id_fkey(*),
-    coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
-    coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code)`,
+      billing:contacts!tickets_billing_id_fkey(*),
+      guest:contacts!tickets_guest_id_fkey(*),
+      coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
+      coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
+      type:ticket_types!public_tickets_ticket_type_fkey(*)
+      `,
     );
   if (!res.error) {
     revalidateTag("tickets");
@@ -210,7 +237,9 @@ export async function updateTicketPaymentStatus(
 
 // Update ticket fields
 export async function updateTicketFields(
-  ticket: Partial<Tickets> & { id: NonNullable<Tickets["id"]> },
+  ticket: Partial<Tickets> & {
+    id: NonNullable<Tickets["id"]>;
+  },
 ) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase
@@ -272,57 +301,102 @@ export async function deleteContacts(contactIDs: number[]) {
 }
 
 // Merge contacts
-export async function mergeContacts(targetContact: Contacts) {
-  const { id, created_at, ...contactFilter } = targetContact;
+// export async function mergeContacts(targetContact: Contacts) {
+//   const { id, created_at, ...contactFilter } = targetContact;
+//   const supabase = createServerSupabase(cookies());
+
+//   let q1 = supabase.from("contacts").select().neq("id", targetContact.id);
+//   for (const [key, value] of Object.entries(contactFilter)) {
+//     if (value == null) {
+//       q1 = q1.is(key, null);
+//     } else {
+//       q1 = q1.eq(key, value);
+//     }
+//   }
+//   const contactsQ = await q1;
+//   if (contactsQ.error) {
+//     return contactsQ;
+//   }
+
+//   const updateBillingQ = await supabase
+//     .from("tickets")
+//     .update({ billing_id: targetContact.id })
+//     .in(
+//       "billing_id",
+//       contactsQ.data.map((c) => c.id),
+//     );
+//   if (updateBillingQ.error) {
+//     return updateBillingQ;
+//   }
+//   const updateGuestQ = await supabase
+//     .from("tickets")
+//     .update({ guest_id: targetContact.id })
+//     .in(
+//       "guest_id",
+//       contactsQ.data.map((c) => c.id),
+//     );
+//   if (updateGuestQ.error) {
+//     return updateGuestQ;
+//   }
+
+//   let q2 = supabase.from("contacts").delete().neq("id", targetContact.id);
+//   for (const [key, value] of Object.entries(contactFilter)) {
+//     if (value == null) {
+//       q2 = q2.is(key, null);
+//     } else {
+//       q2 = q2.eq(key, value);
+//     }
+//   }
+//   const deleteQ = await q2;
+//   if (deleteQ.error) {
+//     return deleteQ;
+//   }
+//   return deleteQ;
+// }
+export async function mergeContacts(
+  deleteContact: Contacts,
+  contactDiff: Partial<Contacts>,
+) {
+  // TODO: implement transaction
   const supabase = createServerSupabase(cookies());
-
-  let q1 = supabase.from("contacts").select().neq("id", targetContact.id);
-  for (const [key, value] of Object.entries(contactFilter)) {
-    if (value == null) {
-      q1 = q1.is(key, null);
-    } else {
-      q1 = q1.eq(key, value);
-    }
+  // Fetch target contact
+  let resTarget = await supabase
+    .from("contacts")
+    .select()
+    .match({
+      name: contactDiff.name || deleteContact.name,
+      email: contactDiff.email || deleteContact.email,
+      phone: contactDiff.phone || deleteContact.phone,
+      address: contactDiff.address || deleteContact.address,
+    })
+    .single();
+  if (resTarget.error) {
+    return resTarget;
   }
-  const contactsQ = await q1;
-  if (contactsQ.error) {
-    return contactsQ;
-  }
-
-  const updateBillingQ = await supabase
+  // Wherever deleteContact is used, replace it with targetContact
+  const resBilling = await supabase
     .from("tickets")
-    .update({ billing_id: targetContact.id })
-    .in(
-      "billing_id",
-      contactsQ.data.map((c) => c.id),
-    );
-  if (updateBillingQ.error) {
-    return updateBillingQ;
+    .update({ billing_id: resTarget.data.id })
+    .eq("billing_id", deleteContact.id);
+  if (resBilling.error) {
+    return resBilling;
   }
-  const updateGuestQ = await supabase
+  const resGuest = await supabase
     .from("tickets")
-    .update({ guest_id: targetContact.id })
-    .in(
-      "guest_id",
-      contactsQ.data.map((c) => c.id),
-    );
-  if (updateGuestQ.error) {
-    return updateGuestQ;
+    .update({ guest_id: resTarget.data.id })
+    .eq("guest_id", deleteContact.id);
+  if (resGuest.error) {
+    return resGuest;
   }
-
-  let q2 = supabase.from("contacts").delete().neq("id", targetContact.id);
-  for (const [key, value] of Object.entries(contactFilter)) {
-    if (value == null) {
-      q2 = q2.is(key, null);
-    } else {
-      q2 = q2.eq(key, value);
-    }
+  // Delete contact
+  const resDelete = await supabase
+    .from("contacts")
+    .delete()
+    .eq("id", deleteContact.id);
+  if (!resDelete.error) {
+    revalidateTag("contacts");
   }
-  const deleteQ = await q2;
-  if (deleteQ.error) {
-    return deleteQ;
-  }
-  return deleteQ;
+  return resDelete;
 }
 
 // Convert tickets to coupon

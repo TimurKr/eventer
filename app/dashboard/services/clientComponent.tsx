@@ -10,13 +10,11 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import NewServiceModal from "./modals/NewServiceModal";
-import { Services } from "@/utils/supabase/database.types";
 import { InstantTextField } from "@/utils/forms/FormElements";
-import { deleteService, updateService } from "./serverActions";
+import { deleteService, updateService, Services } from "./serverActions";
 import Loading from "./loading";
 
 function ServiceRow({ service }: { service: Services }) {
-  const [isEditing, setIsEditing] = useState(false);
   const { eventsCount, setPartialService, removeService } = useStoreContext(
     (state) => ({
       eventsCount: state.events.allEvents.filter(
@@ -25,37 +23,26 @@ function ServiceRow({ service }: { service: Services }) {
       ...state.services,
     }),
   );
-  const ref = useRef(null);
+
   return (
     <li key={service.id}>
       <div className="flex items-center gap-4 py-1">
         <div className="basis-60 ">
-          {isEditing ? (
-            <InstantTextField
-              defaultValue={service.name}
-              setLocalValue={(v) =>
-                setPartialService({ id: service.id, name: v || undefined })
-              }
-              updateDatabase={(v) =>
-                updateService({ id: service.id, name: v || undefined })
-              }
-              type="text"
-              onBlur={() => setIsEditing(false)}
-              autoFocus
-              inline
-              trim
-            />
-          ) : (
-            <button
-              className="group flex items-center gap-2"
-              onClick={() => setIsEditing(true)}
-            >
-              <p className="text-start font-medium tracking-wider">
-                {service.name}
-              </p>
-              <PencilIcon className="h-4 w-4 shrink-0 text-gray-500 opacity-0 transition-all group-hover:opacity-100" />
-            </button>
-          )}
+          <InstantTextField
+            defaultValue={service.name}
+            setLocalValue={(v) =>
+              setPartialService({ id: service.id, name: v || undefined })
+            }
+            updateDatabase={(v) =>
+              updateService({ id: service.id, name: v || undefined })
+            }
+            type="text"
+            // onBlur={() => setIsEditing(false)}
+            showAlways={false}
+            autoFocus
+            inline
+            trim
+          />
         </div>
         <div className="w-12 flex-grow text-sm text-gray-500">
           Počet udalostí: {eventsCount.length}

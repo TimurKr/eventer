@@ -53,7 +53,7 @@ export const createServerSupabase = (
 export const getServerUser = async (
   cookieStore: ReturnType<typeof cookies>,
 ) => {
-  const supabase = createServerSupabase(cookieStore);
+  const supabase = createServerSupabase(cookieStore, ["user"]);
   const {
     data: { user },
   } = await supabase.auth.getUser();

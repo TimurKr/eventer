@@ -37,31 +37,31 @@ export interface Database {
       };
       contacts: {
         Row: {
-          address: string | null;
-          business_id: string | null;
+          address: string;
+          business_id: string;
           created_at: string;
-          email: string | null;
+          email: string;
           id: number;
-          name: string | null;
-          phone: string | null;
+          name: string;
+          phone: string;
         };
         Insert: {
-          address?: string | null;
-          business_id?: string | null;
+          address?: string;
+          business_id?: string;
           created_at?: string;
-          email?: string | null;
+          email?: string;
           id?: number;
-          name?: string | null;
-          phone?: string | null;
+          name: string;
+          phone?: string;
         };
         Update: {
-          address?: string | null;
-          business_id?: string | null;
+          address?: string;
+          business_id?: string;
           created_at?: string;
-          email?: string | null;
+          email?: string;
           id?: number;
-          name?: string | null;
-          phone?: string | null;
+          name?: string;
+          phone?: string;
         };
         Relationships: [
           {
@@ -178,6 +178,44 @@ export interface Database {
           },
         ];
       };
+      ticket_types: {
+        Row: {
+          capacity: number | null;
+          created_at: string;
+          id: number;
+          is_vip: boolean;
+          label: string;
+          price: number;
+          service_id: number;
+        };
+        Insert: {
+          capacity?: number | null;
+          created_at?: string;
+          id?: number;
+          is_vip?: boolean;
+          label: string;
+          price: number;
+          service_id: number;
+        };
+        Update: {
+          capacity?: number | null;
+          created_at?: string;
+          id?: number;
+          is_vip?: boolean;
+          label?: string;
+          price?: number;
+          service_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_ticket_types_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       tickets: {
         Row: {
           arrived: boolean;
@@ -191,7 +229,7 @@ export interface Database {
           note: string | null;
           payment_status: string;
           price: number;
-          type: string;
+          type_id: number;
         };
         Insert: {
           arrived?: boolean;
@@ -205,7 +243,7 @@ export interface Database {
           note?: string | null;
           payment_status?: string;
           price: number;
-          type: string;
+          type_id: number;
         };
         Update: {
           arrived?: boolean;
@@ -219,9 +257,16 @@ export interface Database {
           note?: string | null;
           payment_status?: string;
           price?: number;
-          type?: string;
+          type_id?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "public_tickets_ticket_type_fkey";
+            columns: ["type_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "tickets_billing_id_fkey";
             columns: ["billing_id"];
@@ -378,6 +423,12 @@ export type UpdateEvents = Database["public"]["Tables"]["events"]["Update"];
 export type Services = Database["public"]["Tables"]["services"]["Row"];
 export type InsertServices = Database["public"]["Tables"]["services"]["Insert"];
 export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
+
+export type TicketTypes = Database["public"]["Tables"]["ticket_types"]["Row"];
+export type InsertTicketTypes =
+  Database["public"]["Tables"]["ticket_types"]["Insert"];
+export type UpdateTicketTypes =
+  Database["public"]["Tables"]["ticket_types"]["Update"];
 
 export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
 export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];

@@ -1,68 +1,61 @@
 "use client";
 
 import {
+  CustomComboBox,
   CustomErrorMessage,
   FormikSelectField,
   FormikTextField,
   SubmitButton,
 } from "@/utils/forms/FormElements";
-import { Contacts, Coupons, Events } from "@/utils/supabase/database.types";
+import { Contacts, Coupons } from "@/utils/supabase/database.types";
 import { Alert, Button, Modal } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
-import { CurrencyEuroIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
+import {
+  CurrencyEuroIcon,
+  PlusCircleIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import {
   bulkInsertTickets,
-  bulkInsertContacts,
-  fetchContacts,
   validateCouponCode,
   redeemCoupon,
+  bulkUpsertContacts,
 } from "../serverActions";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import { contactsEqual } from "../utils";
 import CouponCodeField from "./CouponCodeField";
 import { useStoreContext } from "../../store";
+import { Events } from "../store";
 
 export default function NewTicketModal({
-  eventId,
+  event,
   onSuccess,
   couponCode,
 }: {
-  eventId: Events["id"];
+  event: Events;
   onSuccess?: () => void;
   couponCode?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [contacts, setContacts] = useState<Contacts[]>([]);
-  const [errorMess, setErrorMess] = useState<string | undefined>();
   const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
 
-  const { addTickets, ticketTypes, setPartialCoupon } = useStoreContext(
+  const { refresh, ticketTypes, setPartialCoupon, contacts } = useStoreContext(
     (state) => ({
-      addTickets: state.events.addTickets,
-      ticketTypes: state.events.ticketTypes.map((t) => ({
-        ...t,
-        sold: state.events.events
-          .find((e) => e.id === eventId)!
-          .tickets.filter((ticket) => ticket.type == t.label).length,
-      })),
+      refresh: state.events.refresh,
+      ticketTypes: state.services.services
+        .find((s) => event.service_id === s.id)!
+        .ticket_types.map((t) => ({
+          ...t,
+          sold: event.tickets.filter((ticket) => ticket.type_id == t.id).length,
+        })),
       setPartialCoupon: state.coupons.setPartialCoupon,
+      contacts: state.events.contacts,
     }),
   );
-
-  useEffect(() => {
-    (async () => {
-      const { data: contacts, error } = await fetchContacts();
-      if (error) {
-        setErrorMess(error.message);
-        return;
-      }
-      setContacts(contacts);
-    })();
-  }, []);
 
   const validationSchema = Yup.object({
     billingName: Yup.string()
@@ -79,8 +72,11 @@ export default function NewTicketModal({
           name: Yup.string().min(2, "Zadajte aspoň 2 znaky").optional(),
           email: Yup.string().email("Zadajte platný email").optional(),
           phone: Yup.string().optional(),
-          type: Yup.mixed()
-            .oneOf(["VIP", "standard"], "Zadajte platnú možnosť")
+          type_id: Yup.number()
+            .oneOf(
+              ticketTypes.map((t) => t.id),
+              "Zadajte platnú možnosť",
+            )
             .required("Musíte zadať typ"),
           price: Yup.number().required("Cena je povinná"),
         }),
@@ -92,56 +88,47 @@ export default function NewTicketModal({
   type TicketOrderType = Yup.InferType<typeof validationSchema>;
 
   const initialValues: TicketOrderType = {
-    tickets: [{ type: "standard", price: 80 }],
+    billingName: "",
+    tickets: [
+      {
+        type_id: ticketTypes[0].id,
+        price: ticketTypes[0].price,
+      },
+    ],
     paymentStatus: "rezervované",
-  } as unknown as TicketOrderType;
+  };
 
   const onSubmit = async (
     values: TicketOrderType,
     { setErrors }: FormikHelpers<TicketOrderType>,
   ) => {
-    let allContacts = [...contacts];
-    let billingContact = contacts.find((c) =>
-      contactsEqual(c, {
-        name: values.billingName,
-        email: values.billingEmail || null,
-        phone: values.billingPhone || null,
-      }),
-    );
-    if (!billingContact) {
-      const { data: billingContacts, error: billingError } =
-        await bulkInsertContacts([
-          {
-            name: values.billingName,
-            email: values.billingEmail || null,
-            phone: values.billingPhone || null,
-          },
-        ]);
-      if (billingError) {
-        setErrors({
-          tickets: "Chyba pri vytváraní fakturačného kontaktu: " + billingError,
-        });
-        return;
-      }
-      billingContact = billingContacts[0];
-      allContacts = [...contacts, ...billingContacts];
+    const { data: billingContacts, error: billingError } =
+      await bulkUpsertContacts([
+        {
+          name: values.billingName,
+          email: values.billingEmail,
+          phone: values.billingPhone,
+        },
+      ]);
+    if (billingError) {
+      setErrors({
+        tickets:
+          "Chyba pri vytváraní fakturačného kontaktu: " + billingError.message,
+      });
+      return;
     }
+    const billingContact = billingContacts[0];
     const { data: guestContacts, error: guestsError } =
-      await bulkInsertContacts(
+      await bulkUpsertContacts(
         values.tickets
           .map(
             (ticket) =>
               ({
                 name: ticket.name || values.billingName,
-                email: ticket.email || null,
-                phone: ticket.phone || null,
+                email: ticket.email || values.billingEmail,
+                phone: ticket.phone || values.billingPhone,
               }) as Contacts,
           )
-          // filter out existing contacts
-          .filter(
-            (contact) => ![...contacts].find((c) => contactsEqual(c, contact)),
-          )
-          // filter out duplicates
           .filter(
             (ticket, i, a) =>
               i === a.findIndex((t) => contactsEqual(t, ticket)),
@@ -151,20 +138,19 @@ export default function NewTicketModal({
       setErrors({ tickets: "Chyba pri vytváraní kontaktov: " + guestsError });
       return;
     }
-    allContacts = [...allContacts, ...guestContacts];
-
     const { data: createdTickets, error } = await bulkInsertTickets(
       values.tickets.map((ticket) => ({
         billing_id: billingContact!.id,
-        guest_id: allContacts.find((c) =>
+        guest_id: guestContacts.find((c) =>
           contactsEqual(c, {
-            name: ticket.name || values.billingName,
-            email: ticket.email || null,
-            phone: ticket.phone || null,
+            name: ticket.name || values.billingName!,
+            email: ticket.email || values.billingEmail || "",
+            phone: ticket.phone || values.billingPhone || "",
+            address: "",
           }),
         )!.id,
-        event_id: eventId,
-        type: ticket.type as string,
+        event_id: event.id,
+        type_id: ticket.type_id,
         price: ticket.price,
         payment_status: values.paymentStatus as string,
         coupon_redeemed_id: coupon?.id || null,
@@ -174,14 +160,7 @@ export default function NewTicketModal({
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
     }
-    addTickets(
-      eventId,
-      createdTickets.map((t) => ({
-        ...t,
-        billing: allContacts.find((c) => c.id == t.billing_id)!,
-        guest: allContacts.find((c) => c.id == t.guest_id)!,
-      })),
-    );
+    await refresh();
     if (coupon) {
       const couponAmountUpdate = await redeemCoupon(
         coupon.id,
@@ -208,7 +187,7 @@ export default function NewTicketModal({
       });
     }
 
-    toast.success("Lístky boli vytvorené");
+    toast.success("Lístky boli vytvorené", { autoClose: 1500 });
     onSuccess?.();
     setIsOpen(false);
   };
@@ -240,16 +219,43 @@ export default function NewTicketModal({
               isSubmitting,
               errors,
               getFieldMeta,
+              setFieldValue,
             }: FormikProps<TicketOrderType>) => (
               <Form>
                 <p className="ps-1 font-bold text-slate-700">Fakturčné údaje</p>
                 <div className="flex gap-2 rounded-xl bg-slate-200 p-2 shadow-md">
-                  <FormikTextField
+                  {/* <FormikTextField
                     name="billingName"
                     label="Meno"
                     placeHolder="Adam Kováč"
                     vertical
+                  /> */}
+                  <CustomComboBox
+                    options={contacts as Partial<Contacts>[]}
+                    displayFun={(c) => c?.name || ""}
+                    searchKeys={["name"]}
+                    newValueBuilder={(input) => ({ name: input })}
+                    onSelect={(contact) => {
+                      setFieldValue("billingName", contact.name, false);
+                      if (contact.id) {
+                        setFieldValue("billingEmail", contact.email, false);
+                        setFieldValue("billingPhone", contact.phone, false);
+                      }
+                      console.log(values);
+                    }}
+                    label="Meno"
+                    placeholder="Adam Kováč"
+                    vertical
+                    iconStart={
+                      <UserCircleIcon className="h-4 w-4 text-gray-500" />
+                    }
+                    error={
+                      <CustomErrorMessage
+                        fieldMeta={getFieldMeta("billingName")}
+                      />
+                    }
                   />
+
                   <FormikTextField
                     // type="email"
                     name="billingEmail"
@@ -270,59 +276,35 @@ export default function NewTicketModal({
                     <option value="rezervované">Rezervované</option>
                     <option value="zrušené">Zrušené</option>
                   </FormikSelectField>
-                  {/* <div className="flex-0">
-                    <label
-                      className="p-1 text-gray-700"
-                      htmlFor="paymentStatus"
-                    >
-                      Stav platby
-                    </label>
-                    <CustomErrorMessage
-                      fieldMeta={getFieldMeta("paymentStatus")}
-                    />
-                  </div> */}
                 </div>
                 <FieldArray name="tickets">
                   {(ticketsProps) => (
                     <>
-                      <div className="flex flex-row items-end gap-2 p-1 pt-4">
+                      <div className="flex flex-row items-end justify-between gap-2 p-1 pt-4">
                         <p className="ps-1 font-bold text-slate-700">Lístky</p>
-                        <Button
-                          size="xs"
-                          className="ms-auto p-0 ps-1"
-                          pill
-                          onClick={() =>
-                            ticketsProps.push({
-                              type: "standard",
-                              price: ticketTypes.find(
-                                (t) => t.label == "standard",
-                              )!.price,
-                            })
-                          }
-                        >
-                          {
-                            values.tickets.filter((t) => t.type == "standard")
-                              .length
-                          }
-                          x Standard
-                          <PlusCircleIcon className="ms-2 h-5 w-5" />
-                        </Button>
-                        <Button
-                          size="xs"
-                          className="p-0 ps-1"
-                          pill
-                          onClick={() =>
-                            ticketsProps.push({
-                              type: "VIP",
-                              price: ticketTypes.find((t) => t.label == "VIP")!
-                                .price,
-                            })
-                          }
-                        >
-                          {values.tickets.filter((t) => t.type == "VIP").length}
-                          x VIP
-                          <PlusCircleIcon className="ms-2 h-5 w-5" />
-                        </Button>
+                        <div className="flex gap-2">
+                          {ticketTypes.map((type) => (
+                            <Button
+                              size="xs"
+                              className="ms-auto p-0 ps-1"
+                              pill
+                              onClick={() =>
+                                ticketsProps.push({
+                                  type_id: type.id,
+                                  price: type.price,
+                                })
+                              }
+                            >
+                              {
+                                values.tickets.filter(
+                                  (t) => t.type_id == type.id,
+                                ).length
+                              }
+                              x {type.label}
+                              <PlusCircleIcon className="ms-2 h-5 w-5" />
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                       {values.tickets && values.tickets.length > 0 ? (
                         <table className="w-full">
@@ -360,7 +342,7 @@ export default function NewTicketModal({
                               <td className="px-1">
                                 <FormikTextField
                                   name={`tickets[${index}].email`}
-                                  placeHolder="-"
+                                  placeHolder={values.billingEmail || "-"}
                                   optional
                                   vertical
                                 />
@@ -368,17 +350,20 @@ export default function NewTicketModal({
                               <td className="px-1">
                                 <FormikTextField
                                   name={`tickets[${index}].phone`}
-                                  placeHolder="-"
+                                  placeHolder={values.billingPhone || "-"}
                                   optional
                                   vertical
                                 />
                               </td>
                               <td className="px-1">
                                 <FormikSelectField
-                                  name={`tickets[${index}].type`}
+                                  name={`tickets[${index}].type_id`}
                                 >
-                                  <option value="standard">Standard</option>
-                                  <option value="VIP">VIP</option>
+                                  {ticketTypes.map((type) => (
+                                    <option value={type.id}>
+                                      {type.label}
+                                    </option>
+                                  ))}
                                 </FormikSelectField>
                               </td>
                               <td className="px-1">
@@ -412,13 +397,13 @@ export default function NewTicketModal({
                 {ticketTypes.map((type) => {
                   const afterSaleCount =
                     type.sold +
-                    values.tickets.filter((t) => t.type == type.label).length;
-                  if (afterSaleCount > type.max_sold) {
+                    values.tickets.filter((t) => t.type_id == type.id).length;
+                  if (type.capacity && afterSaleCount > type.capacity) {
                     return (
                       <Alert color="warning" icon={HiExclamationTriangle}>
                         Po vytvorení bude {afterSaleCount} lístkov typu{" "}
                         <span className="font-semibold">{type.label}</span>, čo
-                        je viac ako povolených {type.max_sold}.
+                        je viac ako povolených {type.capacity}.
                       </Alert>
                     );
                   }
@@ -475,11 +460,6 @@ export default function NewTicketModal({
                     className="m-0"
                   />
                 </div>
-                {errorMess && (
-                  <Alert color="failure" icon={HiExclamationTriangle}>
-                    {errorMess}
-                  </Alert>
-                )}
               </Form>
             )}
           </Formik>

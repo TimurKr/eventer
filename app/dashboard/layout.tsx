@@ -1,9 +1,12 @@
-import { getServerUser } from "@/utils/supabase/server";
+import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContextProvider } from "./store";
 import Navbar from "./Navbar";
 import { fetchServices } from "./services/serverActions";
+import { InstantTextField } from "@/utils/forms/FormElements";
+import { revalidateTag } from "next/cache";
+import { fetchContacts } from "./events/serverActions";
 
 export default async function DashboardLayout({
   children,
@@ -15,33 +18,58 @@ export default async function DashboardLayout({
     return redirect("/login");
   }
 
-  const { data: services, error } = await fetchServices();
-  if (error) {
-    return <div>Error: {error.message}</div>;
+  const servicesQuery = fetchServices();
+  const contactsQuery = fetchContacts();
+
+  const [services, contacts] = await Promise.all([
+    servicesQuery,
+    contactsQuery,
+  ]);
+
+  if (services.error) {
+    throw new Error(services.error.message);
+  }
+  if (contacts.error) {
+    throw new Error(contacts.error.message);
   }
 
   return (
     <ContextProvider
       initStoreState={{
         services: {
-          services: services,
-          allServices: services,
+          services: services.data,
+          allServices: services.data,
+        },
+        events: {
+          isRefreshing: true,
+          contacts: contacts.data,
+        },
+        coupons: {
+          isRefreshing: true,
         },
       }}
     >
       <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
         <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
           <p className="hidden px-4 text-lg font-bold tracking-wider md:inline">
-            {user.name || "No name"}
-            {/* TODO: Instant textfield, maybe move this to server */}
-            {/* <InstantTextField 
-          defaultValue={business?.name || ""}
-          placeholder="Názov podniku"
-          setLocalValue={(v) => {}}
-          updateDatabase={(v) => {}}
-          type="text"
-          inline
-        /> */}
+            <InstantTextField
+              defaultValue={user?.name || ""}
+              placeholder="Názov podniku"
+              updateDatabase={async (v) => {
+                "use server";
+                const r = await createServerSupabase(cookies())
+                  .from("businesses")
+                  .update({ name: v })
+                  .eq("id", user.id);
+                if (r.error) console.error(r.error);
+                else revalidateTag("user");
+                return r;
+              }}
+              type="text"
+              inline
+              showAlways={false}
+              trim
+            />
           </p>
           <Navbar />
         </nav>

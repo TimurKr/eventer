@@ -14,7 +14,7 @@ import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import NewTicketModal from "./modals/NewTicketModal";
 import {
   EventWithTickets,
-  bulkInsertContacts,
+  bulkUpsertContacts,
   deleteEvent,
   deleteTickets,
   mergeContacts,
@@ -52,67 +52,41 @@ import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
 import { useStoreContext } from "../store";
 import moment from "moment";
-import Link from "next/link";
-import { PlusIcon } from "@heroicons/react/24/outline";
 import NewServiceModal from "../services/modals/NewServiceModal";
+import { Events } from "./store";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
 function LinkUnlinkContact({
-  identicalContactFound,
-  contactUsage,
   groupSize,
   ticket,
   type,
 }: {
-  identicalContactFound: number;
-  contactUsage: number;
   groupSize: number;
   ticket: EventWithTickets["tickets"][0];
-  type: "guest" | "billing";
+  type: "guest_id" | "billing_id";
 }) {
-  const { refresh, setPartialTicket } = useStoreContext(
-    (state) => state.events,
-  );
-  if (identicalContactFound < 2 && contactUsage < 2) return null;
+  const {
+    events: { contacts, refresh },
+    contact,
+  } = useStoreContext((state) => ({
+    ...state,
+    contact: state.events.contacts.find((c) => c.id == ticket[type])!,
+  }));
+  if (contact.usage_count < 2) return null;
   return (
     <div className="inline-flex">
-      {identicalContactFound > 1 && (
-        <div className={`inline-block p-1 `}>
-          <Tooltip
-            content={`Máte ${identicalContactFound} rôznych kontaktov s týmito údajmi. Kliknutím ich spojíte do jedného synchronizovaného.`}
-          >
-            <button
-              onClick={() =>
-                optimisticUpdate({
-                  value: {},
-                  localUpdate: () => {},
-                  databaseUpdate: () => mergeContacts(ticket[type]!),
-                  localRevert: () => {},
-                  onSuccessfulUpdate: refresh,
-                  loadingMessage: "Spájam kontakty...",
-                  successMessage: "Kontakty spojené",
-                })
-              }
-            >
-              <LiaLinkSolid
-                className={`inline h-4 w-4 text-green-500 hover:scale-105 active:scale-110 active:text-green-700`}
-              />
-            </button>
-          </Tooltip>
-        </div>
-      )}
-      {contactUsage > 1 && (groupSize > 1 || type === "guest") && (
+      {contact.usage_count > 1 && (groupSize > 1 || type === "guest_id") && (
         <div
           className={`inline-block p-1 ${
-            type === "guest" ? "invisible group-hover:visible" : ""
+            type === "guest_id" ? "invisible group-hover:visible" : ""
           }`}
         >
           <Tooltip
             content={`Tento kontakt sa používa na ${
-              contactUsage - 1
+              contact.usage_count - 1
             } iných miestach. Kliknutím sem ${
-              type === "guest"
+              type === "guest_id"
                 ? "zrušíte tento link a umožníte zmeny iba na tomto mieste."
                 : "oddelíte jeden lístok z tejto skupiny."
             }`}
@@ -121,8 +95,14 @@ function LinkUnlinkContact({
               onClick={async () => {
                 // TODO: Implement transaction
                 const toastId = toast.loading("Vytváram kópiu kontaktu...");
-                const { id, created_at, ...contactData } = ticket[type]!;
-                const r = await bulkInsertContacts([contactData]);
+                const { id, created_at, usage_count, ...contactData } =
+                  contacts.find((c) => c.id === ticket[type])!;
+                let name = contactData.name + ` (kópia ${1})`;
+                for (let i = 2; true; i++) {
+                  if (!contacts.find((c) => c.name === name)) break;
+                  name = contactData.name + ` (kópia ${i})`;
+                }
+                const r = await bulkUpsertContacts([{ ...contactData, name }]);
                 if (r.error) {
                   toast.update(toastId, {
                     render: r.error.message,
@@ -135,10 +115,9 @@ function LinkUnlinkContact({
                 const r2 = await updateTicketFields({
                   id: ticket.id,
                   billing_id:
-                    type === "billing" ? r.data[0].id : ticket.billing_id,
+                    type === "billing_id" ? r.data[0].id : ticket.billing_id,
                   guest_id:
-                    type === "guest" ||
-                    contactsEqual(ticket.guest!, ticket.billing!)
+                    type === "guest_id" || ticket.guest_id === ticket.billing_id
                       ? r.data[0].id
                       : ticket.guest_id,
                 });
@@ -151,22 +130,7 @@ function LinkUnlinkContact({
                   });
                   return;
                 }
-                setPartialTicket({
-                  id: ticket.id,
-                  billing_id:
-                    type === "billing" ? r.data[0].id : ticket.billing_id,
-                  billing: type === "billing" ? r.data[0] : ticket.billing,
-                  guest_id:
-                    type === "guest" ||
-                    contactsEqual(ticket.guest!, ticket.billing!)
-                      ? r.data[0].id
-                      : ticket.guest_id,
-                  guest:
-                    type === "guest" ||
-                    contactsEqual(ticket.guest!, ticket.billing!)
-                      ? r.data[0]
-                      : ticket.guest,
-                });
+                await refresh();
                 toast.update(toastId, {
                   render: "Kontakt oddelený",
                   type: "success",
@@ -194,23 +158,27 @@ function TicketRow({
   tickets: EventWithTickets["tickets"];
 }) {
   const {
-    ticketTypes,
     highlightedTicketIds,
     selectedTicketIds,
     setPartialTicket,
+    search,
     setPartialContact,
     setTicketsStatus,
     removeTickets,
     addTickets,
     toggleSelectedTicket,
     event,
-    allContacts,
+    contacts,
+    refresh,
+    ticketTypes,
   } = useStoreContext((state) => ({
     ...state.events,
-    event: state.events.events.find((e) => e.id == ticket.event_id)!,
-    allContacts: state.events.events
-      .flatMap((event) => event.tickets)
-      .flatMap((ticket) => [ticket.guest!, ticket.billing!]),
+    event: state.events.allEvents.find((e) => e.id == ticket.event_id)!,
+    ticketTypes: state.services.allServices.find(
+      (s) =>
+        s.id ===
+        state.events.allEvents.find((e) => e.id == ticket.event_id)!.service_id,
+    )!.ticket_types,
   }));
 
   const indexInEvent = tickets.findIndex((t) => t === ticket);
@@ -220,6 +188,9 @@ function TicketRow({
   const indexInGroup = tickets
     .filter((t) => t.billing_id === ticket.billing_id)
     .findIndex((t) => t === ticket);
+
+  const billingContact = contacts.find((c) => c.id === ticket.billing_id)!;
+  const guestContact = contacts.find((c) => c.id === ticket.guest_id)!;
 
   return (
     <Table.Row
@@ -256,36 +227,28 @@ function TicketRow({
       <Table.Cell className="p-2 py-0">
         <select
           className={`rounded-md border-none px-2 py-0.5 text-xs font-semibold hover:cursor-pointer ${
-            ticket.type === "VIP"
+            ticket.type.is_vip
               ? "bg-emerald-400 text-black"
-              : ticket.type === "standard"
-                ? "bg-gray-200 text-gray-600"
-                : ""
+              : "bg-gray-200 text-gray-600"
           }`}
           onChange={async (e) => {
             if (
-              !confirm(
-                `Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.\n\nZmena: ${
-                  ticket.type
-                } => ${e.target.value}\n\nPo zmene bude:\n${e.target.value}: ${
-                  tickets.filter((t) => t.type == e.target.value).length + 1
-                } lístkov\n${ticket.type}: ${
-                  tickets.filter((t) => t.type == ticket.type).length - 1
-                } lístkov`,
-              )
+              !confirm(`Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.`)
             )
               return;
             const originalType = ticket.type;
             const originalPrice = ticket.price;
+            const type_id = parseInt(e.target.value);
             setPartialTicket({
               id: ticket.id,
-              type: e.target.value,
-              price: ticketTypes.find((t) => t.label == e.target.value)!.price,
+              type_id: type_id,
+              type: ticketTypes.find((t) => t.id == type_id)!,
+              price: ticketTypes.find((t) => t.id == type_id)!.price,
             });
             const r = await updateTicketFields({
               id: ticket.id,
-              type: e.target.value,
-              price: ticketTypes.find((t) => t.label == e.target.value)!.price,
+              type_id: type_id,
+              price: ticketTypes.find((t) => t.id == type_id)!.price,
             });
             if (r.error) {
               setPartialTicket({
@@ -297,10 +260,10 @@ function TicketRow({
               return;
             }
           }}
-          value={ticket.type}
+          value={ticket.type.id}
         >
           {ticketTypes.map((type) => (
-            <option key={type.label} value={type.label}>
+            <option key={type.label} value={type.id}>
               {type.label}
             </option>
           ))}
@@ -308,46 +271,74 @@ function TicketRow({
       </Table.Cell>
       <Table.Cell className="group text-pretty border-l p-0">
         <InstantTextField
-          defaultValue={ticket.guest!.name}
+          defaultValue={guestContact.name}
           type="text"
           inline
+          trim
           placeholder="Meno"
           validate={async (value) =>
             value == "" ? "Meno nesmie byť prázdne" : null
           }
-          updateDatabase={async (value) =>
-            updateContactFields({
+          updateDatabase={async (value) => {
+            const r = await updateContactFields({
               id: ticket.guest_id,
-              name: value,
-            })
-          }
-          setLocalValue={(value) =>
-            setPartialContact({ id: ticket.guest_id, name: value })
-          }
+              name: value || "",
+            });
+            if (!r.error) return r;
+            if (
+              !confirm(
+                "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+              )
+            )
+              return { terminate: true };
+            const r2 = await mergeContacts(guestContact, {
+              name: value || "",
+            });
+            if (!r2.error) refresh();
+            return r2;
+          }}
+          setLocalValue={(value) => {
+            setPartialContact({ id: ticket.guest_id, name: value || "" });
+            search({});
+          }}
         />
         <InstantTextField
-          defaultValue={ticket.guest!.phone}
+          defaultValue={guestContact.phone}
           type="text"
           inline
+          trim
           placeholder="Telefón"
-          updateDatabase={(value) =>
-            updateContactFields({
+          updateDatabase={async (value) => {
+            const r = await updateContactFields({
               id: ticket.guest_id,
-              phone: value || null,
-            })
-          }
+              phone: value || "",
+            });
+            if (!r.error || r.status != 409) return r;
+            if (
+              !confirm(
+                "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+              )
+            )
+              return { terminate: true };
+            const r2 = await mergeContacts(guestContact, {
+              phone: value || "",
+            });
+            if (!r2.error) refresh();
+            return r2;
+          }}
           setLocalValue={(value) =>
             setPartialContact({
               id: ticket.guest_id,
-              phone: value,
+              phone: value || "",
             })
           }
         />
         <div className="inline-block">
           <InstantTextField
-            defaultValue={ticket.guest!.email}
+            defaultValue={guestContact.email}
             type="email"
             inline
+            trim
             placeholder="Email"
             validate={(value) =>
               yupString()
@@ -356,31 +347,40 @@ function TicketRow({
                 .then(() => null)
                 .catch((err) => err.message)
             }
-            updateDatabase={(value) =>
-              updateContactFields({
+            updateDatabase={async (value) => {
+              const r = await updateContactFields({
                 id: ticket.guest_id,
-                email: value || null,
-              })
-            }
+                email: value || "",
+              });
+              if (!r.error || r.status != 409) return r;
+              if (
+                !confirm(
+                  "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+                )
+              )
+                return { terminate: true };
+              const r2 = await mergeContacts(guestContact, {
+                email: value || "",
+              });
+              if (!r2.error) refresh();
+              return r2;
+            }}
             setLocalValue={(value) =>
               setPartialContact({
                 id: ticket.guest_id,
-                email: value,
+                email: value || "",
               })
             }
           />
           <LinkUnlinkContact
-            identicalContactFound={
-              allContacts
-                .filter((c, i, a) => a.findIndex((c2) => c.id == c2.id) === i)
-                .filter((c) => contactsEqual(c, ticket.guest!)).length
-            }
-            contactUsage={
-              allContacts.filter((c) => c.id == ticket.guest_id).length
-            }
+            // identicalContactFound={
+            //   allContacts
+            //     .filter((c, i, a) => a.findIndex((c2) => c.id == c2.id) === i)
+            //     .filter((c) => contactsEqual(c, ticket.guest!)).length
+            // }
             groupSize={groupSize}
             ticket={ticket}
-            type="guest"
+            type="guest_id"
           />
         </div>
       </Table.Cell>
@@ -389,62 +389,86 @@ function TicketRow({
           <div className="flex flex-col">
             <div className="flex">
               <InstantTextField
-                defaultValue={ticket.billing!.name}
+                defaultValue={billingContact.name}
                 type="text"
+                trim
                 placeholder="Meno"
                 className="grow"
                 validate={async (value) =>
                   value == "" ? "Meno nesmie byť prázdne" : null
                 }
-                updateDatabase={(value) =>
-                  updateContactFields({
+                updateDatabase={async (value) => {
+                  const r = await updateContactFields({
                     id: ticket.billing_id,
-                    name: value,
-                  })
-                }
+                    name: value || "",
+                  });
+                  if (!r.error || r.status != 409) return r;
+                  if (
+                    !confirm(
+                      "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+                    )
+                  )
+                    return { terminate: true };
+                  const r2 = await mergeContacts(billingContact, {
+                    name: value || "",
+                  });
+                  if (!r2.error) refresh();
+                  return r2;
+                }}
                 setLocalValue={(value) =>
                   setPartialContact({
                     id: ticket.billing_id,
-                    name: value,
+                    name: value || "",
                   })
                 }
               />{" "}
               <LinkUnlinkContact
-                identicalContactFound={
-                  allContacts
-                    .filter(
-                      (c, i, a) => a.findIndex((c2) => c.id == c2.id) === i,
-                    )
-                    .filter((c) => contactsEqual(c, ticket.billing!)).length
-                }
-                contactUsage={
-                  allContacts.filter((c) => c.id == ticket.billing_id).length
-                }
+                // identicalContactFound={
+                //   allContacts
+                //     .filter(
+                //       (c, i, a) => a.findIndex((c2) => c.id == c2.id) === i,
+                //     )
+                //     .filter((c) => contactsEqual(c, ticket.billing!)).length
+                // }
                 groupSize={groupSize}
                 ticket={ticket}
-                type="billing"
+                type="billing_id"
               />
             </div>
             <InstantTextField
-              defaultValue={ticket.billing!.phone}
+              defaultValue={billingContact.phone}
               type="text"
+              trim
               placeholder="Telefón"
-              updateDatabase={(value) =>
-                updateContactFields({
+              updateDatabase={async (value) => {
+                const r = await updateContactFields({
                   id: ticket.billing_id,
-                  phone: value,
-                })
-              }
+                  phone: value || "",
+                });
+                if (!r.error || r.status != 409) return r;
+                if (
+                  !confirm(
+                    "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+                  )
+                )
+                  return { terminate: true };
+                const r2 = await mergeContacts(billingContact, {
+                  phone: value || "",
+                });
+                if (!r2.error) refresh();
+                return r2;
+              }}
               setLocalValue={(value) =>
                 setPartialContact({
                   id: ticket.billing_id,
-                  phone: value,
+                  phone: value || "",
                 })
               }
             />
             <InstantTextField
-              defaultValue={ticket.billing!.email}
+              defaultValue={billingContact.email}
               type="email"
+              trim
               placeholder="Email"
               validate={(value) =>
                 yupString()
@@ -453,16 +477,28 @@ function TicketRow({
                   .then(() => null)
                   .catch((err) => err.message)
               }
-              updateDatabase={(value) =>
-                updateContactFields({
+              updateDatabase={async (value) => {
+                const r = await updateContactFields({
                   id: ticket.billing_id,
-                  email: value,
-                })
-              }
+                  email: value || "",
+                });
+                if (!r.error || r.status != 409) return r;
+                if (
+                  !confirm(
+                    "Takýto kontakt už v databáze máte, táto operácia ich spojí.",
+                  )
+                )
+                  return { terminate: true };
+                const r2 = await mergeContacts(billingContact, {
+                  email: value || "",
+                });
+                if (!r2.error) refresh();
+                return r2;
+              }}
               setLocalValue={(value) =>
                 setPartialContact({
                   id: ticket.billing_id,
-                  email: value,
+                  email: value || "",
                 })
               }
             />
@@ -616,25 +652,22 @@ function TicketRow({
 }
 
 function TicketRows({
-  eventId,
+  event,
   cancelled,
 }: {
-  eventId: number;
+  event: Events;
   cancelled: boolean;
 }) {
-  const tickets = useStoreContext((state) => {
-    const event = state.events.events.find((e) => e.id == eventId)!;
-    return cancelled ? event.cancelled_tickets : event.tickets;
-  });
+  const tickets = cancelled ? event.cancelled_tickets : event.tickets;
 
   return (
-    <React.Fragment key={eventId + (cancelled ? "-cancelled" : "")}>
+    <React.Fragment key={event.id + (cancelled ? "-cancelled" : "")}>
       {tickets
         .map((t) => t.billing_id)
         .filter((v, i, a) => a.indexOf(v) === i)
         .map((billing_id) => (
           <React.Fragment
-            key={eventId + "-" + billing_id + (cancelled ? "-cancelled" : "")}
+            key={event.id + "-" + billing_id + (cancelled ? "-cancelled" : "")}
           >
             <Table.Row
               key={"spacing-" + billing_id}
@@ -665,11 +698,10 @@ function TicketRows({
   );
 }
 
-function EventRow({ eventId }: { eventId: number }) {
+function EventRow({ event }: { event: Events }) {
   const {
-    services: { allServices },
+    service,
     events: {
-      ticketTypes,
       searchTerm,
       removeEvent,
       addEvent,
@@ -680,25 +712,24 @@ function EventRow({ eventId }: { eventId: number }) {
       toggleEventIsExpanded,
       toggleEventLockedArrived,
       toggleEventShowCancelledTickets,
-      event,
       selectedTickets,
       higlightedTickets,
       highlightedCancelledTickets,
     },
   } = useStoreContext((state) => {
-    const e = state.events.events.find((e) => e.id == eventId)!;
     return {
-      services: state.services,
+      service: state.services.allServices.find(
+        (s) => s.id == event.service_id,
+      )!,
       events: {
         ...state.events,
-        event: e,
         selectedTickets: state.events.allEvents
-          .find((e) => e.id === eventId)!
+          .find((e) => e.id === event.id)!
           .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-        higlightedTickets: e.tickets.filter((t) =>
+        higlightedTickets: event.tickets.filter((t) =>
           state.events.highlightedTicketIds.includes(t.id),
         ).length,
-        highlightedCancelledTickets: e.cancelled_tickets.filter((t) =>
+        highlightedCancelledTickets: event.cancelled_tickets.filter((t) =>
           state.events.highlightedTicketIds.includes(t.id),
         ).length,
       },
@@ -706,7 +737,7 @@ function EventRow({ eventId }: { eventId: number }) {
   });
 
   return (
-    <li key={eventId} className={`flex flex-col`}>
+    <li key={event.id} className={`flex flex-col`}>
       <div
         className={`flex flex-wrap justify-between gap-x-6 gap-y-4 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
           event.isExpanded || searchTerm
@@ -716,7 +747,7 @@ function EventRow({ eventId }: { eventId: number }) {
       >
         <div className="flex min-w-0 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-            {allServices.find((s) => s.id == event.service_id)?.name}
+            {service.name}
             {event.is_public ? (
               <Badge color="blue" className="rounded-md">
                 Verejné
@@ -744,26 +775,22 @@ function EventRow({ eventId }: { eventId: number }) {
             </span>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
-          {ticketTypes.map((type) => {
+        <div className="ms-auto flex flex-col items-center justify-start lg:flex-row lg:gap-4">
+          {service.ticket_types.map((type) => {
             const sold = event.tickets.filter(
-              (t) => t.type == type.label,
+              (t) => t.type_id == type.id,
             ).length;
             return (
               <div key={type.label} className="w-28">
                 <div
                   className={`flex items-end text-sm ${
-                    type.label == "VIP"
-                      ? "text-amber-600"
-                      : type.label == "standard"
-                        ? "text-gray-600"
-                        : ""
+                    type.is_vip ? "text-amber-600" : "text-gray-600"
                   }`}
                 >
                   <span className="font-medium">{type.label}</span>
                   <span
                     className={`ms-auto text-base font-bold ${
-                      sold > type.max_sold
+                      type.capacity && sold > type.capacity
                         ? "text-red-600"
                         : sold == 0
                           ? "text-gray-400"
@@ -772,16 +799,16 @@ function EventRow({ eventId }: { eventId: number }) {
                   >
                     {sold}
                   </span>
-                  /<span>{type.max_sold}</span>
+                  /<span>{type.capacity || "-"}</span>
                 </div>
                 <Progress
                   className="mb-1"
                   size="sm"
-                  progress={(sold / type.max_sold) * 100}
+                  progress={type.capacity ? (sold / type.capacity) * 100 : 0}
                   color={
-                    sold > type.max_sold
+                    type.capacity && sold > type.capacity
                       ? "red"
-                      : type.label == "VIP"
+                      : type.is_vip
                         ? "yellow"
                         : "gray"
                   }
@@ -790,8 +817,8 @@ function EventRow({ eventId }: { eventId: number }) {
             );
           })}
         </div>
-        <div className="ms-auto flex flex-row items-center justify-start">
-          <NewTicketModal eventId={eventId} />
+        <div className="flex flex-row items-center justify-start">
+          <NewTicketModal event={event} />
           <button
             className="group grid h-full place-content-center ps-2"
             onClick={() => toggleEventIsExpanded(event.id)}
@@ -906,8 +933,8 @@ function EventRow({ eventId }: { eventId: number }) {
               <p className="ms-auto text-sm text-gray-600">
                 (Označených: {selectedTickets.length})
               </p>
-              <MoveTicketsToDifferentEventModal eventId={event.id} />
-              <ConvertToCouponModal eventId={event.id} />
+              <MoveTicketsToDifferentEventModal event={event} />
+              <ConvertToCouponModal event={event} />
               <button
                 className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 active:bg-red-800"
                 onClick={() => {
@@ -995,7 +1022,7 @@ function EventRow({ eventId }: { eventId: number }) {
                   </Table.Head>
                   <Table.Body>
                     {event.tickets.length > 0 && (
-                      <TicketRows eventId={eventId} cancelled={false} />
+                      <TicketRows event={event} cancelled={false} />
                     )}
                     {event.cancelled_tickets.length > 0 && (
                       <>
@@ -1020,7 +1047,7 @@ function EventRow({ eventId }: { eventId: number }) {
                         </Table.Row>
                         {(event.showCancelledTickets ||
                           highlightedCancelledTickets > 0) && (
-                          <TicketRows eventId={eventId} cancelled={true} />
+                          <TicketRows event={event} cancelled={true} />
                         )}
                       </>
                     )}
@@ -1051,9 +1078,9 @@ export default function EventsComponent() {
   } = useStoreContext((state) => state);
 
   // refresh and search once mounted
-  const q = useSearchParams().get("query");
+  const query = useSearchParams().get("query");
   useEffect(() => {
-    if (q) search(q);
+    if (query) search({ query });
     refresh();
   }, []);
 
@@ -1067,7 +1094,7 @@ export default function EventsComponent() {
           </div>
           {searchTerm && (
             <button
-              onClick={() => search("")}
+              onClick={() => search({ query: "" })}
               className="absolute right-0 top-0 grid h-full place-content-center px-2 text-gray-400 hover:scale-105 hover:text-gray-500 active:text-gray-600"
             >
               <XCircleIcon className="h-4 w-4" />
@@ -1087,13 +1114,13 @@ export default function EventsComponent() {
             } transition-all duration-300 ease-in-out`}
             placeholder="Hladať"
             value={searchTerm}
-            onChange={(e) => search(e.target.value)}
+            onChange={(e) => search({ query: e.target.value })}
             onKeyDown={(e) => {
               if (e.key == "Escape") {
                 (e.target as HTMLInputElement).blur();
               }
               if (e.key == "Enter") {
-                search(searchTerm);
+                search();
               }
             }}
           />
@@ -1115,7 +1142,7 @@ export default function EventsComponent() {
           className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
         >
           {events.map((event) => (
-            <EventRow key={event.id} eventId={event.id} />
+            <EventRow key={event.id} event={event} />
           ))}
         </ul>
       ) : isRefreshing ? (

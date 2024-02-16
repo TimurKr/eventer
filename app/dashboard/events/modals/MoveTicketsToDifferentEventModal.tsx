@@ -3,25 +3,28 @@
 import { Badge, Modal, Progress, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { bulkUpdateTicketFields } from "../serverActions";
-import { Events } from "@/utils/supabase/database.types";
 import { useStoreContext } from "../../store";
+import { Events } from "../store";
 
 export default function MoveTicketsToDifferentEventModal({
-  eventId,
+  event,
 }: {
-  eventId: Events["id"];
+  event: Events;
 }) {
   const [isSubmitting, startSubmition] = useTransition();
   const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { allEvents, ticketTypes, refresh, selectedTickets } = useStoreContext(
+  const { allEvents, refresh, selectedTickets, service } = useStoreContext(
     (state) => ({
       ...state.events,
       selectedTickets: state.events.allEvents
-        .find((e) => e.id === eventId)!
+        .find((e) => e.id === event.id)!
         .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
+      service: state.services.allServices.find(
+        (s) => s.id === event.service_id,
+      )!,
     }),
   );
 
@@ -56,101 +59,106 @@ export default function MoveTicketsToDifferentEventModal({
         </Modal.Header>
         <Modal.Body>
           <div className="flex flex-wrap gap-2">
-            {ticketTypes.map((type) => (
-              <div className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1">
-                <span className="font-semibold">{type.label}</span>:{" "}
-                <span className="font-bold">
-                  {selectedTickets.filter((t) => t.type == type.label).length}
-                </span>{" "}
-                lístkov
-              </div>
-            ))}
+            {selectedTickets
+              .map((t) => t.type)
+              .filter((value, index, self) => self.indexOf(value) === index)
+              .map((type) => (
+                <div className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1">
+                  <span className="font-semibold">{type.label}</span>:{" "}
+                  <span className="font-bold">
+                    {selectedTickets.filter((t) => t.type_id == type.id).length}
+                  </span>{" "}
+                  lístkov
+                </div>
+              ))}
             {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
-          {allEvents.map((event) => (
-            <button
-              className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100 ${
-                event.id == eventId && "!bg-red-100"
-              }`}
-              disabled={event.id == eventId || isSubmitting}
-              onMouseEnter={() => setHoveringEvent(event)}
-              onMouseLeave={() => setHoveringEvent(null)}
-              onClick={() => submit(event.id)}
-            >
-              <div className="flex min-w-0 flex-col items-start self-center">
-                <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-                  {new Date(event.datetime).toLocaleDateString("sk-SK")}
-                  <Badge
-                    color={event.is_public ? "blue" : "purple"}
-                    className="rounded-md"
-                  >
-                    {event.is_public ? "Verejné" : "Súkromné"}
-                  </Badge>
-                </p>
-                <p className="truncate text-xs leading-5 text-gray-500">
-                  {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-                </p>
-              </div>
-              <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
-                {ticketTypes.map((type) => {
-                  const sold = event.tickets.filter(
-                    (t) => t.type == type.label,
-                  ).length;
-                  const hoveringAdd =
-                    hoveringEvent?.id == event.id && event.id != eventId
-                      ? selectedTickets.filter((t) => t.type == type.label)
-                          .length
-                      : 0;
-                  return (
-                    <div key={type.label} className="w-28">
-                      <div
-                        className={`flex items-end text-sm ${
-                          type.label == "VIP"
-                            ? "text-amber-600"
-                            : type.label == "standard"
-                              ? "text-gray-600"
-                              : ""
-                        }`}
-                      >
-                        <span className="font-medium">{type.label}</span>
-                        <span
-                          className={`ms-auto text-base font-bold ${
-                            sold + hoveringAdd > type.max_sold
-                              ? "text-red-600"
-                              : sold + hoveringAdd == 0
-                                ? "text-gray-400"
-                                : ""
+          {allEvents
+            .filter((e) => e.service_id === event.service_id)
+            .map((e) => (
+              <button
+                key={e.id}
+                className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100 ${
+                  e.id == event.id && "!bg-red-100"
+                }`}
+                disabled={e.id == event.id || isSubmitting}
+                onMouseEnter={() => setHoveringEvent(e)}
+                onMouseLeave={() => setHoveringEvent(null)}
+                onClick={() => submit(e.id)}
+              >
+                <div className="flex min-w-0 flex-col items-start self-center">
+                  <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
+                    {new Date(e.datetime).toLocaleDateString("sk-SK")}
+                    <Badge
+                      color={e.is_public ? "blue" : "purple"}
+                      className="rounded-md"
+                    >
+                      {e.is_public ? "Verejné" : "Súkromné"}
+                    </Badge>
+                  </p>
+                  <p className="truncate text-xs leading-5 text-gray-500">
+                    {new Date(e.datetime).toLocaleTimeString("sk-SK")}
+                  </p>
+                </div>
+                <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
+                  {service.ticket_types.map((type) => {
+                    const sold = e.tickets.filter(
+                      (t) => t.type_id == type.id,
+                    ).length;
+                    const hoveringAdd =
+                      hoveringEvent?.id == e.id && e.id != event.id
+                        ? selectedTickets.filter((t) => t.type_id == type.id)
+                            .length
+                        : 0;
+                    return (
+                      <div key={type.label} className="w-28">
+                        <div
+                          className={`flex items-end text-sm ${
+                            type.is_vip ? "text-amber-600" : "text-gray-600"
                           }`}
                         >
-                          {hoveringAdd > 0 ? sold + hoveringAdd : sold}
-                        </span>
-                        /<span>{type.max_sold}</span>
+                          <span className="font-medium">{type.label}</span>
+                          <span
+                            className={`ms-auto text-base font-bold ${
+                              type.capacity &&
+                              sold + hoveringAdd > type.capacity
+                                ? "text-red-600"
+                                : sold + hoveringAdd == 0
+                                  ? "text-gray-400"
+                                  : ""
+                            }`}
+                          >
+                            {hoveringAdd > 0 ? sold + hoveringAdd : sold}
+                          </span>
+                          /<span>{type.capacity || "-"}</span>
+                        </div>
+                        <Progress
+                          className="mb-1"
+                          size="sm"
+                          progress={Math.min(
+                            type.capacity
+                              ? ((sold + hoveringAdd) / type.capacity) * 100
+                              : 0,
+                            100,
+                          )}
+                          color={
+                            type.capacity && sold + hoveringAdd > type.capacity
+                              ? "failure"
+                              : type.is_vip
+                                ? "yellow"
+                                : "gray"
+                          }
+                          theme={{
+                            bar: "transition-all rounded-full",
+                          }}
+                        />
                       </div>
-                      <Progress
-                        className="mb-1"
-                        size="sm"
-                        progress={Math.min(
-                          ((sold + hoveringAdd) / type.max_sold) * 100,
-                          100,
-                        )}
-                        color={
-                          sold + hoveringAdd > type.max_sold
-                            ? "failure"
-                            : type.label == "VIP"
-                              ? "yellow"
-                              : "gray"
-                        }
-                        theme={{
-                          bar: "transition-all rounded-full",
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </button>
-          ))}
+                    );
+                  })}
+                </div>
+              </button>
+            ))}
         </Modal.Body>
       </Modal>
     </>

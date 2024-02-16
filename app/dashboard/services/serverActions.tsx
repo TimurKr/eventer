@@ -1,14 +1,21 @@
 "use server";
 
-import { InsertServices, Services } from "@/utils/supabase/database.types";
+import { InsertServices } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 
 export async function fetchServices() {
   const supabase = createServerSupabase(cookies(), ["services"]);
-  return await supabase.from("services").select("*").order("name");
+  return await supabase
+    .from("services")
+    .select(`*, ticket_types(*)`)
+    .order("name");
 }
+
+export type Services = NonNullable<
+  Awaited<ReturnType<typeof fetchServices>>["data"]
+>[number];
 
 export async function insertServices(service: InsertServices[]) {
   const supabase = createServerSupabase(cookies());

@@ -15,7 +15,7 @@ export default function UseCouponSelectEvent({
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const {
-    events: { allEvents, ticketTypes },
+    events: { allEvents },
     services: { allServices },
   } = useStoreContext((state) => state);
 
@@ -70,52 +70,52 @@ export default function UseCouponSelectEvent({
                 </div>
               </div>
               <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
-                {ticketTypes.map((type) => {
-                  const sold = event.tickets.filter(
-                    (t) => t.type == type.label,
-                  ).length;
-                  return (
-                    <div key={type.label} className="w-28">
-                      <div
-                        className={`flex items-end text-sm ${
-                          type.label == "VIP"
-                            ? "text-amber-600"
-                            : type.label == "standard"
-                              ? "text-gray-600"
-                              : ""
-                        }`}
-                      >
-                        <span className="font-medium">{type.label}</span>
-                        <span
-                          className={`ms-auto text-base font-bold ${
-                            sold > type.max_sold
-                              ? "text-red-600"
-                              : sold == 0
-                                ? "text-gray-400"
-                                : ""
+                {allServices
+                  .find((s) => s.id === event.service_id)!
+                  .ticket_types.map((type) => {
+                    const sold = event.tickets.filter(
+                      (t) => t.type_id == type.id,
+                    ).length;
+                    return (
+                      <div key={type.label} className="w-28">
+                        <div
+                          className={`flex items-end text-sm ${
+                            type.is_vip ? "text-amber-600" : "text-gray-600"
                           }`}
                         >
-                          {sold}
-                        </span>
-                        /<span>{type.max_sold}</span>
+                          <span className="font-medium">{type.label}</span>
+                          <span
+                            className={`ms-auto text-base font-bold ${
+                              type.capacity && sold > type.capacity
+                                ? "text-red-600"
+                                : sold == 0
+                                  ? "text-gray-400"
+                                  : ""
+                            }`}
+                          >
+                            {sold}
+                          </span>
+                          /<span>{type.capacity || "-"}</span>
+                        </div>
+                        <Progress
+                          className="mb-1"
+                          size="sm"
+                          progress={
+                            type.capacity ? (sold / type.capacity) * 100 : 0
+                          }
+                          color={
+                            type.capacity && sold > type.capacity
+                              ? "red"
+                              : type.is_vip
+                                ? "yellow"
+                                : "gray"
+                          }
+                        />
                       </div>
-                      <Progress
-                        className="mb-1"
-                        size="sm"
-                        progress={(sold / type.max_sold) * 100}
-                        color={
-                          sold > type.max_sold
-                            ? "red"
-                            : type.label == "VIP"
-                              ? "yellow"
-                              : "gray"
-                        }
-                      />
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
-              <NewTicketModal eventId={event.id} couponCode={couponCode} />
+              <NewTicketModal event={event} couponCode={couponCode} />
             </div>
           ))}
         </Modal.Body>

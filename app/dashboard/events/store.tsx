@@ -1,15 +1,17 @@
 import { createStoreSlice } from "zimmer-context";
 import {
-  TicketTypes,
   EventWithTickets as fetchEventsReturnType,
   fetchEvents,
-  fetchTicketTypes,
+  fetchContacts,
+  Contacts,
 } from "./serverActions";
 import { ticketSortFunction } from "./utils";
-import { Contacts, Tickets } from "@/utils/supabase/database.types";
+import { Tickets } from "@/utils/supabase/database.types";
 import Fuse from "fuse.js";
+import { useStoreContext } from "../store";
+import { stat } from "fs";
 
-type Events = fetchEventsReturnType & {
+export type Events = fetchEventsReturnType & {
   lockedArrived: boolean;
   showCancelledTickets: boolean;
   isExpanded: boolean;
@@ -18,7 +20,22 @@ type Events = fetchEventsReturnType & {
 function search(
   events: Events[],
   term: string,
+  contacts: Contacts[],
 ): { events: Events[]; highlightedTicketIds: Tickets["id"][] } {
+  let result = events.map((event) => ({
+    ...event,
+    tickets: event.tickets.map((ticket) => ({
+      ...ticket,
+      billing: contacts.find((c) => c.id === ticket.billing_id),
+      guest: contacts.find((c) => c.id === ticket.guest_id),
+    })),
+    cancelled_tickets: event.cancelled_tickets.map((ticket) => ({
+      ...ticket,
+      billing: contacts.find((c) => c.id === ticket.billing_id),
+      guest: contacts.find((c) => c.id === ticket.guest_id),
+    })),
+  }));
+
   if (term === "") {
     return { events: events, highlightedTicketIds: [] };
   }
@@ -34,13 +51,13 @@ function search(
   ];
 
   // First find all events that have some mathching tickets
-  const fuse1 = new Fuse<Events>(events, {
+  result = new Fuse(result, {
     keys: keys.flatMap((k) => ["tickets." + k, "cancelled_tickets." + k]),
     shouldSort: false,
     useExtendedSearch: true,
-  });
-  events = fuse1.search(term).map((r) => r.item);
-  console.log("count: %d", events.length);
+  })
+    .search(term)
+    .map((r) => r.item);
 
   // Then for each event find the matching tickets and add tem to highlighted
   const fuse2 = new Fuse<Events["tickets"][0]>([], {
@@ -50,8 +67,8 @@ function search(
   });
 
   return {
-    events: events,
-    highlightedTicketIds: events.flatMap((event) => {
+    events: result,
+    highlightedTicketIds: result.flatMap((event) => {
       fuse2.setCollection([...event.tickets, ...event.cancelled_tickets]);
       return fuse2.search(term).map((r) => r.item.id);
     }),
@@ -64,13 +81,14 @@ type State = {
   searchTerm: string;
   highlightedTicketIds: Tickets["id"][];
   selectedTicketIds: Tickets["id"][];
-  ticketTypes: TicketTypes[];
+  // ticketTypes: TicketTypes[];
   isRefreshing: boolean;
+  contacts: Contacts[];
 };
 
 type Actions = {
   refresh: () => Promise<void>;
-  search: (term: string, allEvents?: Events[]) => void;
+  search: (props?: { query?: string; allEvents?: Events[] }) => void;
 
   addEvent: (event: Events) => void;
   removeEvent: (eventId: number) => void;
@@ -92,75 +110,72 @@ type Actions = {
     newStatus: Tickets["payment_status"],
   ) => void;
 
+  addContacts: (contacts: Contacts[]) => void;
   setPartialContact: (
     contact: Partial<Contacts> & { id: NonNullable<Contacts["id"]> },
   ) => void;
+  // setPartialContact: (
+  //   contact: Partial<Contacts> & { id: NonNullable<Contacts["id"]> },
+  // ) => void;
 };
 
-const defaultState: State = {
+const eventsSlice = createStoreSlice<State, Actions>((set, get, store) => ({
   events: [],
   allEvents: [],
   searchTerm: "",
   highlightedTicketIds: [],
   selectedTicketIds: [],
-  ticketTypes: [],
+  // ticketTypes: [],
+  contacts: [],
   isRefreshing: false,
-};
-
-const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
-  ...defaultState,
   refresh: async () => {
     set((state) => {
       state.isRefreshing = !state.isRefreshing;
     });
-    const eventsPromise = fetchEvents();
-    const ticketTypesPromise = fetchTicketTypes();
-    const [fetchedEventsResponse, fetchedTicketTypesResponse] =
-      await Promise.all([eventsPromise, ticketTypesPromise]);
+    const eventsQuery = fetchEvents();
+    const contactsQuery = fetchContacts();
+    const [resEvents, resContacts] = await Promise.all([
+      eventsQuery,
+      contactsQuery,
+    ]);
 
-    if (fetchedTicketTypesResponse.error) {
-      console.error(fetchedTicketTypesResponse.error);
-      throw fetchedTicketTypesResponse.error;
-    } else {
-      set((state) => {
-        state.ticketTypes = fetchedTicketTypesResponse.data;
-      });
+    if (resEvents.error) {
+      throw new Error(resEvents.error.message);
     }
-
-    // const { data: events, error } = await fetchEvents();
-    if (fetchedEventsResponse.error) {
-      console.error(fetchedEventsResponse.error);
-    } else {
-      set((state) => {
-        state.allEvents = fetchedEventsResponse.data.map((event) => ({
-          ...(state.allEvents?.find((e) => e.id === event.id) || {
-            lockedArrived: true,
-            showCancelledTickets: false,
-            isExpanded: false,
-          }),
-          ...event,
-        }));
-        state.allEvents.forEach((event) => {
-          event.tickets.sort(ticketSortFunction);
-          event.cancelled_tickets.sort(ticketSortFunction);
-        });
-        state.isRefreshing = false;
-        const r = search(state.allEvents, state.searchTerm);
-        state.events = r.events;
-        state.highlightedTicketIds = r.highlightedTicketIds;
-      });
+    if (resContacts.error) {
+      throw new Error(resContacts.error.message);
     }
+    set((state) => {
+      state.contacts = resContacts.data;
+      state.allEvents = resEvents.data.map((event) => ({
+        ...(state.allEvents?.find((e) => e.id === event.id) || {
+          lockedArrived: true,
+          showCancelledTickets: false,
+          isExpanded: false,
+        }),
+        ...event,
+      }));
+      state.allEvents.forEach((event) => {
+        event.tickets.sort(ticketSortFunction);
+        event.cancelled_tickets.sort(ticketSortFunction);
+      });
+      state.isRefreshing = false;
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
+      state.events = r.events;
+      state.highlightedTicketIds = r.highlightedTicketIds;
+    });
   },
 
-  search: (term, allEvents) =>
+  search: ({ query, allEvents } = {}) =>
     set((state) => {
-      state.searchTerm = term;
-      if (term === "") {
+      query = query === undefined ? state.searchTerm : query;
+      state.searchTerm = query;
+      if (query === "") {
         state.events = allEvents || state.allEvents;
         state.highlightedTicketIds = [];
         return;
       }
-      const r = search(allEvents || state.allEvents, term);
+      const r = search(allEvents || state.allEvents, query, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     }),
@@ -172,7 +187,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
         (a, b) =>
           new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
       );
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -180,7 +195,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
   removeEvent: (eventId) => {
     set((state) => {
       state.allEvents = state.allEvents.filter((event) => event.id !== eventId);
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -197,7 +212,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
         (a, b) =>
           new Date(b.datetime).getTime() - new Date(a.datetime).getTime(),
       );
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -207,7 +222,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
     set((state) => {
       const event = state.allEvents.find((event) => event.id === eventId)!;
       event.isExpanded = !event.isExpanded;
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -216,7 +231,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
     set((state) => {
       const event = state.allEvents.find((event) => event.id === eventId)!;
       event.showCancelledTickets = !event.showCancelledTickets;
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -225,7 +240,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
     set((state) => {
       const event = state.allEvents.find((event) => event.id === eventId)!;
       event.lockedArrived = !event.lockedArrived;
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -239,7 +254,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
       } else {
         state.selectedTicketIds.push(ticketId);
       }
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -256,7 +271,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
       );
       event.tickets.sort(ticketSortFunction);
       event.cancelled_tickets.sort(ticketSortFunction);
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -272,7 +287,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
       state.selectedTicketIds = state.selectedTicketIds.filter(
         (id) => !ticketIds.includes(id),
       );
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -299,7 +314,7 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
           event.cancelled_tickets.sort(ticketSortFunction);
         }
       });
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
@@ -327,31 +342,25 @@ const eventsSlice = createStoreSlice<State, Actions>((set, get) => ({
         event.tickets.sort(ticketSortFunction);
         event.cancelled_tickets.sort(ticketSortFunction);
       });
-      const r = search(state.allEvents, state.searchTerm);
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
   },
-
+  addContacts: (contacts) => {
+    set((state) => {
+      state.contacts = [...contacts, ...state.contacts];
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
+      state.events = r.events;
+      state.highlightedTicketIds = r.highlightedTicketIds;
+    });
+  },
   setPartialContact: (contact) => {
     set((state) => {
-      state.allEvents.forEach((event) => {
-        event.tickets.forEach((ticket) => {
-          if (ticket.guest_id === contact.id) {
-            ticket.guest = {
-              ...ticket.guest!,
-              ...contact,
-            };
-          }
-          if (ticket.billing_id === contact.id) {
-            ticket.billing = {
-              ...ticket.billing!,
-              ...contact,
-            };
-          }
-        });
-      });
-      const r = search(state.allEvents, state.searchTerm);
+      state.contacts = state.contacts.map((c) =>
+        c.id === contact.id ? { ...c, ...contact } : c,
+      );
+      const r = search(state.allEvents, state.searchTerm, state.contacts);
       state.events = r.events;
       state.highlightedTicketIds = r.highlightedTicketIds;
     });
