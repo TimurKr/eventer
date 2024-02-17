@@ -9,11 +9,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import NewServiceModal from "./new-service/Form";
+import NewServiceModal from "./edit/form";
 import { InstantTextField } from "@/utils/forms/FormElements";
 import { deleteService, updateService, Services } from "./serverActions";
 import Loading from "./loading";
-import NewServiceButton from "./new-service/Button";
+import NewServiceButton from "./edit/button";
 import Link from "next/link";
 import Header from "../components/Header";
 
@@ -53,7 +53,7 @@ function ServiceRow({ service }: { service: Services }) {
         </div>
         <Link
           href={{
-            pathname: "/dashboard/services/new-service",
+            pathname: "/dashboard/services/edit",
             query: { serviceId: service.id },
           }}
         >

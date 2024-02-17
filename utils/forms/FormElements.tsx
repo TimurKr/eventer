@@ -127,14 +127,17 @@ export const FormikSelectField = ({
   className,
   vertical = false,
   label,
+  onChange,
 }: {
   children: React.ReactNode;
   name: string;
   className?: string;
   vertical?: boolean;
   label?: string;
+  onChange?: (v: string) => void;
 }) => {
   const [field, meta, helpers] = useField(name);
+  field;
   return (
     <div
       className={`w-full ${
@@ -148,6 +151,10 @@ export const FormikSelectField = ({
       )}
       <select
         {...field}
+        onChange={(e) => {
+          field.onChange(e);
+          onChange && onChange(e.target.value);
+        }}
         className={`ms-auto w-full rounded-lg border-gray-200 bg-gray-50 py-1 ${
           className || ""
         }`}
@@ -158,6 +165,7 @@ export const FormikSelectField = ({
     </div>
   );
 };
+
 export const FormikCheckboxField = ({
   name,
   label,
@@ -270,12 +278,16 @@ export function CustomComboBox<T extends {}>({
               displayValue={displayFun}
               autoComplete="off"
               placeholder={placeholder}
+              // onBlur={(e) => {
+              //   setQuery(value ? displayFun(value) : "");
+              // }}
             />
             <div className="absolute inset-y-0 left-1 grid items-center p-1">
               {iconStart}
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center gap-1">
-              {query.length < 5 &&
+              {((value && displayFun(value).length == 0) ||
+                (!value && query.length == 0)) &&
                 (optional ? (
                   <Badge color={"gray"} className="pointer-events-none">
                     Volitelné
@@ -718,7 +730,13 @@ export function InstantTextField({
       className="group flex items-center gap-2"
       onClick={() => setIsEditing(true)}
     >
-      <p className="text-start font-medium tracking-wider">{value}</p>
+      <p
+        className={`text-start font-medium tracking-wider ${
+          value ? "" : "text-gray-500"
+        }`}
+      >
+        {value || placeholder}
+      </p>
       <PencilIcon className="h-4 w-4 shrink-0 text-gray-500 opacity-0 transition-all group-hover:opacity-100" />
     </button>
   );

@@ -11,8 +11,10 @@ import React from "react";
 
 export default async function DashboardLayout({
   children,
+  modals,
 }: {
   children: React.ReactNode;
+  modals: React.ReactNode;
 }) {
   const user = await getServerUser(cookies());
   if (!user) {
@@ -42,11 +44,7 @@ export default async function DashboardLayout({
           allServices: services.data,
         },
         events: {
-          isRefreshing: true,
           contacts: contacts.data,
-        },
-        coupons: {
-          isRefreshing: true,
         },
       }}
     >
@@ -75,7 +73,10 @@ export default async function DashboardLayout({
           <Navbar />
         </nav>
         <div className="grow overflow-y-scroll p-2">
-          <div className="rounded-xl bg-white p-4 pt-0">{children}</div>
+          <div className="rounded-xl bg-white p-4 pt-0">
+            {children}
+            {modals}
+          </div>
         </div>
       </section>
     </ContextProvider>

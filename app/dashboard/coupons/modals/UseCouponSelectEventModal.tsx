@@ -3,8 +3,8 @@
 import { Badge, Modal, Progress } from "flowbite-react";
 import { useState } from "react";
 import { useStoreContext } from "../../store";
-import NewTicketModal from "../../events/modals/NewTicketModal";
 import moment from "moment";
+import NewTicketsButton from "../../events/new-tickets/button";
 
 export default function UseCouponSelectEvent({
   couponCode,
@@ -115,7 +115,10 @@ export default function UseCouponSelectEvent({
                     );
                   })}
               </div>
-              <NewTicketModal event={event} couponCode={couponCode} />
+              <NewTicketsButton
+                eventId={event.id.toString()}
+                couponCode={couponCode}
+              />
             </div>
           ))}
         </Modal.Body>

@@ -11,7 +11,6 @@ import {
   Tooltip,
 } from "flowbite-react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
-import NewTicketModal from "./modals/NewTicketModal";
 import {
   EventWithTickets,
   bulkUpsertContacts,
@@ -41,10 +40,8 @@ import {
   InstantTextAreaField,
   InstantTextField,
 } from "@/utils/forms/FormElements";
-import { contactsEqual } from "./utils";
 import { string as yupString, number as yupNumber } from "yup";
 import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import ChangeDateModal from "./modals/ChangeDateModal";
 import MoveTicketsToDifferentEventModal from "./modals/MoveTicketsToDifferentEventModal";
 import ConvertToCouponModal from "./modals/ConvertToCouponModal";
 import Loading from "./loading";
@@ -52,9 +49,11 @@ import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
 import { useStoreContext } from "../store";
 import moment from "moment";
-import NewServiceModal from "../services/new-service/Form";
+import NewServiceModal from "../services/edit/form";
 import { Events } from "./store";
 import Header from "../components/Header";
+import NewTicketsButton from "./new-tickets/button";
+import EditDateButton from "./edit-date/button";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -819,7 +818,7 @@ function EventRow({ event }: { event: Events }) {
           })}
         </div>
         <div className="flex flex-row items-center justify-start">
-          <NewTicketModal event={event} />
+          <NewTicketsButton eventId={event.id.toString()} />
           <button
             className="group grid h-full place-content-center ps-2"
             onClick={() => toggleEventIsExpanded(event.id)}
@@ -841,8 +840,8 @@ function EventRow({ event }: { event: Events }) {
             : "grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="flex items-start justify-end gap-2 overflow-y-hidden">
-          <ChangeDateModal event={event} />
+        <div className="flex items-end justify-end gap-2 overflow-y-hidden">
+          <EditDateButton eventId={event.id.toString()} />
           <Button
             onClick={() =>
               optimisticUpdate<EventWithTickets, "id">({
@@ -856,6 +855,7 @@ function EventRow({ event }: { event: Events }) {
               })
             }
             size={"xs"}
+            className="ms-auto"
           >
             {event.is_public ? (
               <>

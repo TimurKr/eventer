@@ -1,4 +1,4 @@
-import NewServicePage from "./Form";
+import NewServicePage from "./form";
 
 export default async function Page({
   searchParams,

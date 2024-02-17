@@ -2,7 +2,7 @@
 
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
-import NewServiceForm from "../../new-service/Form";
+import NewServiceForm from "../../../services/edit/form";
 import { useStoreContext } from "@/app/dashboard/store";
 
 export default function NewServiceModal({

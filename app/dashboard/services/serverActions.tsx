@@ -69,7 +69,11 @@ export async function bulkUpsertTicketTypes(ticket_types: InsertTicketTypes[]) {
   const supabase = createServerSupabase(cookies());
   const r = await supabase
     .from("ticket_types")
-    .upsert(ticket_types, { onConflict: "id", ignoreDuplicates: false })
+    .upsert(ticket_types, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+      defaultToNull: false,
+    })
     .select("*");
   if (!r.error) {
     revalidateTag("services");
