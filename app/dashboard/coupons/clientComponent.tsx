@@ -26,6 +26,7 @@ import moment from "moment";
 import { optimisticUpdate } from "@/utils/misc";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
 import { useStoreContext } from "../store";
+import Header from "../components/Header";
 
 export default function Coupons() {
   const {
@@ -77,47 +78,12 @@ export default function Coupons() {
   return (
     <>
       <div>
-        <div className="flex items-center justify-between gap-4 pb-2 pt-4">
-          <span className="text-2xl font-bold tracking-wider">Kupóny</span>
-          <div className="relative ms-auto max-w-64 grow">
-            <div className="pointer-events-none absolute inset-y-0 left-0 grid place-content-center">
-              <MagnifyingGlassIcon className="h-8 w-8 p-2 text-gray-500" />
-            </div>
-            {searchTerm && (
-              <button
-                onClick={() => search("")}
-                className="absolute right-0 top-0 grid h-full place-content-center px-2 text-gray-400 hover:scale-105 hover:text-gray-500 active:text-gray-600"
-              >
-                <XCircleIconSolid className="h-4 w-4" />
-              </button>
-            )}
-            <input
-              type="text"
-              className="z-10 w-full rounded-md border-gray-200 bg-transparent px-8 py-0.5"
-              placeholder="Hladať"
-              value={searchTerm}
-              onChange={(e) => search(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key == "Escape") {
-                  (e.target as HTMLInputElement).blur();
-                }
-                if (e.key == "Enter") {
-                  search(searchTerm);
-                }
-              }}
-            />
-          </div>
-          <button
-            className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
-            onClick={refresh}
-          >
-            <ArrowPathIcon
-              className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
-            />
-            Obnoviť
-          </button>
-          <NewCouponModal />
-        </div>
+        <Header
+          title="Kupóny"
+          actionButton={<NewCouponModal />}
+          refresh={{ refresh, isRefreshing }}
+          search={{ search, searchTerm, results: coupons.length }}
+        />
         <div>
           {coupons.length > 0 ? (
             <table className="w-full table-auto">

@@ -91,7 +91,8 @@ export const FormikTextField = ({
                 </div>
                 <div className="absolute inset-y-0 right-1 flex items-center gap-1 p-1">
                   {iconEnd}
-                  {(!props.field.value || props.field.value.length < 5) &&
+                  {(props.field.value === undefined ||
+                    props.field.value === "") &&
                     (optional ? (
                       <Badge color={"gray"} className="pointer-events-none">
                         Volitelné
@@ -157,6 +158,46 @@ export const FormikSelectField = ({
     </div>
   );
 };
+export const FormikCheckboxField = ({
+  name,
+  label,
+  className,
+  vertical = false,
+}: {
+  name: string;
+  label?: string;
+  className?: string;
+  vertical?: boolean;
+}) => (
+  <Field name={name}>
+    {(props: FieldProps) => (
+      <div
+        className={`flex w-full  ${
+          vertical
+            ? "flex-col items-end"
+            : "flex-row items-center justify-between gap-8"
+        }`}
+      >
+        {label && (
+          <label
+            className="p-1 text-gray-700"
+            // htmlFor={props.field.name}
+          >
+            {label}
+          </label>
+        )}
+        <div>
+          <input
+            type="checkbox"
+            // id={name + label}
+            className={`h-5 w-5 rounded-md border border-gray-200 bg-gray-50 ${className}`}
+            {...props.field}
+          />
+        </div>
+      </div>
+    )}
+  </Field>
+);
 
 export function CustomComboBox<T extends {}>({
   options,

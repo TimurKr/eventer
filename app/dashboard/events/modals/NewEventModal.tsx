@@ -39,18 +39,21 @@ export default function NewEventModal() {
         <Modal.Body>
           <Formik
             initialValues={{
-              date: new Date().toLocaleDateString(),
+              date: new Date().toDateString(),
               time: moment().startOf("hour").format("HH:mm"),
               isPublic: false,
               service_id: allServices[0].id,
             }}
             onSubmit={async (values) => {
+              const datetime = new Date(
+                values.date + " " + values.time,
+              ).toISOString();
               const { data, error } = await insertEvents([
                 {
                   datetime: new Date(
                     values.date + " " + values.time,
                   ).toISOString(),
-                  is_public: false,
+                  is_public: values.isPublic,
                   service_id: values.service_id,
                 },
               ]);
@@ -80,7 +83,7 @@ export default function NewEventModal() {
                     inline
                     color="red"
                     onSelectedDateChanged={(date) =>
-                      setFieldValue("date", date.toLocaleDateString())
+                      setFieldValue("date", date.toDateString())
                     }
                     theme={{
                       popup: {

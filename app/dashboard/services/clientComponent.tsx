@@ -14,6 +14,8 @@ import { InstantTextField } from "@/utils/forms/FormElements";
 import { deleteService, updateService, Services } from "./serverActions";
 import Loading from "./loading";
 import NewServiceButton from "./new-service/Button";
+import Link from "next/link";
+import Header from "../components/Header";
 
 function ServiceRow({ service }: { service: Services }) {
   const { eventsCount, setPartialService, removeService } = useStoreContext(
@@ -28,7 +30,7 @@ function ServiceRow({ service }: { service: Services }) {
   return (
     <li key={service.id}>
       <div className="flex items-center gap-4 py-1">
-        <div className="basis-60 ">
+        <div>
           <InstantTextField
             defaultValue={service.name}
             setLocalValue={(v) =>
@@ -45,9 +47,18 @@ function ServiceRow({ service }: { service: Services }) {
             trim
           />
         </div>
-        <div className="w-12 flex-grow text-sm text-gray-500">
-          Počet udalostí: {eventsCount.length}
+        <div className="me-4 ms-auto text-xs text-gray-500">
+          <p>Typy lístkov: {service.ticket_types.length}</p>
+          <p>Počet udalostí: {eventsCount.length}</p>
         </div>
+        <Link
+          href={{
+            pathname: "/dashboard/services/new-service",
+            query: { serviceId: service.id },
+          }}
+        >
+          <PencilIcon className="h-5 w-5" />
+        </Link>
         <button
           className="transition-all hover:scale-110 hover:text-red-500"
           onClick={async () => {
@@ -82,56 +93,12 @@ export default function Services() {
 
   return (
     <>
-      <div className="sticky -top-2 z-20 flex items-start justify-between gap-4 bg-inherit py-2 pt-4">
-        <span className="text-2xl font-bold tracking-wider">Predstavenia</span>
-        <div className="relative ms-auto max-w-64 grow">
-          <div className="pointer-events-none absolute left-0 top-0 grid h-full place-content-center px-2">
-            <MagnifyingGlassIcon className="h-4 w-4 text-gray-500" />
-          </div>
-          {searchTerm && (
-            <button
-              onClick={() => search("")}
-              className="absolute right-0 top-0 grid h-full place-content-center px-2 text-gray-400 hover:scale-105 hover:text-gray-500 active:text-gray-600"
-            >
-              <XCircleIcon className="h-4 w-4" />
-            </button>
-          )}
-          <div
-            className={`absolute bottom-0.5 left-8 h-0 overflow-hidden text-xs text-gray-500 ${
-              searchTerm ? "h-4" : ""
-            } transition-all duration-300 ease-in-out`}
-          >
-            {services.length} výsledkov
-          </div>
-          <input
-            type="text"
-            className={`z-10 w-full rounded-md border-gray-200 bg-transparent px-8 py-0.5 ${
-              searchTerm ? "pb-4" : ""
-            } transition-all duration-300 ease-in-out`}
-            placeholder="Hladať"
-            value={searchTerm}
-            onChange={(e) => search(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key == "Escape") {
-                (e.target as HTMLInputElement).blur();
-              }
-              if (e.key == "Enter") {
-                search(searchTerm);
-              }
-            }}
-          />
-        </div>
-        <button
-          className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
-          onClick={refresh}
-        >
-          <ArrowPathIcon
-            className={`h-5 w-5 ${isRefreshing && "animate-spin"}`}
-          />
-          Obnoviť
-        </button>
-        <NewServiceButton />
-      </div>
+      <Header
+        title="Predstavenia"
+        refresh={{ refresh, isRefreshing }}
+        search={{ search, searchTerm, results: services.length }}
+        actionButton={<NewServiceButton />}
+      />
       {services.length > 0 ? (
         <ul>
           {services.map((service) => (

@@ -1,6 +1,9 @@
 "use server";
 
-import { InsertServices } from "@/utils/supabase/database.types";
+import {
+  InsertServices,
+  InsertTicketTypes,
+} from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
@@ -44,6 +47,30 @@ export async function updateService(
 export async function deleteService(id: Services["id"]) {
   const supabase = createServerSupabase(cookies());
   const r = await supabase.from("services").delete().eq("id", id);
+  if (!r.error) {
+    revalidateTag("services");
+  }
+  return r;
+}
+
+export async function insertTicketTypes(ticket_types: InsertTicketTypes[]) {
+  const supabase = createServerSupabase(cookies());
+  const r = await supabase
+    .from("ticket_types")
+    .insert(ticket_types)
+    .select("*");
+  if (!r.error) {
+    revalidateTag("services");
+  }
+  return r;
+}
+
+export async function bulkUpsertTicketTypes(ticket_types: InsertTicketTypes[]) {
+  const supabase = createServerSupabase(cookies());
+  const r = await supabase
+    .from("ticket_types")
+    .upsert(ticket_types, { onConflict: "id", ignoreDuplicates: false })
+    .select("*");
   if (!r.error) {
     revalidateTag("services");
   }
