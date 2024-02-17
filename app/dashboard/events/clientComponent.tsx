@@ -52,7 +52,7 @@ import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./modals/CouponRelationManager";
 import { useStoreContext } from "../store";
 import moment from "moment";
-import NewServiceModal from "../services/modals/NewServiceModal";
+import NewServiceModal from "../services/new-service/Form";
 import { Events } from "./store";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];

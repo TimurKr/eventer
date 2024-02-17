@@ -7,6 +7,7 @@ import { fetchServices } from "./services/serverActions";
 import { InstantTextField } from "@/utils/forms/FormElements";
 import { revalidateTag } from "next/cache";
 import { fetchContacts } from "./events/serverActions";
+import React from "react";
 
 export default async function DashboardLayout({
   children,

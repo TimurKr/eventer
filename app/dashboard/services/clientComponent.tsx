@@ -9,10 +9,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import NewServiceModal from "./modals/NewServiceModal";
+import NewServiceModal from "./new-service/Form";
 import { InstantTextField } from "@/utils/forms/FormElements";
 import { deleteService, updateService, Services } from "./serverActions";
 import Loading from "./loading";
+import NewServiceButton from "./new-service/Button";
 
 function ServiceRow({ service }: { service: Services }) {
   const { eventsCount, setPartialService, removeService } = useStoreContext(
@@ -129,12 +130,12 @@ export default function Services() {
           />
           Obnoviť
         </button>
-        <NewServiceModal />
+        <NewServiceButton />
       </div>
       {services.length > 0 ? (
         <ul>
           {services.map((service) => (
-            <ServiceRow service={service} />
+            <ServiceRow key={service.id} service={service} />
           ))}
         </ul>
       ) : isRefreshing ? (
@@ -142,7 +143,7 @@ export default function Services() {
       ) : (
         <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
           Namáte žiadne vytvorené predstavenia
-          <NewServiceModal />
+          <NewServiceButton />
         </div>
       )}
     </>
