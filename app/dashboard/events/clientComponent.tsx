@@ -739,13 +739,13 @@ function EventRow({ event }: { event: Events }) {
   return (
     <li key={event.id} className={`flex flex-col`}>
       <div
-        className={`flex flex-wrap justify-end gap-x-6 gap-y-4 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
+        className={`flex-wrp flex justify-end gap-x-6 gap-y-4 rounded-t-xl p-1 py-4 ps-3 transition-all duration-300 ease-in-out ${
           event.isExpanded || searchTerm
             ? "mt-2 border-x border-t border-cyan-700 pe-4 ps-4 pt-2"
             : ""
         }`}
       >
-        <div className="me-auto flex min-w-0 flex-col gap-1 self-center py-0.5">
+        <div className="me-auto flex min-w-0 flex-none flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
             {service.name}
             {event.is_public ? (
@@ -775,7 +775,7 @@ function EventRow({ event }: { event: Events }) {
             </span>
           </div>
         </div>
-        <div className="ms-auto flex flex-col items-center justify-start lg:flex-row lg:gap-4">
+        <div className="ms-auto flex flex-auto flex-col flex-wrap items-end gap-x-4 gap-y-1 lg:flex-row lg:items-center lg:justify-end">
           {service.ticket_types.map((type) => {
             const sold = event.tickets.filter(
               (t) => t.type_id == type.id,
@@ -817,7 +817,7 @@ function EventRow({ event }: { event: Events }) {
             );
           })}
         </div>
-        <div className="flex flex-row items-center justify-start">
+        <div className="flex flex-none flex-row items-center justify-start">
           <NewTicketsButton eventId={event.id.toString()} />
           <button
             className="group grid h-full place-content-center ps-2"
@@ -1100,7 +1100,7 @@ export default function EventsComponent() {
       {events.length > 0 ? (
         <ul
           role="list"
-          className={`w-auto divide-y divide-gray-300 rounded-xl border border-gray-200 p-2`}
+          className={`w-auto divide-y divide-gray-400 rounded-xl border border-gray-200 p-2`}
         >
           {events.map((event) => (
             <EventRow key={event.id} event={event} />

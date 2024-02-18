@@ -8,7 +8,7 @@ import {
   SubmitButton,
 } from "@/utils/forms/FormElements";
 import { Contacts, Coupons } from "@/utils/supabase/database.types";
-import { Alert, Button, Modal } from "flowbite-react";
+import { Alert, Button, Modal, Tooltip } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
@@ -18,7 +18,7 @@ import {
   SquaresPlusIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { TrashIcon } from "@heroicons/react/24/solid";
+import { TrashIcon, CheckBadgeIcon } from "@heroicons/react/24/solid";
 import {
   bulkInsertTickets,
   validateCouponCode,
@@ -98,15 +98,7 @@ export default function NewTicketsForm({
 
   const initialValues: TicketOrderType = {
     billingName: "",
-    tickets:
-      ticketTypes.length > 0
-        ? [
-            {
-              type_id: ticketTypes[0].id,
-              price: ticketTypes[0].price,
-            },
-          ]
-        : [],
+    tickets: [],
     paymentStatus: "rezervované",
   };
 
@@ -341,12 +333,14 @@ export default function NewTicketsForm({
                             <td className="px-1">
                               <FormikSelectField
                                 name={`tickets[${index}].type_id`}
-                                className={
+                                iconStart={
                                   ticketTypes.find(
                                     (t) => t.id == ticket.type_id,
-                                  )?.is_vip
-                                    ? "border-yellow-200 bg-yellow-100 text-yellow-600"
-                                    : ""
+                                  )?.is_vip && (
+                                    <Tooltip content="VIP">
+                                      <CheckBadgeIcon className="h-5 w-5 text-green-500" />
+                                    </Tooltip>
+                                  )
                                 }
                                 onChange={(v: string) => {
                                   getFieldHelpers(
@@ -388,42 +382,75 @@ export default function NewTicketsForm({
                       </tbody>
                     </table>
                   )}
-                  <div className="flex justify-center">
+                  <div className="flex flex-col items-center">
+                    {!values.tickets ||
+                      (values.tickets.length === 0 && (
+                        <p className="pt-3 text-gray-400">Žiadne lístky</p>
+                      ))}
                     <CustomErrorMessage fieldMeta={getFieldMeta("tickets")} />
                   </div>
                   <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
-                    {ticketTypes.map((type) => (
-                      <button
-                        key={type.id}
-                        type="button"
-                        className={`flex items-center gap-1 rounded-lg border border-gray-200 p-0 px-2 py-1 text-sm ${
-                          type.is_vip
-                            ? "border-yellow-200 bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
-                            : "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                        onClick={() =>
-                          ticketsProps.push({
-                            type_id: type.id,
-                            price: type.price,
-                          })
-                        }
-                      >
-                        {
-                          values.tickets.filter((t) => t.type_id == type.id)
-                            .length
-                        }
-                        {type.capacity && `/${type.capacity - type.sold}`}{" "}
-                        {type.label}
-                        <PlusCircleIcon className="h-5 w-5" />
-                      </button>
-                    ))}
-                    <Link
-                      href={`/dashboard/services/edit?serviceId=${event?.service_id}`}
+                    {ticketTypes.map((type) => {
+                      const creating = values.tickets.filter(
+                        (t) => t.type_id == type.id,
+                      ).length;
+
+                      return (
+                        <button
+                          key={type.id}
+                          type="button"
+                          className={`flex items-center gap-2 rounded-lg border p-0 px-2 py-1 text-sm ${
+                            type.capacity &&
+                            creating > type.capacity - type.sold
+                              ? "border-red-100 bg-red-100 text-red-600"
+                              : type.capacity &&
+                                  creating == type.capacity - type.sold
+                                ? "border-gray-100 bg-gray-50 text-gray-400 hover:cursor-default"
+                                : "border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                          onClick={() =>
+                            ticketsProps.push({
+                              type_id: type.id,
+                              price: type.price,
+                            })
+                          }
+                        >
+                          {type.is_vip && (
+                            <CheckBadgeIcon className="h-5 w-5 text-green-500" />
+                          )}
+                          <div className="flex flex-col items-start">
+                            <p className="font-medium">{type.label}</p>
+                            <div className="text-xs font-light">
+                              <span className="font-medium">{creating}</span>
+                              {type.capacity &&
+                                `/${type.capacity - type.sold} voľných`}
+                            </div>
+                          </div>
+                          <PlusCircleIcon className="h-5 w-5" />
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
                       className="rounded-lg p-2 text-gray-600 transition-all hover:scale-110 hover:text-gray-700"
                       title="Pridať typ lístka"
+                      onClick={() => {
+                        router.prefetch(
+                          `/dashboard/services/edit?serviceId=${event?.service_id}`,
+                        );
+                        if (
+                          !confirm(
+                            "Otvoriť typy lístkov? Stratíte zmeny, ktoré ste doteraz vykonali.",
+                          )
+                        )
+                          return;
+                        router.push(
+                          `/dashboard/services/edit?serviceId=${event?.service_id}`,
+                        );
+                      }}
                     >
                       <SquaresPlusIcon className="h-4 w-4" />
-                    </Link>
+                    </button>
                   </div>
                 </>
               )}
@@ -437,7 +464,7 @@ export default function NewTicketsForm({
             if (type.capacity && afterSaleCount > type.capacity) {
               return (
                 <Alert
-                  color="warning"
+                  color="failure"
                   icon={HiExclamationTriangle}
                   className="my-2"
                   key={type.id}

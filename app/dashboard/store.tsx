@@ -11,7 +11,7 @@ export const { ContextProvider, useStoreContext } = createGlobalStoreContext(
     coupons: couponsSlice,
     services: servicesSlice,
   },
-  {
-    version: 10,
-  },
+  // {
+  //   persist: { version: 10 },
+  // },
 );

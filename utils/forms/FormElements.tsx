@@ -128,6 +128,7 @@ export const FormikSelectField = ({
   vertical = false,
   label,
   onChange,
+  iconStart,
 }: {
   children: React.ReactNode;
   name: string;
@@ -135,12 +136,13 @@ export const FormikSelectField = ({
   vertical?: boolean;
   label?: string;
   onChange?: (v: string) => void;
+  iconStart?: React.ReactNode;
 }) => {
   const [field, meta, helpers] = useField(name);
   field;
   return (
     <div
-      className={`w-full ${
+      className={`relative w-full ${
         vertical ? "" : "flex flex-row items-center justify-between gap-8"
       }`}
     >
@@ -148,6 +150,11 @@ export const FormikSelectField = ({
         <label className="p-1 text-gray-700" htmlFor={field.name}>
           {label}
         </label>
+      )}
+      {iconStart && (
+        <div className="absolute inset-y-0 left-1 grid items-center p-1">
+          {iconStart}
+        </div>
       )}
       <select
         {...field}
@@ -157,7 +164,7 @@ export const FormikSelectField = ({
         }}
         className={`ms-auto w-full rounded-lg border-gray-200 bg-gray-50 py-1 ${
           className || ""
-        }`}
+        } ${iconStart ? "pl-7" : ""}`}
       >
         {children}
       </select>
