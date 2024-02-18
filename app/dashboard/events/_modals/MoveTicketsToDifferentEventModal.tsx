@@ -4,7 +4,7 @@ import { Badge, Modal, Progress, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { bulkUpdateTicketFields } from "../serverActions";
 import { useStoreContext } from "../../store";
-import { Events } from "../store";
+import { Events } from "../store/helpers";
 
 export default function MoveTicketsToDifferentEventModal({
   event,
@@ -63,7 +63,10 @@ export default function MoveTicketsToDifferentEventModal({
               .map((t) => t.type)
               .filter((value, index, self) => self.indexOf(value) === index)
               .map((type) => (
-                <div className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1">
+                <div
+                  key={type.id}
+                  className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1"
+                >
                   <span className="font-semibold">{type.label}</span>:{" "}
                   <span className="font-bold">
                     {selectedTickets.filter((t) => t.type_id == type.id).length}
@@ -131,7 +134,7 @@ export default function MoveTicketsToDifferentEventModal({
                           >
                             {hoveringAdd > 0 ? sold + hoveringAdd : sold}
                           </span>
-                          /<span>{type.capacity || "-"}</span>
+                          {type.capacity && "/" + type.capacity}
                         </div>
                         <Progress
                           className="mb-1"

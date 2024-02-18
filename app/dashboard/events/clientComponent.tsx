@@ -34,7 +34,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/solid";
 import { useSearchParams } from "next/navigation";
-import NewEventModal from "./modals/NewEventModal";
+import NewEventModal from "./_modals/NewEventModal";
 import {
   InstantSwitchField,
   InstantTextAreaField,
@@ -42,15 +42,15 @@ import {
 } from "@/utils/forms/FormElements";
 import { string as yupString, number as yupNumber } from "yup";
 import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import MoveTicketsToDifferentEventModal from "./modals/MoveTicketsToDifferentEventModal";
-import ConvertToCouponModal from "./modals/ConvertToCouponModal";
+import MoveTicketsToDifferentEventModal from "./_modals/MoveTicketsToDifferentEventModal";
+import ConvertToCouponModal from "./_modals/ConvertToCouponModal";
 import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
-import CouponRelationManager from "./modals/CouponRelationManager";
+import CouponRelationManager from "./_modals/CouponRelationManager";
 import { useStoreContext } from "../store";
 import moment from "moment";
 import NewServiceModal from "../services/edit/form";
-import { Events } from "./store";
+import { Events } from "./store/helpers";
 import Header from "../components/Header";
 import NewTicketsButton from "./new-tickets/button";
 import EditDateButton from "./edit-date/button";
@@ -739,13 +739,13 @@ function EventRow({ event }: { event: Events }) {
   return (
     <li key={event.id} className={`flex flex-col`}>
       <div
-        className={`flex flex-wrap justify-between gap-x-6 gap-y-4 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
+        className={`flex flex-wrap justify-end gap-x-6 gap-y-4 rounded-t-xl p-1 ps-3 transition-all duration-300 ease-in-out ${
           event.isExpanded || searchTerm
             ? "mt-2 border-x border-t border-cyan-700 pe-4 ps-4 pt-2"
             : ""
         }`}
       >
-        <div className="flex min-w-0 flex-col gap-1 self-center py-0.5">
+        <div className="me-auto flex min-w-0 flex-col gap-1 self-center py-0.5">
           <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
             {service.name}
             {event.is_public ? (
@@ -799,7 +799,7 @@ function EventRow({ event }: { event: Events }) {
                   >
                     {sold}
                   </span>
-                  /<span>{type.capacity || "-"}</span>
+                  {type.capacity && "/" + type.capacity}
                 </div>
                 <Progress
                   className="mb-1"

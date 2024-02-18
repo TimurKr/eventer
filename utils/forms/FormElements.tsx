@@ -177,7 +177,7 @@ export const FormikCheckboxField = ({
   className?: string;
   vertical?: boolean;
 }) => (
-  <Field name={name}>
+  <Field name={name} type="checkbox">
     {(props: FieldProps) => (
       <div
         className={`flex w-full  ${
@@ -271,7 +271,7 @@ export function CustomComboBox<T extends {}>({
           )}
           <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm">
             <Combobox.Input
-              className={`w-full border-none py-1 text-gray-900 focus:ring-0 ${
+              className={`w-full border-none bg-transparent py-1 text-gray-900 focus:ring-0 ${
                 iconStart ? "ps-7" : " ps-3"
               } ${iconEnd ? "pe-8" : "pe-10"}`}
               onChange={(event) => setQuery(event.target.value)}

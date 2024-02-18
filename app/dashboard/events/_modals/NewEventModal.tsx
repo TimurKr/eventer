@@ -113,14 +113,8 @@ export default function NewEventModal() {
                       type="time"
                       className="rounded-lg border border-gray-200 bg-gray-50 py-1"
                       step={60}
-                      // value={time}
-                      // onChange={(e) => setTime(e.target.value)}
                     />
-                    <Field
-                      name="isPublic"
-                      // value={isPublic.toString()}
-                      // onChange={(e) => setIsPublic(e.target.checked)}
-                    >
+                    <Field name="isPublic">
                       {(props: FieldProps) => (
                         <div className="mt-4 flex flex-1 flex-row justify-between">
                           <label htmlFor="is_public" className="ml-2">
@@ -140,14 +134,6 @@ export default function NewEventModal() {
                       label="Vytvoriť"
                       submittingLabel="Vytváram..."
                     />
-                    {/* <Button
-                      type="submit"
-                      size="sm"
-                      // className="mt-4 rounded-md bg-blue-600 py-1 text-white shadow-md hover:bg-blue-700 hover:shadow-none"
-                      isProcessing={isSubmitting}
-                    >
-                      {isSubmitting ? "Vytváram..." : "Vytvoriť"}
-                    </Button> */}
                     {errorMessages.length > 0 && (
                       <Alert
                         color="failure"

@@ -2,7 +2,7 @@
 
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
-import NewServiceForm from "../../../services/edit/form";
+import ServiceForm from "../../../services/edit/form";
 import { useStoreContext } from "@/app/dashboard/store";
 
 export default function NewServiceModal({
@@ -21,7 +21,7 @@ export default function NewServiceModal({
             : "Vytvorte si nové predstavenie"}
         </Modal.Header>
         <Modal.Body>
-          <NewServiceForm serviceId={searchParams.serviceId} />
+          <ServiceForm serviceId={searchParams.serviceId} />
         </Modal.Body>
       </Modal>
     </>

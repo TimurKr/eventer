@@ -51,6 +51,7 @@ export default function Header({
               </div>
               <input
                 type="text"
+                name="search"
                 className={`z-10 w-full rounded-md border-gray-200 bg-transparent px-8 py-0.5 ${
                   search.searchTerm ? "pb-4" : ""
                 } transition-all duration-300 ease-in-out`}

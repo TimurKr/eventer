@@ -95,7 +95,7 @@ export default function UseCouponSelectEvent({
                           >
                             {sold}
                           </span>
-                          /<span>{type.capacity || "-"}</span>
+                          {type.capacity && "/" + type.capacity}
                         </div>
                         <Progress
                           className="mb-1"

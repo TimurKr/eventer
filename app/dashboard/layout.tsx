@@ -6,8 +6,9 @@ import Navbar from "./Navbar";
 import { fetchServices } from "./services/serverActions";
 import { InstantTextField } from "@/utils/forms/FormElements";
 import { revalidateTag } from "next/cache";
-import { fetchContacts } from "./events/serverActions";
+import { fetchContacts, fetchEvents } from "./events/serverActions";
 import React from "react";
+import { mergeNewEvents } from "./events/store/helpers";
 
 export default async function DashboardLayout({
   children,
@@ -23,10 +24,12 @@ export default async function DashboardLayout({
 
   const servicesQuery = fetchServices();
   const contactsQuery = fetchContacts();
+  const eventsQuery = fetchEvents();
 
-  const [services, contacts] = await Promise.all([
+  const [services, contacts, events] = await Promise.all([
     servicesQuery,
     contactsQuery,
+    eventsQuery,
   ]);
 
   if (services.error) {
@@ -34,6 +37,9 @@ export default async function DashboardLayout({
   }
   if (contacts.error) {
     throw new Error(contacts.error.message);
+  }
+  if (events.error) {
+    throw new Error(events.error.message);
   }
 
   return (
@@ -45,6 +51,11 @@ export default async function DashboardLayout({
         },
         events: {
           contacts: contacts.data,
+          ...mergeNewEvents({
+            newEvents: events.data,
+            searchTerm: "",
+            contacts: contacts.data,
+          }),
         },
       }}
     >

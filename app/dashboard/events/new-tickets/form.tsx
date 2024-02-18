@@ -28,9 +28,8 @@ import {
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import { contactsEqual } from "../utils";
-import CouponCodeField from "../modals/CouponCodeField";
+import CouponCodeField from "../_modals/CouponCodeField";
 import { useStoreContext } from "../../store";
-import { Events } from "../store";
 import { redirect, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -66,12 +65,6 @@ export default function NewTicketsForm({
         contacts: state.events.contacts,
       };
     });
-
-  // useEffect(() => {
-  //   if (event === undefined) {
-  //     router.push("/dashboard/events");
-  //   }
-  // }, [event]);
 
   const validationSchema = Yup.object({
     billingName: Yup.string()
@@ -246,18 +239,19 @@ export default function NewTicketsForm({
         <Form>
           <p className="ps-1 font-bold">Fakturčné údaje</p>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
+            {/* {getFieldMeta("billingName").value} */}
             <CustomComboBox
               options={contacts as Partial<Contacts>[]}
               displayFun={(c) => c?.name || ""}
               searchKeys={["name"]}
               newValueBuilder={(input) => ({ name: input })}
-              onSelect={(contact) => {
-                setFieldValue("billingName", contact.name, false);
+              onSelect={async (contact) => {
+                await setFieldValue("billingName", contact.name, true);
                 if (contact.id) {
-                  setFieldValue("billingEmail", contact.email, false);
-                  setFieldValue("billingPhone", contact.phone, false);
+                  await setFieldValue("billingEmail", contact.email, true);
+                  await setFieldValue("billingPhone", contact.phone, true);
                 }
-                validateField("billingName");
+                // await validateField("billingName");
                 console.log(values);
               }}
               label="Meno"
@@ -297,121 +291,139 @@ export default function NewTicketsForm({
                 <>
                   {values.tickets && values.tickets.length > 0 && (
                     <table className="w-full">
-                      <tr>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Meno
-                        </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Email
-                        </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Telefón
-                        </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Typ
-                        </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Cena
-                        </th>
-                        <th></th>
-                      </tr>
-                      {values.tickets.map((ticket, index) => (
-                        // <div className="flex flex-row items-center gap-2 rounded-xl bg-slate-200 p-2 shadow-md">
+                      <thead>
                         <tr>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`tickets[${index}].name`}
-                              placeHolder={values.billingName || "Adam Kováč"}
-                              optional
-                              vertical
-                            />
-                          </td>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`tickets[${index}].email`}
-                              placeHolder={values.billingEmail || "-"}
-                              optional
-                              vertical
-                            />
-                          </td>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`tickets[${index}].phone`}
-                              placeHolder={values.billingPhone || "-"}
-                              optional
-                              vertical
-                            />
-                          </td>
-                          <td className="px-1">
-                            <FormikSelectField
-                              name={`tickets[${index}].type_id`}
-                              onChange={(v: string) => {
-                                getFieldHelpers(
-                                  `tickets[${index}].price`,
-                                ).setValue(
-                                  ticketTypes.find((t) => t.id == parseInt(v))
-                                    ?.price || 0,
-                                );
-                              }}
-                            >
-                              {ticketTypes.map((type) => (
-                                <option value={type.id}>{type.label}</option>
-                              ))}
-                            </FormikSelectField>
-                          </td>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`tickets[${index}].price`}
-                              type="number"
-                              vertical
-                              iconEnd={
-                                <CurrencyEuroIcon className="pointer-events-none h-4 w-4" />
-                              }
-                            />
-                          </td>
-                          <td>
-                            <button
-                              className="self-center p-2 text-red-600 hover:text-red-700"
-                              onClick={() => ticketsProps.remove(index)}
-                            >
-                              <TrashIcon className="h-5 w-5" />
-                            </button>
-                          </td>
+                          <th className="px-2 text-start text-sm font-normal text-gray-500">
+                            Meno
+                          </th>
+                          <th className="px-2 text-start text-sm font-normal text-gray-500">
+                            Email
+                          </th>
+                          <th className="px-2 text-start text-sm font-normal text-gray-500">
+                            Telefón
+                          </th>
+                          <th className="px-2 text-start text-sm font-normal text-gray-500">
+                            Typ
+                          </th>
+                          <th className="px-2 text-start text-sm font-normal text-gray-500">
+                            Cena
+                          </th>
+                          <th></th>
                         </tr>
-                      ))}
+                      </thead>
+                      <tbody>
+                        {values.tickets.map((ticket, index) => (
+                          <tr key={index}>
+                            <td className="px-1">
+                              <FormikTextField
+                                name={`tickets[${index}].name`}
+                                placeHolder={values.billingName || "Adam Kováč"}
+                                optional
+                                vertical
+                              />
+                            </td>
+                            <td className="px-1">
+                              <FormikTextField
+                                name={`tickets[${index}].email`}
+                                placeHolder={values.billingEmail || "-"}
+                                optional
+                                vertical
+                              />
+                            </td>
+                            <td className="px-1">
+                              <FormikTextField
+                                name={`tickets[${index}].phone`}
+                                placeHolder={values.billingPhone || "-"}
+                                optional
+                                vertical
+                              />
+                            </td>
+                            <td className="px-1">
+                              <FormikSelectField
+                                name={`tickets[${index}].type_id`}
+                                className={
+                                  ticketTypes.find(
+                                    (t) => t.id == ticket.type_id,
+                                  )?.is_vip
+                                    ? "border-yellow-200 bg-yellow-100 text-yellow-600"
+                                    : ""
+                                }
+                                onChange={(v: string) => {
+                                  getFieldHelpers(
+                                    `tickets[${index}].price`,
+                                  ).setValue(
+                                    ticketTypes.find((t) => t.id == parseInt(v))
+                                      ?.price || 0,
+                                  );
+                                }}
+                              >
+                                {ticketTypes.map((type) => (
+                                  <option value={type.id} key={type.id}>
+                                    {type.label}
+                                  </option>
+                                ))}
+                              </FormikSelectField>
+                            </td>
+                            <td className="px-1">
+                              <FormikTextField
+                                name={`tickets[${index}].price`}
+                                type="number"
+                                vertical
+                                iconEnd={
+                                  <CurrencyEuroIcon className="pointer-events-none h-4 w-4" />
+                                }
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="self-center p-2 text-red-600 hover:text-red-700"
+                                onClick={() => ticketsProps.remove(index)}
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
                     </table>
                   )}
                   <div className="flex justify-center">
                     <CustomErrorMessage fieldMeta={getFieldMeta("tickets")} />
                   </div>
-                  <div className="flex w-full flex-row items-end justify-end gap-2 pt-4">
-                    <div className="flex gap-2">
-                      {ticketTypes.map((type) => (
-                        <button
-                          className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-0 px-2 py-1 text-sm text-gray-600 hover:bg-gray-200"
-                          onClick={() =>
-                            ticketsProps.push({
-                              type_id: type.id,
-                              price: type.price,
-                            })
-                          }
-                        >
-                          {
-                            values.tickets.filter((t) => t.type_id == type.id)
-                              .length
-                          }
-                          x {type.label}
-                          <PlusCircleIcon className="h-5 w-5" />
-                        </button>
-                      ))}
-                      <Link
-                        href={`/dashboard/services/edit?serviceId=${event?.service_id}`}
-                        className="rounded-lg p-2 text-gray-600 transition-all hover:scale-110 hover:text-gray-700"
-                        title="Pridať typ lístka"
+                  <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
+                    {ticketTypes.map((type) => (
+                      <button
+                        key={type.id}
+                        type="button"
+                        className={`flex items-center gap-1 rounded-lg border border-gray-200 p-0 px-2 py-1 text-sm ${
+                          type.is_vip
+                            ? "border-yellow-200 bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
+                            : "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                        onClick={() =>
+                          ticketsProps.push({
+                            type_id: type.id,
+                            price: type.price,
+                          })
+                        }
                       >
-                        <SquaresPlusIcon className="h-4 w-4" />
-                      </Link>
-                    </div>
+                        {
+                          values.tickets.filter((t) => t.type_id == type.id)
+                            .length
+                        }
+                        {type.capacity && `/${type.capacity - type.sold}`}{" "}
+                        {type.label}
+                        <PlusCircleIcon className="h-5 w-5" />
+                      </button>
+                    ))}
+                    <Link
+                      href={`/dashboard/services/edit?serviceId=${event?.service_id}`}
+                      className="rounded-lg p-2 text-gray-600 transition-all hover:scale-110 hover:text-gray-700"
+                      title="Pridať typ lístka"
+                    >
+                      <SquaresPlusIcon className="h-4 w-4" />
+                    </Link>
                   </div>
                 </>
               )}
@@ -424,7 +436,12 @@ export default function NewTicketsForm({
               values.tickets.filter((t) => t.type_id == type.id).length;
             if (type.capacity && afterSaleCount > type.capacity) {
               return (
-                <Alert color="warning" icon={HiExclamationTriangle}>
+                <Alert
+                  color="warning"
+                  icon={HiExclamationTriangle}
+                  className="my-2"
+                  key={type.id}
+                >
                   Po vytvorení bude {afterSaleCount} lístkov typu{" "}
                   <span className="font-semibold">{type.label}</span>, čo je
                   viac ako povolených {type.capacity}.
@@ -437,42 +454,44 @@ export default function NewTicketsForm({
             <div className="h-px grow bg-gray-300" />
           </div>
           <table className="w-full">
-            <tr>
-              <td className="pe-6 ps-2">Lístky</td>
-              <td className="px-2 text-end">
-                {values.tickets.reduce((a, b) => a + b.price, 0)} €
-              </td>
-            </tr>
-            <tr>
-              <td className="py-2 pe-6 ps-2">
-                <CouponCodeField
-                  defaultCode={couponCode}
-                  coupon={coupon}
-                  setCoupon={setCoupon}
-                  validate={async (code) => validateCouponCode(code)}
-                />
-              </td>
-              <td className="px-2 text-end">
-                {coupon
-                  ? -Math.min(
-                      coupon.amount,
-                      values.tickets.reduce((a, b) => a + b.price, 0),
-                    )
-                  : 0}{" "}
-                €
-              </td>
-            </tr>
-            <tr className="border-t font-bold">
-              <td className="px-2">Spolu</td>
-              <td className="px-2 text-end">
-                {Math.max(
-                  values.tickets.reduce((a, b) => a + b.price, 0) -
-                    (coupon ? coupon.amount : 0),
-                  0,
-                )}{" "}
-                €
-              </td>
-            </tr>
+            <tbody>
+              <tr>
+                <td className="pe-6 ps-2">Lístky</td>
+                <td className="px-2 text-end">
+                  {values.tickets.reduce((a, b) => a + b.price, 0)} €
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pe-6 ps-2">
+                  <CouponCodeField
+                    defaultCode={couponCode}
+                    coupon={coupon}
+                    setCoupon={setCoupon}
+                    validate={async (code) => validateCouponCode(code)}
+                  />
+                </td>
+                <td className="px-2 text-end">
+                  {coupon
+                    ? -Math.min(
+                        coupon.amount,
+                        values.tickets.reduce((a, b) => a + b.price, 0),
+                      )
+                    : 0}{" "}
+                  €
+                </td>
+              </tr>
+              <tr className="border-t font-bold">
+                <td className="px-2">Spolu</td>
+                <td className="px-2 text-end">
+                  {Math.max(
+                    values.tickets.reduce((a, b) => a + b.price, 0) -
+                      (coupon ? coupon.amount : 0),
+                    0,
+                  )}{" "}
+                  €
+                </td>
+              </tr>
+            </tbody>
           </table>
           <div className="mt-4 flex items-center justify-end gap-4">
             <SubmitButton

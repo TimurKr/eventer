@@ -7,7 +7,7 @@ import { SubmitButton } from "@/utils/forms/FormElements";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useStoreContext } from "../../store";
 import { useState, useTransition } from "react";
-import { Events } from "../store";
+import { Events } from "../store/helpers";
 
 export default function ConvertToCouponModal({
   event,

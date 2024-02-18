@@ -13,7 +13,8 @@ export async function fetchServices() {
   return await supabase
     .from("services")
     .select(`*, ticket_types(*)`)
-    .order("name");
+    .order("name")
+    .order("created_at", { referencedTable: "ticket_types", ascending: true });
 }
 
 export type Services = NonNullable<
@@ -75,6 +76,15 @@ export async function bulkUpsertTicketTypes(ticket_types: InsertTicketTypes[]) {
       defaultToNull: false,
     })
     .select("*");
+  if (!r.error) {
+    revalidateTag("services");
+  }
+  return r;
+}
+
+export async function deleteTicketTypes(ids: Services["id"][]) {
+  const supabase = createServerSupabase(cookies());
+  const r = await supabase.from("ticket_types").delete().in("id", ids);
   if (!r.error) {
     revalidateTag("services");
   }

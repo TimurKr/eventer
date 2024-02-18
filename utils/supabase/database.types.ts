@@ -261,7 +261,7 @@ export interface Database {
         };
         Relationships: [
           {
-            foreignKeyName: "public_tickets_ticket_type_fkey";
+            foreignKeyName: "public_tickets_type_id_fkey";
             columns: ["type_id"];
             isOneToOne: false;
             referencedRelation: "ticket_types";

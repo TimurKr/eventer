@@ -16,6 +16,7 @@ import {
   Services,
   bulkUpsertTicketTypes,
   deleteService,
+  deleteTicketTypes,
   insertServices,
   insertTicketTypes,
   updateService,
@@ -30,13 +31,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 
-export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
+export default function ServiceForm({ serviceId }: { serviceId?: string }) {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
-  const { addServices, allServices, setPartialService } = useStoreContext(
-    (state) => state.services,
-  );
+  const {
+    services: { addServices, allServices, setPartialService, refresh },
+    events: { allEvents },
+  } = useStoreContext((state) => state);
   const service = allServices.find((s) => s.id.toString() == serviceId);
 
   const validationSchema = Yup.object().shape({
@@ -60,6 +62,7 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
   type FormValues = Yup.InferType<typeof validationSchema>;
 
   const create = async (values: FormValues) => {
+    // TODO: implement transaction
     const { ticket_types: bin, ...serviceValues } = values;
     const resServices = await insertServices([serviceValues]);
     if (resServices.error) {
@@ -89,6 +92,7 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
   };
 
   const update = async (values: FormValues) => {
+    // TODO implement transactions
     if (!service) return;
     if (service.name !== values.name) {
       const res = await updateService({
@@ -108,6 +112,25 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
       setErrorMessages(res.error.message.split("\n"));
       return;
     }
+
+    const ticketTypesToDelete = service.ticket_types
+      .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
+      .map((t) => t.id);
+    const resDelete = await deleteTicketTypes(ticketTypesToDelete);
+    if (resDelete.error) {
+      if (resDelete.error.message.includes("foreign key constraint")) {
+        setErrorMessages([
+          "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
+        ]);
+      } else {
+        setErrorMessages([
+          "Failed to delete ticketTypes: ",
+          ...resDelete.error.message.split("\n"),
+        ]);
+      }
+      refresh();
+      return;
+    }
     setPartialService({
       id: service.id,
       ticket_types: res.data,
@@ -120,7 +143,13 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
       <Formik
         initialValues={
           service !== undefined
-            ? service
+            ? {
+                ...service,
+                ticket_types: service.ticket_types.map((t) => ({
+                  ...t,
+                  capacity: t.capacity || undefined,
+                })),
+              }
             : {
                 name: "",
                 ticket_types: [
@@ -153,75 +182,109 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
               {({ remove, push }) => (
                 <div>
                   <table className="w-full">
-                    <tr>
-                      <th className="px-2 text-start text-sm font-normal text-gray-500">
-                        Názov typu
-                      </th>
-                      <th className="px-2 text-start text-sm font-normal text-gray-500">
-                        Kapacita
-                      </th>
-                      <th className="px-2 text-start text-sm font-normal text-gray-500">
-                        Cena
-                      </th>
-                      <th className="px-1 text-start text-sm font-normal text-gray-500">
-                        VIP
-                      </th>
-                      <th></th>
-                    </tr>
-                    {values.ticket_types &&
-                      values.ticket_types.map((ticket_type, index) => (
-                        <tr>
-                          <td className="px-1">
-                            <Field
-                              name={`ticket_types[${index}].id`}
-                              type="hidden"
-                            />
-                            <FormikTextField
-                              name={`ticket_types[${index}].label`}
-                              vertical
-                            />
-                          </td>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`ticket_types[${index}].capacity`}
-                              vertical
-                              type="number"
-                              iconStart={<UserGroupIcon className="h-4 w-4" />}
-                            />
-                          </td>
-                          <td className="px-1">
-                            <FormikTextField
-                              name={`ticket_types[${index}].price`}
-                              vertical
-                              type="number"
-                              iconStart={
-                                <CurrencyEuroIcon className="h-4 w-4" />
-                              }
-                            />
-                          </td>
-                          <td className="p-1">
-                            <FormikCheckboxField
-                              name={`ticket_types[${index}].is_vip`}
-                            />
-                          </td>
-                          <td>
-                            {values.ticket_types.length > 1 && (
-                              <button
-                                className="self-center p-2 text-red-600 hover:text-red-700"
-                                onClick={() => remove(index)}
-                              >
-                                <TrashIcon className="h-5 w-5" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                    <thead>
+                      <tr>
+                        <th className="px-2 text-start text-sm font-normal text-gray-500">
+                          Názov typu
+                        </th>
+                        <th className="px-2 text-start text-sm font-normal text-gray-500">
+                          Kapacita
+                        </th>
+                        <th className="px-2 text-start text-sm font-normal text-gray-500">
+                          Cena
+                        </th>
+                        <th className="px-1 text-start text-sm font-normal text-gray-500">
+                          VIP
+                        </th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {values.ticket_types &&
+                        values.ticket_types.map((ticket_type, index) => {
+                          const canDelete =
+                            !!serviceId &&
+                            allEvents.some(
+                              (e) =>
+                                e.service_id.toString() == serviceId &&
+                                (e.tickets.some(
+                                  (t) => t.type_id == ticket_type.id,
+                                ) ||
+                                  e.tickets.some(
+                                    (t) => t.type_id == ticket_type.id,
+                                  )),
+                            );
+                          return (
+                            <tr key={index}>
+                              <td className="px-1">
+                                <Field
+                                  name={`ticket_types[${index}].id`}
+                                  type="hidden"
+                                />
+                                <FormikTextField
+                                  name={`ticket_types[${index}].label`}
+                                  vertical
+                                />
+                              </td>
+                              <td className="px-1">
+                                <FormikTextField
+                                  name={`ticket_types[${index}].capacity`}
+                                  vertical
+                                  type="number"
+                                  iconStart={
+                                    <UserGroupIcon className="h-4 w-4" />
+                                  }
+                                  optional
+                                />
+                              </td>
+                              <td className="px-1">
+                                <FormikTextField
+                                  name={`ticket_types[${index}].price`}
+                                  vertical
+                                  type="number"
+                                  iconStart={
+                                    <CurrencyEuroIcon className="h-4 w-4" />
+                                  }
+                                />
+                              </td>
+                              <td className="p-1">
+                                <FormikCheckboxField
+                                  name={`ticket_types[${index}].is_vip`}
+                                />
+                              </td>
+                              <td>
+                                {values.ticket_types.length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="self-center p-2 text-red-600 transition-all hover:scale-110 hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:scale-100 disabled:hover:text-gray-300"
+                                    onClick={() => remove(index)}
+                                    title={
+                                      canDelete
+                                        ? "Nemôžete zmazať, typ je už použitý"
+                                        : "Vymyzať"
+                                    }
+                                    disabled={canDelete}
+                                  >
+                                    <TrashIcon className="h-5 w-5" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
                   </table>
                   <div className="p-1">
                     <button
                       className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-1 text-sm font-medium text-gray-500 hover:bg-gray-200"
                       type="button"
-                      onClick={() => push({ label: "Standard" })}
+                      onClick={() =>
+                        push({
+                          label: "Standard",
+                          price: "",
+                          is_vip: false,
+                        })
+                      }
                     >
                       <PlusIcon className="h-4 w-4" />
                       Pridať typ lístka
@@ -249,7 +312,7 @@ export default function NewServiceForm({ serviceId }: { serviceId?: string }) {
           icon={HiOutlineExclamationCircle}
         >
           {errorMessages.map((message) => (
-            <p>{message}</p>
+            <p key={message}>{message}</p>
           ))}
         </Alert>
       )}

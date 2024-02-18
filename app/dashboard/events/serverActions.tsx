@@ -27,7 +27,7 @@ export async function fetchEvents() {
       tickets (*,
         coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
         coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
-        type:ticket_types!public_tickets_ticket_type_fkey(*)
+        type:ticket_types!public_tickets_type_id_fkey(*)
         )`,
       // billing:contacts!tickets_billing_id_fkey(*),
       // guest:contacts!tickets_guest_id_fkey(*),
@@ -176,7 +176,7 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
       guest:contacts!tickets_guest_id_fkey(*),
       coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
       coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
-      type:ticket_types!public_tickets_ticket_type_fkey(*)
+      type:ticket_types!public_tickets_type_id_fkey(*)
       `,
     );
   if (!res.error) {
