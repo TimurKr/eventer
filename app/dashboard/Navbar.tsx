@@ -38,7 +38,6 @@ const routes: route[] = [
 
 export default function Navbar() {
   const path = usePathname();
-  const store = useStoreContext();
 
   return (
     <>

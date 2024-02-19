@@ -1,4 +1,3 @@
-import { useStoreContext } from "../dashboard/store";
 import { logOutServer } from "./serverActions";
 
 export function logOutClient(clearStorage?: () => void) {
