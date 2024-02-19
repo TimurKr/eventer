@@ -30,8 +30,16 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
+import { on } from "events";
 
-export default function ServiceForm({ serviceId }: { serviceId?: string }) {
+export type ServiceFormProps = {
+  serviceId?: string;
+};
+
+export default function ServiceForm({
+  serviceId,
+  onSubmit,
+}: ServiceFormProps & { onSubmit?: () => void }) {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
@@ -88,7 +96,7 @@ export default function ServiceForm({ serviceId }: { serviceId?: string }) {
     addServices([
       { ...resServices.data[0], ticket_types: resTicketTypes.data },
     ]);
-    router.back();
+    onSubmit ? onSubmit() : router.back();
   };
 
   const update = async (values: FormValues) => {
@@ -135,7 +143,7 @@ export default function ServiceForm({ serviceId }: { serviceId?: string }) {
       id: service.id,
       ticket_types: res.data,
     });
-    router.back();
+    onSubmit ? onSubmit() : router.back();
   };
 
   return (
@@ -172,12 +180,14 @@ export default function ServiceForm({ serviceId }: { serviceId?: string }) {
           <Form className="flex flex-col gap-2">
             <FormikTextField
               name="name"
-              label="Názov Predstavenia"
+              label="Názov predstavenia"
               vertical
               type="text"
             />
-            <hr className="my-4" />
-            <p>Typy lístkov:</p>
+            <div className="flex items-center gap-6 pt-4">
+              <p className="text-sm text-gray-600">Typy lístkov</p>
+              <div className="h-px flex-grow bg-gray-400" />
+            </div>
             <FieldArray name="ticket_types">
               {({ remove, push }) => (
                 <div>

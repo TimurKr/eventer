@@ -81,7 +81,7 @@ export default function Header({
             </button>
           )}
         </div>
-        <div className="ms-auto">{actionButton}</div>
+        {actionButton}
       </div>
       <hr className="my-4" />
     </>

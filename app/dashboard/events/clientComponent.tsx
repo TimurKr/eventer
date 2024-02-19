@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Badge,
   Button,
@@ -30,6 +30,7 @@ import {
   LockClosedIcon,
   LockOpenIcon,
   MagnifyingGlassIcon,
+  RocketLaunchIcon,
   TrashIcon,
   XCircleIcon,
 } from "@heroicons/react/24/solid";
@@ -47,12 +48,15 @@ import Loading from "./loading";
 import { optimisticUpdate } from "@/utils/misc";
 import CouponRelationManager from "./_modals/CouponRelationManager";
 import { useStoreContext } from "../store";
-import moment from "moment";
-import NewServiceModal from "../services/edit/form";
 import { Events } from "./store/helpers";
 import Header from "../components/Header";
 import NewTicketsButton from "./new-tickets/button";
 import EditEventButton from "./edit-event/button";
+import EventRows from "./_components/EventRow";
+import ServiceForm from "../services/edit/form";
+import NewServiceButton from "../services/edit/button";
+import EditEventForm from "./edit-event/form";
+import { Transition } from "@headlessui/react";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -697,9 +701,9 @@ function TicketRows({
   );
 }
 
-function EventRow({ event }: { event: Events }) {
+function EventDetail({ event }: { event: Events }) {
   const {
-    service,
+    services: { service, allServices },
     events: {
       searchTerm,
       removeEvent,
@@ -717,9 +721,12 @@ function EventRow({ event }: { event: Events }) {
     },
   } = useStoreContext((state) => {
     return {
-      service: state.services.allServices.find(
-        (s) => s.id == event.service_id,
-      )!,
+      services: {
+        service: state.services.allServices.find(
+          (s) => s.id == event.service_id,
+        )!,
+        allServices: state.services.allServices,
+      },
       events: {
         ...state.events,
         selectedTickets: state.events.allEvents
@@ -736,106 +743,29 @@ function EventRow({ event }: { event: Events }) {
   });
 
   return (
-    <li key={event.id} className={`flex flex-col`}>
-      <div
-        className={`flex-wrp flex justify-end gap-x-6 gap-y-4 rounded-t-xl p-1 py-4 ps-3 transition-all duration-300 ease-in-out ${
-          event.isExpanded || searchTerm
-            ? "mt-2 border-x border-t border-cyan-700 pe-4 ps-4 pt-2"
-            : ""
+    <li
+      key={event.id}
+      className={`flex flex-col rounded-lg transition-all first:mt-0 last:mb-0 ${
+        event.isExpanded || searchTerm
+          ? "my-6 !border-slate-300 bg-slate-100"
+          : "my-2"
+      }`}
+    >
+      <EventRows
+        className={`transition-all ${
+          event.isExpanded || searchTerm ? "!bg-slate-100" : ""
         }`}
-      >
-        <div className="me-auto flex min-w-0 flex-none flex-col gap-1 self-center py-0.5">
-          <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-            {service.name}
-            {event.is_public ? (
-              <Badge color="blue" className="rounded-md">
-                Verejné
-              </Badge>
-            ) : (
-              <Badge color="purple" className="rounded-md">
-                Súkromné
-              </Badge>
-            )}
-          </p>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-sm font-bold ${
-                moment(event.datetime).isSame(moment(), "day")
-                  ? "text-cyan-700"
-                  : ""
-              }`}
-            >
-              {moment(event.datetime).isSame(moment(), "day")
-                ? "Dnes"
-                : new Date(event.datetime).toLocaleDateString("sk-SK")}
-            </span>
-            <span className="text-xs text-gray-500">
-              {new Date(event.datetime).toLocaleTimeString("sk-SK")}
-            </span>
-          </div>
-        </div>
-        <div className="ms-auto flex flex-auto flex-col flex-wrap items-end gap-x-4 gap-y-1 lg:flex-row lg:items-center lg:justify-end">
-          {service.ticket_types.map((type) => {
-            const sold = event.tickets.filter(
-              (t) => t.type_id == type.id,
-            ).length;
-            return (
-              <div key={type.label} className="w-28">
-                <div
-                  className={`flex items-end text-sm ${
-                    type.is_vip ? "text-amber-600" : "text-gray-600"
-                  }`}
-                >
-                  <span className="font-medium">{type.label}</span>
-                  <span
-                    className={`ms-auto text-base font-bold ${
-                      type.capacity && sold > type.capacity
-                        ? "text-red-600"
-                        : sold == 0
-                          ? "text-gray-400"
-                          : ""
-                    }`}
-                  >
-                    {sold}
-                  </span>
-                  {type.capacity && "/" + type.capacity}
-                </div>
-                <Progress
-                  className="mb-1"
-                  size="sm"
-                  progress={type.capacity ? (sold / type.capacity) * 100 : 0}
-                  color={
-                    type.capacity && sold > type.capacity
-                      ? "red"
-                      : type.is_vip
-                        ? "yellow"
-                        : "gray"
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex flex-none flex-row items-center justify-start">
+        events={[event]}
+        services={allServices}
+        onClick={(event) => toggleEventIsExpanded(event.id)}
+        actionButton={(event) => (
           <NewTicketsButton eventId={event.id.toString()} />
-          <button
-            className="group grid h-full place-content-center ps-2"
-            onClick={() => toggleEventIsExpanded(event.id)}
-          >
-            <div className="rounded-md border border-slate-200 p-0.5 group-hover:bg-slate-200">
-              <HiChevronDown
-                className={`${
-                  event.isExpanded || searchTerm ? "rotate-180 transform" : ""
-                } h-4 w-4 transition-transform duration-500 `}
-              />
-            </div>
-          </button>
-        </div>
-      </div>
+        )}
+      />
       <div
         className={`grid transition-all duration-300 ease-in-out ${
           event.isExpanded || searchTerm
-            ? "mb-2 grid-rows-[1fr] rounded-b-xl border-x border-b border-cyan-700 p-1 opacity-100"
+            ? "mb-2 grid-rows-[1fr] rounded-b-xl p-1 opacity-100"
             : "grid-rows-[0fr] opacity-0"
         }`}
       >
@@ -854,21 +784,23 @@ function EventRow({ event }: { event: Events }) {
                 hideToast: true,
               })
             }
-            className="flex items-center gap-2 rounded-lg border px-2 py-1 text-sm"
+            className="me-auto flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
           >
             {event.is_public ? (
               <>
+                <LockClosedIcon className="h-3 w-3"></LockClosedIcon>
                 <span>Spraviť udalosť súkromnou</span>
-                <LockClosedIcon className="ms-2 h-3 w-3"></LockClosedIcon>
               </>
             ) : (
               <>
+                <LockOpenIcon className="h-3 w-3"></LockOpenIcon>
                 <span>Zverejniť udalosť</span>
-                <LockOpenIcon className="ms-2 h-3 w-3"></LockOpenIcon>
               </>
             )}
           </button>
-          <Button
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg border border-red-500 px-2 py-1 text-sm text-red-500 hover:bg-red-50"
             onClick={() => {
               if (
                 event.tickets.length > 0 ||
@@ -889,12 +821,10 @@ function EventRow({ event }: { event: Events }) {
                 successMessage: "Udalosť vymazaná",
               });
             }}
-            size={"xs"}
-            color="failure"
           >
-            <span>Vymazať udalosť</span>
-            <TrashIcon className="ms-2 h-3 w-3"></TrashIcon>
-          </Button>
+            Vymazať udalosť
+            <TrashIcon className="h-4 w-4"></TrashIcon>
+          </button>
         </div>
       </div>
       <div
@@ -905,11 +835,14 @@ function EventRow({ event }: { event: Events }) {
         }`}
       >
         <div className="overflow-y-hidden">
-          <div className="rounded-xl bg-slate-200 p-2">
+          <div className="flex items-center">
+            <p className="ps-2 text-sm font-medium tracking-wider text-gray-700">
+              Lístky
+            </p>
+            <div className="mx-4 h-px flex-grow bg-gray-300" />
+          </div>
+          <div className="p-2">
             <div className="flex items-center gap-2 pb-1">
-              <p className="ps-2 text-lg font-medium tracking-wider text-gray-900">
-                Lístky
-              </p>
               <div className="flex flex-col text-xs text-gray-500">
                 {higlightedTickets > 0 ||
                   (highlightedCancelledTickets > 0 && (
@@ -1055,7 +988,12 @@ function EventRow({ event }: { event: Events }) {
                 </Table>
               </div>
             ) : (
-              <p className="text-center">Žiadne lístky</p>
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <p className="text-center text-xs text-gray-500">
+                  Žiadne lístky
+                </p>
+                <NewTicketsButton eventId={event.id.toString()} />
+              </div>
             )}
           </div>
         </div>
@@ -1094,28 +1032,39 @@ export default function EventsComponent() {
           searchTerm,
           results: highlightedTicketIds.length,
         }}
-        actionButton={<EditEventButton />}
+        actionButton={allServices.length === 0 || <EditEventButton />}
       />
       {events.length > 0 ? (
-        <ul
+        <ol
           role="list"
-          className={`w-auto divide-y divide-gray-400 rounded-xl border border-gray-200 p-2`}
+          className={`w-auto divide-gray-400 rounded-xl border border-gray-200 p-2`}
         >
           {events.map((event) => (
-            <EventRow key={event.id} event={event} />
+            <EventDetail key={event.id} event={event} />
           ))}
-        </ul>
+        </ol>
       ) : isRefreshing ? (
         <Loading />
       ) : allServices.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
-          Namáte žiadne vytvorené predstavenia
-          <NewServiceModal />
+        <div className="flex flex-col items-center p-10">
+          <RocketLaunchIcon className="w-12 text-gray-400" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Vytvorte si svoje prvé predstavenie
+          </p>
+          <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+            <ServiceForm onSubmit={() => {}} />
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
-          Namáte žiadne vytvorené udalosti
-          <EditEventButton />
+        <div className="flex flex-col items-center p-10">
+          <RocketLaunchIcon className="w-12 text-gray-400" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Skvelé! Máte vytvorené predstavenie, teraz už len vytvoriť prvú
+            udalosť
+          </p>
+          <div className="rounded-2xl border border-gray-200 p-4 shadow-lg">
+            <EditEventForm onSubmit={() => {}} />
+          </div>
         </div>
       )}
     </>

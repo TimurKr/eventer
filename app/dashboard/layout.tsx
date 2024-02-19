@@ -9,6 +9,7 @@ import { revalidateTag } from "next/cache";
 import { fetchContacts, fetchEvents } from "./events/serverActions";
 import React from "react";
 import { mergeNewEvents } from "./events/store/helpers";
+import { fetchCoupons } from "./coupons/serverActions";
 
 export default async function DashboardLayout({
   children,
@@ -25,11 +26,13 @@ export default async function DashboardLayout({
   const servicesQuery = fetchServices();
   const contactsQuery = fetchContacts();
   const eventsQuery = fetchEvents();
+  const couponsQuery = fetchCoupons();
 
-  const [services, contacts, events] = await Promise.all([
+  const [services, contacts, events, coupons] = await Promise.all([
     servicesQuery,
     contactsQuery,
     eventsQuery,
+    couponsQuery,
   ]);
 
   if (services.error) {
@@ -40,6 +43,9 @@ export default async function DashboardLayout({
   }
   if (events.error) {
     throw new Error(events.error.message);
+  }
+  if (coupons.error) {
+    throw new Error(coupons.error.message);
   }
 
   return (
@@ -56,6 +62,9 @@ export default async function DashboardLayout({
             searchTerm: "",
             contacts: contacts.data,
           }),
+        },
+        coupons: {
+          allCoupons: coupons.data,
         },
       }}
     >

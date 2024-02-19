@@ -11,7 +11,8 @@ export default function NewTicketsButton(params: {
         pathname: "/dashboard/events/new-tickets",
         query: params,
       }}
-      className="rounded-md bg-green-500 px-2 py-0.5 text-xs text-white hover:bg-green-600"
+      className="rounded-md bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600"
+      onClick={(e) => e.stopPropagation()}
     >
       Vytvoriť lístok
     </Link>

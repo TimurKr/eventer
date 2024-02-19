@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { bulkUpdateTicketFields } from "../serverActions";
 import { useStoreContext } from "../../store";
 import { Events } from "../store/helpers";
+import EventRows from "../_components/EventRow";
 
 export default function MoveTicketsToDifferentEventModal({
   event,
@@ -61,7 +62,10 @@ export default function MoveTicketsToDifferentEventModal({
           <div className="flex flex-wrap gap-2">
             {selectedTickets
               .map((t) => t.type)
-              .filter((value, index, self) => self.indexOf(value) === index)
+              .filter(
+                (value, index, self) =>
+                  self.findIndex((v) => v.id === value.id) === index,
+              )
               .map((type) => (
                 <div
                   key={type.id}
@@ -77,91 +81,29 @@ export default function MoveTicketsToDifferentEventModal({
             {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
-          {allEvents
-            .filter((e) => e.service_id === event.service_id)
-            .map((e) => (
-              <button
-                key={e.id}
-                className={`my-0.5 flex w-full justify-between gap-x-6 rounded-md p-2 hover:bg-slate-100 ${
-                  e.id == event.id && "!bg-red-100"
-                }`}
-                disabled={e.id == event.id || isSubmitting}
-                onMouseEnter={() => setHoveringEvent(e)}
-                onMouseLeave={() => setHoveringEvent(null)}
-                onClick={() => submit(e.id)}
-              >
-                <div className="flex min-w-0 flex-col items-start self-center">
-                  <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-                    {new Date(e.datetime).toLocaleDateString("sk-SK")}
-                    <Badge
-                      color={e.is_public ? "blue" : "purple"}
-                      className="rounded-md"
-                    >
-                      {e.is_public ? "Verejné" : "Súkromné"}
-                    </Badge>
-                  </p>
-                  <p className="truncate text-xs leading-5 text-gray-500">
-                    {new Date(e.datetime).toLocaleTimeString("sk-SK")}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center justify-start lg:flex-row lg:gap-4">
-                  {service.ticket_types.map((type) => {
-                    const sold = e.tickets.filter(
-                      (t) => t.type_id == type.id,
-                    ).length;
-                    const hoveringAdd =
-                      hoveringEvent?.id == e.id && e.id != event.id
-                        ? selectedTickets.filter((t) => t.type_id == type.id)
-                            .length
-                        : 0;
-                    return (
-                      <div key={type.label} className="w-28">
-                        <div
-                          className={`flex items-end text-sm ${
-                            type.is_vip ? "text-amber-600" : "text-gray-600"
-                          }`}
-                        >
-                          <span className="font-medium">{type.label}</span>
-                          <span
-                            className={`ms-auto text-base font-bold ${
-                              type.capacity &&
-                              sold + hoveringAdd > type.capacity
-                                ? "text-red-600"
-                                : sold + hoveringAdd == 0
-                                  ? "text-gray-400"
-                                  : ""
-                            }`}
-                          >
-                            {hoveringAdd > 0 ? sold + hoveringAdd : sold}
-                          </span>
-                          {type.capacity && "/" + type.capacity}
-                        </div>
-                        <Progress
-                          className="mb-1"
-                          size="sm"
-                          progress={Math.min(
-                            type.capacity
-                              ? ((sold + hoveringAdd) / type.capacity) * 100
-                              : 0,
-                            100,
-                          )}
-                          color={
-                            type.capacity && sold + hoveringAdd > type.capacity
-                              ? "failure"
-                              : type.is_vip
-                                ? "yellow"
-                                : "gray"
-                          }
-                          theme={{
-                            bar: "transition-all rounded-full",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </button>
-            ))}
+          {
+            <EventRows
+              events={allEvents
+                .filter((e) => e.service_id === event.service_id)
+                .map((e) => ({
+                  ...e,
+                  tickets: e.tickets.concat(
+                    e.id === hoveringEvent?.id && hoveringEvent?.id != event.id
+                      ? selectedTickets
+                      : [],
+                  ),
+                }))}
+              className={
+                hoveringEvent?.id == event.id
+                  ? "cursor-not-allowed hover:!bg-red-100"
+                  : ""
+              }
+              services={[service]}
+              onClick={(e) => event.id != e.id && submit(e.id)}
+              onMouseEnter={(e) => setHoveringEvent(e)}
+              onMouseLeave={(e) => setHoveringEvent(null)}
+            />
+          }
         </Modal.Body>
       </Modal>
     </>

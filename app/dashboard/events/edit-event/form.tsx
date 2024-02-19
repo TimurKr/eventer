@@ -19,7 +19,9 @@ export type EditEventFormProps = {
   eventId?: string;
 };
 
-export default function EditEventForm(props?: EditEventFormProps) {
+export default function EditEventForm(
+  props?: EditEventFormProps & { onSubmit?: () => void },
+) {
   const {
     events: { addEvent, setPartialEvent },
     services: { allServices },
@@ -66,7 +68,7 @@ export default function EditEventForm(props?: EditEventFormProps) {
       lockedArrived: true,
       showCancelledTickets: false,
     });
-    router.back();
+    props?.onSubmit ? props.onSubmit() : router.back();
   };
 
   const update = async (values: Values) => {
@@ -81,7 +83,7 @@ export default function EditEventForm(props?: EditEventFormProps) {
       return;
     }
     setPartialEvent(data[0]);
-    router.back();
+    props?.onSubmit ? props.onSubmit() : router.back();
   };
 
   return (
@@ -143,25 +145,11 @@ export default function EditEventForm(props?: EditEventFormProps) {
                 step={60}
               />
               <FormikCheckboxField name="isPublic" label="Verejný" />
-              {/* <Field name="isPublic" type="checkbox">
-                {(props: FieldProps) => (
-                  <div className="mt-4 flex flex-1 flex-row justify-between">
-                    <label htmlFor="is_public" className="ml-2">
-                      Verejný
-                    </label>
-                    <input
-                      type="checkbox"
-                      id="is_public"
-                      className="h-5 w-5 rounded-md border border-gray-200 bg-gray-50"
-                      {...props.field}
-                    />
-                  </div>
-                )}
-              </Field> */}
               <SubmitButton
                 isSubmitting={isSubmitting}
                 label={event?.id ? "Uložiť" : "Vytvoriť"}
                 submittingLabel={event?.id ? "Ukladám" : "Vytváram..."}
+                className="mt-auto"
               />
               {errorMessages.length > 0 && (
                 <Alert

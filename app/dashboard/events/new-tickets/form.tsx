@@ -385,7 +385,9 @@ export default function NewTicketsForm({
                   <div className="flex flex-col items-center">
                     {!values.tickets ||
                       (values.tickets.length === 0 && (
-                        <p className="pt-3 text-gray-400">Žiadne lístky</p>
+                        <p className="pt-3 text-sm text-gray-400">
+                          Žiadne lístky
+                        </p>
                       ))}
                     <CustomErrorMessage fieldMeta={getFieldMeta("tickets")} />
                   </div>
@@ -499,9 +501,12 @@ export default function NewTicketsForm({
                 </td>
                 <td className="px-2 text-end">
                   {coupon
-                    ? -Math.min(
-                        coupon.amount,
-                        values.tickets.reduce((a, b) => a + b.price, 0),
+                    ? -Math.max(
+                        Math.min(
+                          coupon.amount,
+                          values.tickets.reduce((a, b) => a + b.price, 0),
+                        ),
+                        0,
                       )
                     : 0}{" "}
                   €

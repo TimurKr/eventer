@@ -76,7 +76,10 @@ export const FormikTextField = ({
             }`}
           >
             {label && (
-              <label className="p-1 text-gray-700" htmlFor={props.field.name}>
+              <label
+                className="p-1 text-sm text-gray-600"
+                htmlFor={props.field.name}
+              >
                 {label}
               </label>
             )}
