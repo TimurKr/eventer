@@ -6,6 +6,7 @@ import {
   InsertEvents,
   InsertTickets,
   Tickets,
+  UpdateEvents,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -88,9 +89,9 @@ export type Contacts = NonNullable<
 >[0];
 
 // Create new event
-export async function insertEvents(events: InsertEvents[]) {
+export async function insertEvent(event: InsertEvents) {
   const supabase = createServerSupabase(cookies());
-  const result = await supabase.from("events").insert(events).select();
+  const result = await supabase.from("events").insert(event).select();
   if (!result.error) {
     revalidateTag("events");
   }
@@ -108,14 +109,13 @@ export async function deleteEvent(eventId: number) {
 }
 
 // Update event fields
-export async function updateEventFields(
-  event: Partial<EventWithTickets> & { id: NonNullable<Events["id"]> },
-) {
+export async function updateEvent(event: UpdateEvents & { id: Events["id"] }) {
   const supabase = createServerSupabase(cookies());
   const result = await supabase
     .from("events")
     .update(event)
-    .match({ id: event.id });
+    .match({ id: event.id })
+    .select();
   if (!result.error) {
     revalidateTag("events");
   }

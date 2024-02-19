@@ -56,10 +56,7 @@ export default function Navbar() {
           <span className="block md:hidden">{item.icon}</span>
         </Link>
       ))}
-      <form
-        action={() => logOutClient(store.persist.clearStorage)}
-        className="ms-auto w-auto"
-      >
+      <form action={() => logOutClient()} className="ms-auto w-auto">
         <button
           className="w-full rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
           type="submit"

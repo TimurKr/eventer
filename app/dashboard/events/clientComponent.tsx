@@ -18,7 +18,7 @@ import {
   deleteTickets,
   mergeContacts,
   updateContactFields,
-  updateEventFields,
+  updateEvent,
   updateTicketFields,
   updateTicketPaymentStatus,
 } from "./serverActions";
@@ -34,7 +34,6 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/solid";
 import { useSearchParams } from "next/navigation";
-import NewEventModal from "./_modals/NewEventModal";
 import {
   InstantSwitchField,
   InstantTextAreaField,
@@ -53,7 +52,7 @@ import NewServiceModal from "../services/edit/form";
 import { Events } from "./store/helpers";
 import Header from "../components/Header";
 import NewTicketsButton from "./new-tickets/button";
-import EditDateButton from "./edit-date/button";
+import EditEventButton from "./edit-event/button";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -841,21 +840,21 @@ function EventRow({ event }: { event: Events }) {
         }`}
       >
         <div className="flex items-end justify-end gap-2 overflow-y-hidden">
-          <EditDateButton eventId={event.id.toString()} />
-          <Button
+          <EditEventButton eventId={event.id.toString()} />
+          <button
+            type="button"
             onClick={() =>
-              optimisticUpdate<EventWithTickets, "id">({
+              optimisticUpdate({
                 value: { id: event.id, is_public: !event.is_public },
                 localUpdate: setPartialEvent,
-                databaseUpdate: updateEventFields,
+                databaseUpdate: updateEvent,
                 localRevert: () => setPartialEvent(event),
                 loadingMessage: "Mením status...",
                 successMessage: "Status zmenený",
                 hideToast: true,
               })
             }
-            size={"xs"}
-            className="ms-auto"
+            className="flex items-center gap-2 rounded-lg border px-2 py-1 text-sm"
           >
             {event.is_public ? (
               <>
@@ -868,7 +867,7 @@ function EventRow({ event }: { event: Events }) {
                 <LockOpenIcon className="ms-2 h-3 w-3"></LockOpenIcon>
               </>
             )}
-          </Button>
+          </button>
           <Button
             onClick={() => {
               if (
@@ -1095,7 +1094,7 @@ export default function EventsComponent() {
           searchTerm,
           results: highlightedTicketIds.length,
         }}
-        actionButton={<NewEventModal />}
+        actionButton={<EditEventButton />}
       />
       {events.length > 0 ? (
         <ul
@@ -1116,7 +1115,7 @@ export default function EventsComponent() {
       ) : (
         <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
           Namáte žiadne vytvorené udalosti
-          <NewEventModal />
+          <EditEventButton />
         </div>
       )}
     </>
