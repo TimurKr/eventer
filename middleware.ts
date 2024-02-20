@@ -1,24 +1,60 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareSupabase } from "@/utils/supabase/middleware";
+import { Route } from "next";
+
+type ExhaustiveRoute = Route | `${Route}/*`;
+
+const authenticatedHomeRoute: Route = "/dashboard";
+const loginRoute: Route = "/login";
+
+const protectedRoutes: ExhaustiveRoute[] = ["/dashboard/*"];
+const onlyPublicRoutes: ExhaustiveRoute[] = ["/login", "/signup"];
+const redirects: Record<string, Route> = {
+  "/": "/dashboard",
+};
+
+function pathInExhaustiveRoutes(route: string, routes: ExhaustiveRoute[]) {
+  return routes.some(
+    (exhaustiveRoute) =>
+      (exhaustiveRoute.endsWith("/*") &&
+        route.startsWith(exhaustiveRoute.slice(0, -2))) ||
+      route === exhaustiveRoute,
+  );
+}
+
+function redirect(path: Route, request: NextRequest) {
+  return NextResponse.redirect(new URL(path, request.nextUrl));
+}
 
 export async function middleware(request: NextRequest) {
-    const { supabase, response } = createMiddlewareSupabase(request);
-    await supabase.auth.getSession();
+  const { supabase, response } = createMiddlewareSupabase(request);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (
+    !session &&
+    pathInExhaustiveRoutes(request.nextUrl.pathname, protectedRoutes)
+  ) {
+    return redirect(loginRoute, request);
+  }
+  if (
+    !!session &&
+    pathInExhaustiveRoutes(request.nextUrl.pathname, onlyPublicRoutes)
+  ) {
+    return redirect(authenticatedHomeRoute, request);
+  }
 
-    // If going to dashboard and not logged in, redirect to login
-    if (request.nextUrl.pathname.startsWith("/dashboard") && !supabase.auth.getUser()) {
-        return NextResponse.redirect(new URL("/login", request.nextUrl))
+  for (const [from, to] of Object.entries(redirects)) {
+    if (
+      pathInExhaustiveRoutes(request.nextUrl.pathname, [
+        from as ExhaustiveRoute,
+      ])
+    ) {
+      return redirect(to, request);
     }
+  }
 
-    // If going to home, redirect to dashboard if logged in
-    if (request.nextUrl.pathname === "/") {
-        if (!!supabase.auth.getUser()) {
-            return NextResponse.redirect(new URL("/dashboard", request.nextUrl));
-        }
-        return NextResponse.redirect(new URL("/login", request.nextUrl));
-    }
-
-    return response;
+  return response;
 }
 
 export const config = {
