@@ -176,7 +176,7 @@ export default function NewTicketsForm({
       );
       if (couponAmountUpdate.error) {
         setErrors({
-          tickets: "Chyba pri aplikovaní kupónu: " + couponAmountUpdate.error,
+          tickets: "Chyba pri aplikovaní poukazu: " + couponAmountUpdate.error,
         });
         return;
       }

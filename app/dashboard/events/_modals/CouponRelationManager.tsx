@@ -62,8 +62,8 @@ export default function CouponRelationManager({
             <Tooltip
               content={
                 type === "created"
-                  ? "Lístok bol premenený na kupón, kliknutím zobrazíte"
-                  : "Na kúpu bol použitý kupón, kliknutím zobrazíte"
+                  ? "Lístok bol premenený na poukaz, kliknutím zobrazíte"
+                  : "Na kúpu bol použitý poukaz, kliknutím zobrazíte"
               }
               placement="left"
             >
@@ -99,7 +99,7 @@ export default function CouponRelationManager({
                     }),
                   localRevert: () => setPartialTicket(ticket),
                   confirmation:
-                    "Naozaj chcete vymazať prepojenie na tento kupón?",
+                    "Naozaj chcete vymazať prepojenie na tento poukaz?",
                 })
               }
             >

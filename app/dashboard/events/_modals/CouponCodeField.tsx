@@ -43,7 +43,7 @@ export default function CouponCodeField({
               ? ""
               : "border-green-500 text-green-500"
         }`}
-        placeholder="Kupón"
+        placeholder="Poukaz"
         value={code}
         onChange={(e) => {
           const newCode = e.target.value.toUpperCase().trim();

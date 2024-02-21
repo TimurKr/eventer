@@ -26,10 +26,10 @@ export default function NewCouponModal() {
         className="flex items-center gap-2 rounded-md bg-cyan-700 px-2 py-1 text-sm text-white hover:bg-cyan-800"
       >
         <PlusIcon className="h-5 w-5" />
-        Nový kupón
+        Nový poukaz
       </button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-        <Modal.Header>Vytvorte nový kupón</Modal.Header>
+        <Modal.Header>Vytvorte nový poukaz</Modal.Header>
         <Modal.Body>
           <Formik
             initialValues={{

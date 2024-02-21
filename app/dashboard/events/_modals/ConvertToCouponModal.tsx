@@ -44,11 +44,11 @@ export default function ConvertToCouponModal({
         }
         disabled={disabled}
       >
-        Premeniť na kupón
+        Premeniť na poukaz
       </button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
         <Modal.Header>
-          Naozaj chcete premeniť zvolené lístky na kupón?
+          Naozaj chcete premeniť zvolené lístky na poukaz?
         </Modal.Header>
         <Modal.Body>
           <div className="flex flex-wrap items-center gap-2">
@@ -70,7 +70,7 @@ export default function ConvertToCouponModal({
           <hr className="my-2" />
           <p className="flex items-center text-gray-700">
             <InformationCircleIcon className="me-2 h-4 w-4" />
-            Zvolené lístky budú zrušené a vytvorí sa jeden kupón v hodnote{" "}
+            Zvolené lístky budú zrušené a vytvorí sa jeden poukaz v hodnote{" "}
             {selectedTickets.map((t) => t.price).reduce((a, b) => a + b, 0)}€
           </p>
           <form
@@ -89,7 +89,7 @@ export default function ConvertToCouponModal({
             <SubmitButton
               isSubmitting={isSubmitting}
               label="Potvrdiť"
-              submittingLabel="Vytváram kupón..."
+              submittingLabel="Vytváram poukaz..."
               className="ms-auto"
             />
           </form>

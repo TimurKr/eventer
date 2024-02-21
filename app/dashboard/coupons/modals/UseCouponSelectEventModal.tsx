@@ -24,7 +24,7 @@ export default function UseCouponSelectEvent({
         className="rounded-md bg-green-500 px-1.5 py-0.5 text-xs text-white hover:bg-green-600 active:bg-green-700"
         onClick={() => setIsOpen(true)}
       >
-        Use
+        Použiť
       </button>
       <Modal
         show={isOpen}
@@ -34,7 +34,7 @@ export default function UseCouponSelectEvent({
       >
         <Modal.Header>
           Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
-          kupónom
+          poukazom
         </Modal.Header>
         <Modal.Body>
           <EventRows

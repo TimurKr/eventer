@@ -79,7 +79,7 @@ export default function Coupons() {
     <>
       <div>
         <Header
-          title="Kupóny"
+          title="Poukazy"
           actionButton={<NewCouponModal />}
           refresh={{ refresh, isRefreshing }}
           search={{ search, searchTerm, results: coupons.length }}
@@ -313,17 +313,17 @@ export default function Coupons() {
                           onClick={() =>
                             optimisticUpdate<Coupons, "id">({
                               confirmation:
-                                "Naozaj chcete vymazať tento kupón? Tento krok je nezvratný." +
+                                "Naozaj chcete vymazať tento poukaz? Tento krok je nezvratný." +
                                 (coupon.created_from.length > 0 ||
                                 coupon.redeemed_from.length > 0
-                                  ? "\n\nVymazanie tohoto kupónu nijako neovplyvní lískty, na ktoré bol kupón už použitý, alebo z ktorých bol vytvorený."
+                                  ? "\n\nVymazanie tohoto poukazu nijako neovplyvní lískty, na ktoré bol poukaz už použitý, alebo z ktorých bol vytvorený."
                                   : ""),
                               value: { id: coupon.id },
                               localUpdate: removeCoupon,
                               databaseUpdate: deleteCoupon,
                               localRevert: refresh,
-                              loadingMessage: "Vymazávam kupón",
-                              successMessage: "Kupón vymazaný",
+                              loadingMessage: "Vymazávam poukaz",
+                              successMessage: "Poukaz vymazaný",
                             })
                           }
                         >
@@ -339,7 +339,7 @@ export default function Coupons() {
             <Loading />
           ) : (
             <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
-              Namáte žiadne vytvorené kupóny
+              Namáte žiadne vytvorené poukazy
               <NewCouponModal />
             </div>
           )}

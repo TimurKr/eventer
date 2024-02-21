@@ -30,7 +30,7 @@ const routes: route[] = [
     icon: <HiCalendarDays className="h-5 w-5" />,
   },
   {
-    title: "Kupóny",
+    title: "Poukazy",
     href: "/dashboard/coupons",
     icon: <FaTicketAlt className="h-5 w-5" />,
   },

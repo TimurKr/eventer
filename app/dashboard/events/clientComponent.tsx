@@ -944,7 +944,7 @@ function EventDetail({ event }: { event: Events }) {
                       Poznámka
                     </Table.HeadCell>
                     <Table.HeadCell className="p-1 text-end">
-                      Kupón
+                      Poukaz
                     </Table.HeadCell>
                     <Table.HeadCell className="p-1 text-end">
                       Cena
