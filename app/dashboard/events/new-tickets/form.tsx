@@ -8,9 +8,9 @@ import {
   SubmitButton,
 } from "@/utils/forms/FormElements";
 import { Contacts, Coupons } from "@/utils/supabase/database.types";
-import { Alert, Button, Modal, Tooltip } from "flowbite-react";
+import { Alert, Tooltip } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as Yup from "yup";
 import {
   CurrencyEuroIcon,

@@ -23,6 +23,17 @@
         "uriFormat": "%s",
         "action": "debugWithChrome"
       }
+    },
+    {
+      "name": "Next.js: debug full stack - production",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run build && npm run start",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://.+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
     }
   ]
 }

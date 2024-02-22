@@ -3,7 +3,6 @@
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import ServiceForm from "../../../services/edit/form";
-import { useStoreContext } from "@/app/dashboard/store";
 
 export default function NewServiceModal({
   searchParams,

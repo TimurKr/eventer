@@ -42,7 +42,6 @@ export default function Coupons() {
   const q = useSearchParams().get("query");
   useEffect(() => {
     if (q) search(q);
-    refresh();
   }, []);
 
   const changeDate = async (coupon: Coupons, date: Date | null) => {

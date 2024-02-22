@@ -1019,7 +1019,6 @@ export default function EventsComponent() {
   const query = useSearchParams().get("query");
   useEffect(() => {
     if (query) search({ query });
-    refresh();
   }, []);
 
   return (
