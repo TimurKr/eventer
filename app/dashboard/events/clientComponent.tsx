@@ -1042,8 +1042,6 @@ export default function EventsComponent() {
             <EventDetail key={event.id} event={event} />
           ))}
         </ol>
-      ) : isRefreshing ? (
-        <Loading />
       ) : allServices.length === 0 ? (
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />

@@ -133,7 +133,9 @@ export default function EditEventForm(
               {!event && (
                 <FormikSelectField name="service_id">
                   {allServices.map((service) => (
-                    <option value={service.id}>{service.name}</option>
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
                   ))}
                 </FormikSelectField>
               )}

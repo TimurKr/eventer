@@ -30,8 +30,6 @@ export async function fetchEvents() {
         coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
         type:ticket_types!public_tickets_type_id_fkey(*)
         )`,
-      // billing:contacts!tickets_billing_id_fkey(*),
-      // guest:contacts!tickets_guest_id_fkey(*),
     )
     .order("datetime", { ascending: false });
   if (r.error) {

@@ -78,6 +78,7 @@ export interface Database {
           amount: number;
           business_id: string;
           code: string;
+          contact_id: number | null;
           created_at: string;
           id: number;
           note: string | null;
@@ -89,6 +90,7 @@ export interface Database {
           amount: number;
           business_id?: string;
           code: string;
+          contact_id?: number | null;
           created_at?: string;
           id?: number;
           note?: string | null;
@@ -100,6 +102,7 @@ export interface Database {
           amount?: number;
           business_id?: string;
           code?: string;
+          contact_id?: number | null;
           created_at?: string;
           id?: number;
           note?: string | null;
@@ -113,6 +116,13 @@ export interface Database {
             columns: ["business_id"];
             isOneToOne: false;
             referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "public_coupons_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
             referencedColumns: ["id"];
           },
         ];

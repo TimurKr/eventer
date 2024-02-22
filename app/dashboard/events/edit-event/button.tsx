@@ -10,10 +10,10 @@ export default function EditEventButton(params: EditEventFormProps) {
         pathname: "/dashboard/events/edit-event",
         query: params,
       }}
-      className={`flex items-center gap-2 rounded-lg border px-2 py-1 text-sm ${
+      className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm ${
         params.eventId
-          ? "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
-          : "border-green-500 bg-green-500 text-white hover:bg-green-600"
+          ? "border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          : "bg-green-500 text-white hover:bg-green-600"
       }
       }`}
     >

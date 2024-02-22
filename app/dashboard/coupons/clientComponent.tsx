@@ -2,16 +2,12 @@
 
 import { useEffect } from "react";
 import { type Coupons, updateCoupon, deleteCoupon } from "./serverActions";
-import NewCouponModal from "./modals/NewCouponModal";
 import {
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
   XCircleIcon,
   ArrowTopRightOnSquareIcon,
   PlusCircleIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { XCircleIcon as XCircleIconSolid } from "@heroicons/react/24/solid";
 import { Badge, Datepicker } from "flowbite-react";
 import Link from "next/link";
 import Loading from "../events/loading";
@@ -27,6 +23,9 @@ import { optimisticUpdate } from "@/utils/misc";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
 import { useStoreContext } from "../store";
 import Header from "../components/Header";
+import NewCouponButton from "./new/button";
+import NewCouponForm from "./new/form";
+import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 
 export default function Coupons() {
   const {
@@ -79,7 +78,7 @@ export default function Coupons() {
       <div>
         <Header
           title="Poukazy"
-          actionButton={<NewCouponModal />}
+          actionButton={<NewCouponButton />}
           refresh={{ refresh, isRefreshing }}
           search={{ search, searchTerm, results: coupons.length }}
         />
@@ -334,12 +333,15 @@ export default function Coupons() {
                 ))}
               </tbody>
             </table>
-          ) : isRefreshing ? (
-            <Loading />
           ) : (
-            <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
-              Namáte žiadne vytvorené poukazy
-              <NewCouponModal />
+            <div className="flex flex-col items-center p-10">
+              <RocketLaunchIcon className="w-12 text-gray-400" />
+              <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+                Nemáte žiadne vytvorené poukazy. Vytvorte si svoj prvý:
+              </p>
+              <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+                <NewCouponForm onSubmit={() => {}} />
+              </div>
             </div>
           )}
         </div>
