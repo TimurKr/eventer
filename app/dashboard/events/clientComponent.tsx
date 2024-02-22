@@ -1,16 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
-  Badge,
-  Button,
-  Checkbox,
-  Dropdown,
-  Progress,
-  Table,
-  Tooltip,
-} from "flowbite-react";
+  InstantSwitchField,
+  InstantTextAreaField,
+  InstantTextField,
+} from "@/utils/forms/FormElements";
+import { optimisticUpdate } from "@/utils/misc";
+import {
+  EllipsisHorizontalIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  RocketLaunchIcon,
+  TrashIcon,
+} from "@heroicons/react/24/solid";
+import { Checkbox, Dropdown, Table, Tooltip } from "flowbite-react";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect } from "react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
+import { LiaUnlinkSolid } from "react-icons/lia";
+import { toast } from "react-toastify";
+import { number as yupNumber, string as yupString } from "yup";
+import Header from "../components/Header";
+import ServiceForm from "../services/edit/form";
+import { useStoreContext } from "../store";
+import EventRows from "./_components/EventRow";
+import ConvertToCouponModal from "./_modals/ConvertToCouponModal";
+import CouponRelationManager from "./_modals/CouponRelationManager";
+import MoveTicketsToDifferentEventModal from "./_modals/MoveTicketsToDifferentEventModal";
+import EditEventButton from "./edit-event/button";
+import EditEventForm from "./edit-event/form";
+import NewTicketsButton from "./new-tickets/button";
 import {
   EventWithTickets,
   bulkUpsertContacts,
@@ -22,41 +41,7 @@ import {
   updateTicketFields,
   updateTicketPaymentStatus,
 } from "./serverActions";
-import { toast } from "react-toastify";
-import React from "react";
-import {
-  ArrowPathIcon,
-  EllipsisHorizontalIcon,
-  LockClosedIcon,
-  LockOpenIcon,
-  MagnifyingGlassIcon,
-  RocketLaunchIcon,
-  TrashIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
-import { useSearchParams } from "next/navigation";
-import {
-  InstantSwitchField,
-  InstantTextAreaField,
-  InstantTextField,
-} from "@/utils/forms/FormElements";
-import { string as yupString, number as yupNumber } from "yup";
-import { LiaLinkSolid, LiaUnlinkSolid } from "react-icons/lia";
-import MoveTicketsToDifferentEventModal from "./_modals/MoveTicketsToDifferentEventModal";
-import ConvertToCouponModal from "./_modals/ConvertToCouponModal";
-import Loading from "./loading";
-import { optimisticUpdate } from "@/utils/misc";
-import CouponRelationManager from "./_modals/CouponRelationManager";
-import { useStoreContext } from "../store";
 import { Events } from "./store/helpers";
-import Header from "../components/Header";
-import NewTicketsButton from "./new-tickets/button";
-import EditEventButton from "./edit-event/button";
-import EventRows from "./_components/EventRow";
-import ServiceForm from "../services/edit/form";
-import NewServiceButton from "../services/edit/button";
-import EditEventForm from "./edit-event/form";
-import { Transition } from "@headlessui/react";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -429,13 +414,6 @@ function TicketRow({
                 }
               />{" "}
               <LinkUnlinkContact
-                // identicalContactFound={
-                //   allContacts
-                //     .filter(
-                //       (c, i, a) => a.findIndex((c2) => c.id == c2.id) === i,
-                //     )
-                //     .filter((c) => contactsEqual(c, ticket.billing!)).length
-                // }
                 groupSize={groupSize}
                 ticket={ticket}
                 type="billing_id"

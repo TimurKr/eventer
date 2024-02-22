@@ -1,14 +1,14 @@
 "use client";
 
-import { Alert, Modal, Spinner } from "flowbite-react";
-import { convertTicketsToCoupon } from "../serverActions";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { SubmitButton } from "@/utils/forms/FormElements";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { useStoreContext } from "../../store";
+import { Alert, Modal, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
-import { Events } from "../store/helpers";
+import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
+import { useStoreContext } from "../../store";
+import { convertTicketsToCoupon } from "../serverActions";
+import { Events } from "../store/helpers";
 
 export default function ConvertToCouponModal({
   event,

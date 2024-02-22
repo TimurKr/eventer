@@ -1,4 +1,7 @@
 import { Roboto } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.min.css";
+import "./globals.css";
 
 // If loading a variable font, you don't need to specify the font weight
 const font = Roboto({
@@ -6,9 +9,6 @@ const font = Roboto({
   subsets: ["latin"],
   display: "swap",
 });
-import "./globals.css";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.min.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

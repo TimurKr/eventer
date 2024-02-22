@@ -1,7 +1,7 @@
 import { Badge, Progress } from "flowbite-react";
 import moment from "moment";
-import { Events } from "../store/helpers";
 import { Services } from "../../services/serverActions";
+import { Events } from "../store/helpers";
 
 export default function EventRows({
   events,

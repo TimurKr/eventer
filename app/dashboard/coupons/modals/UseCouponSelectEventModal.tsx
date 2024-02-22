@@ -2,9 +2,9 @@
 
 import { Modal } from "flowbite-react";
 import { useState } from "react";
-import { useStoreContext } from "../../store";
-import NewTicketsButton from "../../events/new-tickets/button";
 import EventRows from "../../events/_components/EventRow";
+import NewTicketsButton from "../../events/new-tickets/button";
+import { useStoreContext } from "../../store";
 
 export default function UseCouponSelectEvent({
   couponCode,

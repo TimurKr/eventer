@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import EditEventForm from "./form";
 
 export default async function Page() {

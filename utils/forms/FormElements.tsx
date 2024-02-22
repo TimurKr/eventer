@@ -8,16 +8,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
 import { Badge, Button, ToggleSwitch } from "flowbite-react";
-import {
-  ErrorMessage,
-  Field,
-  FieldMetaProps,
-  FieldProps,
-  GenericFieldHTMLAttributes,
-  useField,
-} from "formik";
+import { Field, FieldMetaProps, FieldProps, useField } from "formik";
 import Fuse from "fuse.js";
-import { Fragment, HTMLInputTypeAttribute, useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 export function CustomErrorMessage({

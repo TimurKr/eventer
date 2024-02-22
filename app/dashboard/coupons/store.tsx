@@ -1,8 +1,8 @@
 import Fuse from "fuse.js";
-import { Coupons, fetchCoupons } from "./serverActions";
 import moment from "moment";
-import { validateCoupon } from "./utils";
 import { createStoreSlice } from "zimmer-context";
+import { Coupons, fetchCoupons } from "./serverActions";
+import { validateCoupon } from "./utils";
 
 function search(coupons: Coupons[], term: string): Coupons[] {
   if (term === "") {

@@ -1,8 +1,8 @@
 import "server-only";
 
+import { Database } from "@/utils/supabase/database.types";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { Database } from "@/utils/supabase/database.types";
 
 // Do not cache
 export const revalidate = 0;

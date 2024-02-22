@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface Database {
   public: {
@@ -353,9 +347,7 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -374,9 +366,7 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -395,9 +385,7 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof Database["public"]["Enums"]
-    | { schema: keyof Database },
+  PublicEnumNameOrOptions extends keyof Database["public"]["Enums"] | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
@@ -410,10 +398,8 @@ export type Enums<
 // Schema: public
 // Tables
 export type Businesses = Database["public"]["Tables"]["businesses"]["Row"];
-export type InsertBusinesses =
-  Database["public"]["Tables"]["businesses"]["Insert"];
-export type UpdateBusinesses =
-  Database["public"]["Tables"]["businesses"]["Update"];
+export type InsertBusinesses = Database["public"]["Tables"]["businesses"]["Insert"];
+export type UpdateBusinesses = Database["public"]["Tables"]["businesses"]["Update"];
 
 export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
 export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
@@ -432,10 +418,8 @@ export type InsertServices = Database["public"]["Tables"]["services"]["Insert"];
 export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
 
 export type TicketTypes = Database["public"]["Tables"]["ticket_types"]["Row"];
-export type InsertTicketTypes =
-  Database["public"]["Tables"]["ticket_types"]["Insert"];
-export type UpdateTicketTypes =
-  Database["public"]["Tables"]["ticket_types"]["Update"];
+export type InsertTicketTypes = Database["public"]["Tables"]["ticket_types"]["Insert"];
+export type UpdateTicketTypes = Database["public"]["Tables"]["ticket_types"]["Update"];
 
 export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
 export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];

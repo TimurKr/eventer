@@ -1,27 +1,17 @@
 "use client";
 
-import {
-  MagnifyingGlassIcon,
-  RocketLaunchIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
-import { useStoreContext } from "../store";
-import {
-  ArrowPathIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import NewServiceModal from "./edit/form";
 import { InstantTextField } from "@/utils/forms/FormElements";
-import { deleteService, updateService, Services } from "./serverActions";
-import Loading from "./loading";
-import NewServiceButton from "./edit/button";
-import Link from "next/link";
-import Header from "../components/Header";
 import { optimisticUpdate } from "@/utils/misc";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { RocketLaunchIcon } from "@heroicons/react/24/solid";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import Header from "../components/Header";
+import { useStoreContext } from "../store";
+import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
+import { Services, deleteService, updateService } from "./serverActions";
 
 function ServiceRow({ service }: { service: Services }) {
   const { eventsCount, setPartialService, removeService, addServices } =

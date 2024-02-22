@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { headers, cookies } from "next/headers";
 import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import LoginForm from "./LoginForm";
 

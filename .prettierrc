@@ -1,5 +1,7 @@
 {
-  "plugins": ["prettier-plugin-tailwindcss"],
-  "trailingComma": "all",
-  "printWidth": 80
+  "plugins": [
+    "prettier-plugin-tailwindcss",
+    "prettier-plugin-organize-imports"
+  ],
+  "trailingComma": "all"
 }

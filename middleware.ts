@@ -1,6 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareSupabase } from "@/utils/supabase/middleware";
 import { Route } from "next";
+import { NextResponse, type NextRequest } from "next/server";
 
 type ExhaustiveRoute = Route | `${Route}/*`;
 

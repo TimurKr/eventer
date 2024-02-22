@@ -1,12 +1,12 @@
 "use client";
 
-import { Badge, Modal, Progress, Spinner } from "flowbite-react";
+import { Modal, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
-import { bulkUpdateTicketFields } from "../serverActions";
-import { useStoreContext } from "../../store";
-import { Events } from "../store/helpers";
-import EventRows from "../_components/EventRow";
 import { toast } from "react-toastify";
+import { useStoreContext } from "../../store";
+import EventRows from "../_components/EventRow";
+import { bulkUpdateTicketFields } from "../serverActions";
+import { Events } from "../store/helpers";
 
 export default function MoveTicketsToDifferentEventModal({
   event,

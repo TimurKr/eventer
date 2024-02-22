@@ -1,11 +1,9 @@
 "use client";
 
+import NewCouponForm from "@/app/dashboard/coupons/new/form";
+import { type EditEventFormProps } from "@/app/dashboard/events/edit-event/form";
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
-import EditEventForm, {
-  type EditEventFormProps,
-} from "@/app/dashboard/events/edit-event/form";
-import NewCouponForm from "@/app/dashboard/coupons/new/form";
 
 export default function Page({
   searchParams,

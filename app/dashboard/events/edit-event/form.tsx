@@ -1,20 +1,19 @@
 "use client";
 
-import { Alert, Datepicker } from "flowbite-react";
-import { useState } from "react";
-import { insertEvent, updateEvent } from "../serverActions";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { useStoreContext } from "../../store";
 import {
   FormikCheckboxField,
   FormikSelectField,
   SubmitButton,
 } from "@/utils/forms/FormElements";
+import { Alert, Datepicker } from "flowbite-react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { optimisticUpdate } from "@/utils/misc";
+import { useStoreContext } from "../../store";
+import { insertEvent, updateEvent } from "../serverActions";
 
 export type EditEventFormProps = {
   eventId?: string;

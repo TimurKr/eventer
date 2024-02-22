@@ -9,11 +9,11 @@ import {
   UpdateEvents,
 } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
+import { randomUUID } from "crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { ticketSortFunction } from "./utils";
-import { randomUUID } from "crypto";
 import { validateCoupon } from "../coupons/utils";
+import { ticketSortFunction } from "./utils";
 
 // Fetch events
 export async function fetchEvents() {

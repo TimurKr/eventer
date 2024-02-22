@@ -1,8 +1,8 @@
-import { createStoreSlice } from "zimmer-context";
-import { fetchEvents, fetchContacts, Contacts } from "../serverActions";
-import { ticketSortFunction } from "../utils";
 import { Tickets } from "@/utils/supabase/database.types";
-import { type Events, mergeNewEvents, search } from "./helpers";
+import { createStoreSlice } from "zimmer-context";
+import { Contacts, fetchContacts, fetchEvents } from "../serverActions";
+import { ticketSortFunction } from "../utils";
+import { mergeNewEvents, search, type Events } from "./helpers";
 
 type State = {
   events: Events[];

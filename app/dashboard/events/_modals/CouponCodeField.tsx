@@ -1,3 +1,5 @@
+import { Coupons } from "@/utils/supabase/database.types";
+import { Spinner } from "flowbite-react";
 import {
   Dispatch,
   SetStateAction,
@@ -5,8 +7,6 @@ import {
   useState,
   useTransition,
 } from "react";
-import { Spinner } from "flowbite-react";
-import { Coupons } from "@/utils/supabase/database.types";
 
 export default function CouponCodeField({
   coupon,

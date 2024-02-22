@@ -2,7 +2,6 @@
 
 import { InsertCoupons } from "@/utils/supabase/database.types";
 import { createServerSupabase } from "@/utils/supabase/server";
-import moment from "moment";
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { validateCoupon } from "./utils";

@@ -8,30 +8,30 @@ import {
   SubmitButton,
 } from "@/utils/forms/FormElements";
 import { Contacts, Coupons } from "@/utils/supabase/database.types";
-import { Alert, Tooltip } from "flowbite-react";
-import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
-import { useState } from "react";
-import * as Yup from "yup";
 import {
   CurrencyEuroIcon,
   PlusCircleIcon,
   SquaresPlusIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { TrashIcon, CheckBadgeIcon } from "@heroicons/react/24/solid";
-import {
-  bulkInsertTickets,
-  validateCouponCode,
-  redeemCoupon,
-  bulkUpsertContacts,
-} from "../serverActions";
+import { CheckBadgeIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { Alert, Tooltip } from "flowbite-react";
+import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
+import Link from "next/link";
+import { redirect, useRouter } from "next/navigation";
+import { useState } from "react";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { contactsEqual } from "../utils";
-import CouponCodeField from "../_modals/CouponCodeField";
+import * as Yup from "yup";
 import { useStoreContext } from "../../store";
-import { redirect, useRouter } from "next/navigation";
-import Link from "next/link";
+import CouponCodeField from "../_modals/CouponCodeField";
+import {
+  bulkInsertTickets,
+  bulkUpsertContacts,
+  redeemCoupon,
+  validateCouponCode,
+} from "../serverActions";
+import { contactsEqual } from "../utils";
 
 export default function NewTicketsForm({
   eventId,

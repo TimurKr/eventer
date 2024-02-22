@@ -1,5 +1,4 @@
-import { permanentRedirect, useRouter } from "next/navigation";
-import { useStoreContext } from "./store";
+import { permanentRedirect } from "next/navigation";
 
 export default function Page() {
   return permanentRedirect("/dashboard/events");

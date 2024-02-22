@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
-import { Services, fetchServices } from "./serverActions";
 import { createStoreSlice } from "zimmer-context";
+import { Services, fetchServices } from "./serverActions";
 
 type State = {
   services: Services[];

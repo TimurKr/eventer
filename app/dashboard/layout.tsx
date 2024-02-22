@@ -1,15 +1,15 @@
+import { InstantTextField } from "@/utils/forms/FormElements";
 import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ContextProvider } from "./store";
-import Navbar from "./Navbar";
-import { fetchServices } from "./services/serverActions";
-import { InstantTextField } from "@/utils/forms/FormElements";
-import { revalidateTag } from "next/cache";
-import { fetchContacts, fetchEvents } from "./events/serverActions";
 import React from "react";
-import { mergeNewEvents } from "./events/store/helpers";
+import Navbar from "./Navbar";
 import { fetchCoupons } from "./coupons/serverActions";
+import { fetchContacts, fetchEvents } from "./events/serverActions";
+import { mergeNewEvents } from "./events/store/helpers";
+import { fetchServices } from "./services/serverActions";
+import { ContextProvider } from "./store";
 
 export default async function DashboardLayout({
   children,

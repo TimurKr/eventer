@@ -1,31 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
-import { type Coupons, updateCoupon, deleteCoupon } from "./serverActions";
-import {
-  XCircleIcon,
-  ArrowTopRightOnSquareIcon,
-  PlusCircleIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import { Badge, Datepicker } from "flowbite-react";
-import Link from "next/link";
-import Loading from "../events/loading";
-import { useSearchParams } from "next/navigation";
 import {
   InstantTextAreaField,
   InstantTextField,
 } from "@/utils/forms/FormElements";
-import { string as yupString, number as yupNumber, ref } from "yup";
-import { toast } from "react-toastify";
-import moment from "moment";
 import { optimisticUpdate } from "@/utils/misc";
-import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
-import { useStoreContext } from "../store";
+import {
+  ArrowTopRightOnSquareIcon,
+  PlusCircleIcon,
+  TrashIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
+import { RocketLaunchIcon } from "@heroicons/react/24/solid";
+import { Badge, Datepicker } from "flowbite-react";
+import moment from "moment";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { number as yupNumber } from "yup";
 import Header from "../components/Header";
+import { useStoreContext } from "../store";
+import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
 import NewCouponButton from "./new/button";
 import NewCouponForm from "./new/form";
-import { RocketLaunchIcon } from "@heroicons/react/24/solid";
+import { deleteCoupon, updateCoupon, type Coupons } from "./serverActions";
 
 export default function Coupons() {
   const {

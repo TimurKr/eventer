@@ -1,10 +1,10 @@
-import {
-  EventWithTickets as fetchEventsReturnType,
-  Contacts,
-} from "../serverActions";
-import { ticketSortFunction } from "../utils";
 import { Tickets } from "@/utils/supabase/database.types";
 import Fuse from "fuse.js";
+import {
+  Contacts,
+  EventWithTickets as fetchEventsReturnType,
+} from "../serverActions";
+import { ticketSortFunction } from "../utils";
 
 export type Events = fetchEventsReturnType & {
   lockedArrived: boolean;

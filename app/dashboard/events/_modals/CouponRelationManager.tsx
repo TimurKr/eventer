@@ -1,22 +1,22 @@
 "use client";
 
+import { optimisticUpdate } from "@/utils/misc";
+import { Coupons } from "@/utils/supabase/database.types";
+import {
+  TicketIcon as TicketIconOutline,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
 import { Tooltip } from "flowbite-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useStoreContext } from "../../store";
 import {
   EventWithTickets,
   fetchCoupon,
   updateTicketFields,
 } from "../serverActions";
-import Link from "next/link";
-import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
-import {
-  TicketIcon as TicketIconOutline,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import { optimisticUpdate } from "@/utils/misc";
 import CouponCodeField from "./CouponCodeField";
-import { Coupons } from "@/utils/supabase/database.types";
-import { useStoreContext } from "../../store";
 
 export default function CouponRelationManager({
   ticket,
