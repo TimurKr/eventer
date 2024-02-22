@@ -22,6 +22,7 @@ export default function EventRows({
 }) {
   return events.map((event) => (
     <button
+      key={event.id}
       type="button"
       className={`flex w-full items-center justify-between gap-x-6 rounded-lg p-2 hover:bg-slate-100 ${className}`}
       disabled={onClick ? false : true}

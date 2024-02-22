@@ -6,6 +6,7 @@ import { bulkUpdateTicketFields } from "../serverActions";
 import { useStoreContext } from "../../store";
 import { Events } from "../store/helpers";
 import EventRows from "../_components/EventRow";
+import { toast } from "react-toastify";
 
 export default function MoveTicketsToDifferentEventModal({
   event,
@@ -37,7 +38,10 @@ export default function MoveTicketsToDifferentEventModal({
           event_id: selectedEventId,
         },
       );
-      refresh();
+      await refresh();
+      toast.success("Lístky boli presunuté na inú udalosť", {
+        autoClose: 1500,
+      });
       setIsOpen(false);
     });
   };

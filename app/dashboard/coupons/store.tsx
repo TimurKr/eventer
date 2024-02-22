@@ -1,6 +1,5 @@
 import Fuse from "fuse.js";
-import { Coupons, fetchCoupons, insertCoupons } from "./serverActions";
-import { InsertCoupons } from "@/utils/supabase/database.types";
+import { Coupons, fetchCoupons } from "./serverActions";
 import moment from "moment";
 import { validateCoupon } from "./utils";
 import { createStoreSlice } from "zimmer-context";
@@ -40,7 +39,7 @@ type Actions = {
   refresh: () => Promise<void>;
   search: (term: string, allCoupons?: Coupons[]) => void;
 
-  addCoupons: (coupons: InsertCoupons[]) => Promise<void>;
+  addCoupons: (coupons: Coupons[]) => void;
   removeCoupon: (coupon: { id: Coupons["id"] }) => void;
 
   setPartialCoupon: (
@@ -89,9 +88,10 @@ const couponsSlice = createStoreSlice<State, Actions>((set, get) => ({
     }),
 
   addCoupons: async (coupons) => {
-    const r = await insertCoupons(coupons);
-    if (r.error) throw new Error(r.error.message);
-    get().refresh();
+    set((state) => {
+      state.allCoupons = [...state.allCoupons, ...coupons];
+      state.coupons = search(state.allCoupons, state.searchTerm);
+    });
   },
   removeCoupon: (coupon) => {
     set((state) => {

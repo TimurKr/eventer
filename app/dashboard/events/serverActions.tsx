@@ -121,20 +121,20 @@ export async function updateEvent(event: UpdateEvents & { id: Events["id"] }) {
 }
 
 // Change event public status
-export async function updateEventPublicStatus(
-  eventId: number,
-  isPublic: boolean,
-) {
-  const supabase = createServerSupabase(cookies());
-  const result = await supabase
-    .from("events")
-    .update({ is_public: isPublic })
-    .match({ id: eventId });
-  if (!result.error) {
-    revalidatePath("/dashboard/events");
-  }
-  return result;
-}
+// export async function updateEventPublicStatus(
+//   eventId: number,
+//   isPublic: boolean,
+// ) {
+//   const supabase = createServerSupabase(cookies());
+//   const result = await supabase
+//     .from("events")
+//     .update({ is_public: isPublic })
+//     .match({ id: eventId });
+//   if (!result.error) {
+//     revalidatePath("/dashboard/events");
+//   }
+//   return result;
+// }
 
 // Create new contacts
 // export async function bulkInsertContacts(contacts: InsertContacts[]) {
@@ -289,14 +289,14 @@ export async function deleteTickets(ticketIds: Tickets["id"][]) {
 }
 
 // Bulk delete contacts
-export async function deleteContacts(contactIDs: number[]) {
-  const supabase = createServerSupabase(cookies());
-  const res = await supabase.from("contacts").delete().in("id", contactIDs);
-  if (!res.error) {
-    revalidateTag("contacts");
-  }
-  return res;
-}
+// export async function deleteContacts(contactIDs: number[]) {
+//   const supabase = createServerSupabase(cookies());
+//   const res = await supabase.from("contacts").delete().in("id", contactIDs);
+//   if (!res.error) {
+//     revalidateTag("contacts");
+//   }
+//   return res;
+// }
 
 // Merge contacts
 // export async function mergeContacts(targetContact: Contacts) {

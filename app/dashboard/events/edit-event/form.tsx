@@ -13,6 +13,8 @@ import {
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { optimisticUpdate } from "@/utils/misc";
 
 export type EditEventFormProps = {
   eventId?: string;
@@ -22,7 +24,7 @@ export default function EditEventForm(
   props?: EditEventFormProps & { onSubmit?: () => void },
 ) {
   const {
-    events: { addEvent, setPartialEvent },
+    events: { addEvent, setPartialEvent, removeEvent },
     services: { allServices },
     event,
   } = useStoreContext((state) => ({
@@ -67,6 +69,7 @@ export default function EditEventForm(
       lockedArrived: true,
       showCancelledTickets: false,
     });
+    toast.success("Udalosť vytvorená!", { autoClose: 1500 });
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 
@@ -82,6 +85,7 @@ export default function EditEventForm(
       return;
     }
     setPartialEvent(data[0]);
+    toast.success("Udalosť upravená!", { autoClose: 1500 });
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 

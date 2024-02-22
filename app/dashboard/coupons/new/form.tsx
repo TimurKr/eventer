@@ -1,15 +1,18 @@
 "use client";
 
-import { Alert } from "flowbite-react";
-import { useState } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { useStoreContext } from "../../store";
 import { FormikTextField, SubmitButton } from "@/utils/forms/FormElements";
+import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
+import { Alert } from "flowbite-react";
 import { Form, Formik } from "formik";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import * as Yup from "yup";
-import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
+import { useStoreContext } from "../../store";
+import { insertCoupons } from "../serverActions";
+import { validateCoupon } from "../utils";
 
 export default function NewCouponForm({ onSubmit }: { onSubmit?: () => void }) {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -23,13 +26,30 @@ export default function NewCouponForm({ onSubmit }: { onSubmit?: () => void }) {
           code: uuidv4().slice(0, 8).toUpperCase(),
           amount: 100,
         }}
-        onSubmit={async (values) => {
-          try {
-            await addCoupons([{ ...values, original_amount: values.amount }]);
-          } catch (error) {
-            setErrorMessages((error as Error).message.split("\n"));
+        onSubmit={async (values, helpers) => {
+          const { data: coupons, error } = await insertCoupons([
+            { ...values, original_amount: values.amount },
+          ]);
+          if (error) {
+            if (error.message.includes("coupons_code_key")) {
+              helpers.setFieldError(
+                "code",
+                "Kód už existuje, vygenerujte nový",
+              );
+            } else {
+              setErrorMessages([error.message]);
+            }
             return;
           }
+          addCoupons(
+            coupons.map((c) => ({
+              ...c,
+              valid: validateCoupon(c),
+              created_from: [],
+              redeemed_from: [],
+            })),
+          );
+          toast.success("Kupóny boli vytvorené", { autoClose: 1500 });
           onSubmit ? onSubmit() : router.back();
         }}
         validationSchema={Yup.object().shape({

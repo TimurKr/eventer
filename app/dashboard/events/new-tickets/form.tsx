@@ -106,7 +106,9 @@ export default function NewTicketsForm({
     values: TicketOrderType,
     { setErrors }: FormikHelpers<TicketOrderType>,
   ) => {
+    // TODO: see if this whole thing could be moved to a single server action
     const { data: billingContacts, error: billingError } =
+      // ServerAction
       await bulkUpsertContacts([
         {
           name: values.billingName,
@@ -123,6 +125,7 @@ export default function NewTicketsForm({
     }
     const billingContact = billingContacts[0];
     const { data: guestContacts, error: guestsError } =
+      // ServerAction
       await bulkUpsertContacts(
         values.tickets
           .map(
@@ -142,6 +145,7 @@ export default function NewTicketsForm({
       setErrors({ tickets: "Chyba pri vytváraní kontaktov: " + guestsError });
       return;
     }
+    // ServerAction
     const { data: createdTickets, error } = await bulkInsertTickets(
       values.tickets.map((ticket) => ({
         billing_id: billingContact!.id,
@@ -164,8 +168,9 @@ export default function NewTicketsForm({
       setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
       return;
     }
-    await refresh();
+    await refresh(); // ServerAction?
     if (coupon) {
+      // ServerAction
       const couponAmountUpdate = await redeemCoupon(
         coupon.id,
         coupon.amount -

@@ -83,7 +83,6 @@ export interface Database {
           id: number;
           note: string | null;
           original_amount: number;
-          temp_id: string | null;
           valid_until: string | null;
         };
         Insert: {
@@ -95,7 +94,6 @@ export interface Database {
           id?: number;
           note?: string | null;
           original_amount: number;
-          temp_id?: string | null;
           valid_until?: string | null;
         };
         Update: {
@@ -107,7 +105,6 @@ export interface Database {
           id?: number;
           note?: string | null;
           original_amount?: number;
-          temp_id?: string | null;
           valid_until?: string | null;
         };
         Relationships: [

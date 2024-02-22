@@ -665,7 +665,8 @@ export function InstantTextField({
       refocus();
       setError(err);
       toast.error(err, {
-        autoClose: 2000,
+        closeButton: true,
+        autoClose: false,
       });
       setValue(defaultValue || "");
       return;

@@ -8,6 +8,7 @@ import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useStoreContext } from "../../store";
 import { useState, useTransition } from "react";
 import { Events } from "../store/helpers";
+import { toast } from "react-toastify";
 
 export default function ConvertToCouponModal({
   event,
@@ -81,7 +82,10 @@ export default function ConvertToCouponModal({
                   setErrorMessages(r.error.message.split("\n"));
                   return;
                 }
-                refresh();
+                await refresh();
+                toast.success("Lístky boli premenené na poukaz", {
+                  autoClose: 1500,
+                });
                 setIsOpen(false);
               });
             }}

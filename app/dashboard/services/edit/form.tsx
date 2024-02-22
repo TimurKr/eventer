@@ -1,16 +1,25 @@
 "use client";
 
-import { Alert, Tooltip } from "flowbite-react";
-import { useState } from "react";
-import { Field, FieldArray, Form, Formik } from "formik";
 import {
   CustomErrorMessage,
   FormikCheckboxField,
   FormikTextField,
   SubmitButton,
 } from "@/utils/forms/FormElements";
-import * as Yup from "yup";
+import {
+  CurrencyEuroIcon,
+  InformationCircleIcon,
+  PlusIcon,
+  TrashIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
+import { Alert, Tooltip } from "flowbite-react";
+import { Field, FieldArray, Form, Formik, FormikHelpers } from "formik";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { toast } from "react-toastify";
+import * as Yup from "yup";
 import { useStoreContext } from "../../store";
 import {
   bulkUpsertTicketTypes,
@@ -20,15 +29,6 @@ import {
   insertTicketTypes,
   updateService,
 } from "../serverActions";
-import { useRouter } from "next/navigation";
-import {
-  CurrencyEuroIcon,
-  InformationCircleIcon,
-  PlusIcon,
-  TrashIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
-import { toast } from "react-toastify";
 
 export type ServiceFormProps = {
   serviceId?: string;
@@ -67,12 +67,25 @@ export default function ServiceForm({
 
   type FormValues = Yup.InferType<typeof validationSchema>;
 
-  const create = async (values: FormValues) => {
+  const create = async (
+    values: FormValues,
+    helpers: FormikHelpers<FormValues>,
+  ) => {
     // TODO: implement transaction
     const { ticket_types: bin, ...serviceValues } = values;
     const resServices = await insertServices([serviceValues]);
     if (resServices.error) {
-      setErrorMessages(resServices.error.message.split("\n"));
+      if (
+        resServices.error.message.includes("services_unique_name_constraint")
+      ) {
+        setErrorMessages([]);
+        helpers.setFieldError(
+          "name",
+          "Už máte jedno predstavenie s týmto názvom",
+        );
+      } else {
+        setErrorMessages(resServices.error.message.split("\n"));
+      }
       return;
     }
     const resTicketTypes = await insertTicketTypes(
@@ -94,10 +107,14 @@ export default function ServiceForm({
     addServices([
       { ...resServices.data[0], ticket_types: resTicketTypes.data },
     ]);
+    toast.success("Predstavenie vytvorené!", { autoClose: 1500 });
     onSubmit ? onSubmit() : router.back();
   };
 
-  const update = async (values: FormValues) => {
+  const update = async (
+    values: FormValues,
+    helpers: FormikHelpers<FormValues>,
+  ) => {
     // TODO implement transactions
     if (!service) return;
     if (service.name !== values.name) {
@@ -141,6 +158,7 @@ export default function ServiceForm({
       id: service.id,
       ticket_types: res.data,
     });
+    toast.success("Predstavenie upravené!", { autoClose: 1500 });
     onSubmit ? onSubmit() : router.back();
   };
 
@@ -148,7 +166,7 @@ export default function ServiceForm({
     <>
       <Formik
         initialValues={
-          service !== undefined
+          (service !== undefined
             ? {
                 ...service,
                 ticket_types: service.ticket_types.map((t) => ({
@@ -167,11 +185,9 @@ export default function ServiceForm({
                     is_vip: false,
                   },
                 ],
-              }
+              }) as FormValues
         }
-        onSubmit={async (values) => {
-          service?.id ? update(values) : create(values);
-        }}
+        onSubmit={service?.id ? update : create}
         validationSchema={validationSchema}
       >
         {({ values, isSubmitting, getFieldMeta }) => (
@@ -272,6 +288,7 @@ export default function ServiceForm({
                               </td>
                               <td className="p-1 text-end">
                                 <FormikCheckboxField
+                                  vertical
                                   name={`ticket_types[${index}].is_vip`}
                                 />
                               </td>

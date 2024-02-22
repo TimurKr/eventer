@@ -234,35 +234,38 @@ function TicketRow({
               ? "bg-emerald-400 text-black"
               : "bg-gray-200 text-gray-600"
           }`}
-          onChange={async (e) => {
-            if (
-              !confirm(`Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.`)
-            )
-              return;
-            const originalType = ticket.type;
-            const originalPrice = ticket.price;
-            const type_id = parseInt(e.target.value);
-            setPartialTicket({
-              id: ticket.id,
-              type_id: type_id,
-              type: ticketTypes.find((t) => t.id == type_id)!,
-              price: ticketTypes.find((t) => t.id == type_id)!.price,
-            });
-            const r = await updateTicketFields({
-              id: ticket.id,
-              type_id: type_id,
-              price: ticketTypes.find((t) => t.id == type_id)!.price,
-            });
-            if (r.error) {
-              setPartialTicket({
-                id: ticket.id,
-                type: originalType,
-                price: originalPrice,
-              });
-              alert(r.error.message);
-              return;
-            }
-          }}
+          onChange={(e) =>
+            optimisticUpdate({
+              value: {},
+              localUpdate: () =>
+                setPartialTicket({
+                  id: ticket.id,
+                  type_id: parseInt(e.target.value),
+                  type: ticketTypes.find(
+                    (t) => t.id == parseInt(e.target.value),
+                  )!,
+                  price: ticketTypes.find(
+                    (t) => t.id == parseInt(e.target.value),
+                  )!.price,
+                }),
+              databaseUpdate: () =>
+                updateTicketFields({
+                  id: ticket.id,
+                  type_id: parseInt(e.target.value),
+                  price: ticketTypes.find(
+                    (t) => t.id == parseInt(e.target.value),
+                  )!.price,
+                }),
+              localRevert: () =>
+                setPartialTicket({
+                  id: ticket.id,
+                  type: ticket.type, //TODO: test if this is oukej, because ticket.type is changed by the time this is called
+                  price: ticket.price,
+                }),
+              confirmation: `Naozaj chcete zmeniť typ lístka? Zmení sa ním aj cena.`,
+              successMessage: "Typ lístka zmenený",
+            })
+          }
           value={ticket.type.id}
         >
           {ticketTypes.map((type) => (

@@ -1,6 +1,10 @@
 "use client";
 
-import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import {
+  MagnifyingGlassIcon,
+  RocketLaunchIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/solid";
 import { useStoreContext } from "../store";
 import {
   ArrowPathIcon,
@@ -16,16 +20,17 @@ import Loading from "./loading";
 import NewServiceButton from "./edit/button";
 import Link from "next/link";
 import Header from "../components/Header";
+import { optimisticUpdate } from "@/utils/misc";
+import ServiceForm from "./edit/form";
 
 function ServiceRow({ service }: { service: Services }) {
-  const { eventsCount, setPartialService, removeService } = useStoreContext(
-    (state) => ({
+  const { eventsCount, setPartialService, removeService, addServices } =
+    useStoreContext((state) => ({
       eventsCount: state.events.allEvents.filter(
         (e) => e.service_id == service.id,
       ),
       ...state.services,
-    }),
-  );
+    }));
 
   return (
     <li key={service.id}>
@@ -68,11 +73,15 @@ function ServiceRow({ service }: { service: Services }) {
               );
               return;
             }
-            if (!confirm("Naozaj chcete zmazať toto predstavenie?")) return;
-            const r = await deleteService(service.id);
-            if (!r.error) {
-              removeService(service.id);
-            }
+            optimisticUpdate({
+              value: {},
+              localUpdate: () => removeService(service.id),
+              databaseUpdate: () => deleteService(service.id),
+              localRevert: () => addServices([service]),
+              confirmation: "Naozaj chcete zmazať toto predstavenie?",
+              successMessage: "Predstavenie bolo vymazané",
+              loadingMessage: "Vymazávam...",
+            });
           }}
         >
           <TrashIcon className="h-5 w-5" />
@@ -105,12 +114,15 @@ export default function Services() {
             <ServiceRow key={service.id} service={service} />
           ))}
         </ul>
-      ) : isRefreshing ? (
-        <Loading />
       ) : (
-        <div className="flex flex-col items-center gap-2 p-10 text-sm text-gray-500">
-          Namáte žiadne vytvorené predstavenia
-          <NewServiceButton />
+        <div className="flex flex-col items-center p-10">
+          <RocketLaunchIcon className="w-12 text-gray-400" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Vytvorte si svoje prvé predstavenie
+          </p>
+          <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+            <ServiceForm onSubmit={() => {}} />
+          </div>
         </div>
       )}
     </>

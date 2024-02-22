@@ -43,35 +43,15 @@ export default function Coupons() {
     if (q) search(q);
   }, []);
 
-  const changeDate = async (coupon: Coupons, date: Date | null) => {
-    const toastId = toast.loading(
-      `${date ? "Aktualizujem" : "Vymazávam"} dátum platnosti`,
-    );
-    const r = await updateCoupon({
-      id: coupon.id,
-      valid_until: date?.toDateString(),
+  const changeDate = async (coupon: Coupons, date: Date | null) =>
+    optimisticUpdate({
+      value: { id: coupon.id, valid_until: date?.toDateString() || null },
+      localUpdate: setPartialCoupon,
+      databaseUpdate: updateCoupon,
+      localRevert: () => setPartialCoupon(coupon),
+      loadingMessage: `${date ? "Aktualizujem" : "Vymazávam"} dátum platnosti`,
+      successMessage: "Dátum platnosti aktualizovaný",
     });
-
-    if (r.error) {
-      toast.update(toastId, {
-        render: r.error.message,
-        type: "error",
-        closeButton: true,
-      });
-      return;
-    }
-
-    setPartialCoupon({
-      id: coupon.id,
-      valid_until: date?.toDateString(),
-    });
-    toast.update(toastId, {
-      render: "Dátum platnosti aktualizovaný",
-      type: "success",
-      isLoading: false,
-      autoClose: 1500,
-    });
-  };
 
   return (
     <>
