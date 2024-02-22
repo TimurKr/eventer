@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert } from "flowbite-react";
+import { Alert, Tooltip } from "flowbite-react";
 import { useState } from "react";
 import { Field, FieldArray, Form, Formik } from "formik";
 import {
@@ -13,7 +13,6 @@ import * as Yup from "yup";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { useStoreContext } from "../../store";
 import {
-  Services,
   bulkUpsertTicketTypes,
   deleteService,
   deleteTicketTypes,
@@ -24,13 +23,12 @@ import {
 import { useRouter } from "next/navigation";
 import {
   CurrencyEuroIcon,
-  ExclamationTriangleIcon,
+  InformationCircleIcon,
   PlusIcon,
   TrashIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
-import { on } from "events";
 
 export type ServiceFormProps = {
   serviceId?: string;
@@ -197,14 +195,29 @@ export default function ServiceForm({
                         <th className="px-2 text-start text-sm font-normal text-gray-500">
                           Názov typu
                         </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Kapacita
+                        <th className="px-2 text-sm font-normal text-gray-500">
+                          <div className="flex items-center gap-1">
+                            Kapacita
+                            <Tooltip content="Kapacita je nezáväzná, môžete ju kedykoľvek prekročiť. Nechajte prázdne pre neobmedzenú.">
+                              <InformationCircleIcon className="h-4 w-4" />
+                            </Tooltip>
+                          </div>
                         </th>
-                        <th className="px-2 text-start text-sm font-normal text-gray-500">
-                          Cena
+                        <th className="px-2 text-sm font-normal text-gray-500">
+                          <div className="flex items-center gap-1">
+                            Cena
+                            <Tooltip content="Cena je nezáväzná a pri každom lístku je viete zmeniť.">
+                              <InformationCircleIcon className="h-4 w-4" />
+                            </Tooltip>
+                          </div>
                         </th>
                         <th className="px-1 text-start text-sm font-normal text-gray-500">
-                          VIP
+                          <div className="flex items-center gap-1">
+                            VIP
+                            <Tooltip content="Iba pre vašu referenciu, aby sa vám lahšie rozlyšovalo medzi lístkami.">
+                              <InformationCircleIcon className="h-4 w-4" />
+                            </Tooltip>
+                          </div>
                         </th>
                         <th></th>
                       </tr>
@@ -257,7 +270,7 @@ export default function ServiceForm({
                                   }
                                 />
                               </td>
-                              <td className="p-1">
+                              <td className="p-1 text-end">
                                 <FormikCheckboxField
                                   name={`ticket_types[${index}].is_vip`}
                                 />

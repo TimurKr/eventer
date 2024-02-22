@@ -1,17 +1,16 @@
 "use client";
 
-import { Alert, Datepicker, Modal } from "flowbite-react";
+import { Alert, Datepicker } from "flowbite-react";
 import { useState } from "react";
 import { insertEvent, updateEvent } from "../serverActions";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { PlusIcon } from "@heroicons/react/24/solid";
 import { useStoreContext } from "../../store";
 import {
   FormikCheckboxField,
   FormikSelectField,
   SubmitButton,
 } from "@/utils/forms/FormElements";
-import { Field, FieldProps, Form, Formik } from "formik";
+import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 
