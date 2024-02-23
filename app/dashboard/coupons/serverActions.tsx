@@ -11,15 +11,15 @@ export async function fetchCoupons() {
     .from("coupons")
     .select(
       `*,
-      created_from:tickets!tickets_coupon_created_id_fkey(
+      created_from:tickets!public_tickets_coupon_created_id_fkey(
         id,
-        guest:contacts!tickets_guest_id_fkey(*),
-        billing:contacts!tickets_billing_id_fkey(*)
+        guest:contacts!public_tickets_guest_id_fkey(*),
+        billing:contacts!public_tickets_billing_id_fkey(*)
       ),
-      redeemed_from:tickets!tickets_coupon_redeemed_id_fkey(
+      redeemed_from:tickets!public_tickets_coupon_redeemed_id_fkey(
         id,
-        guest:contacts!tickets_guest_id_fkey(*),
-        billing:contacts!tickets_billing_id_fkey(*)
+        guest:contacts!public_tickets_guest_id_fkey(*),
+        billing:contacts!public_tickets_billing_id_fkey(*)
       )`,
     )
     .order("created_at", { ascending: false });

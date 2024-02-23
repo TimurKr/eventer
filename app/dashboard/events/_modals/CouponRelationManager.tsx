@@ -52,7 +52,7 @@ export default function CouponRelationManager({
         localRevert: () => setPartialTicket(ticket),
       });
     }
-  }, [selectedCoupon]);
+  }, [selectedCoupon, ticket, idKey, objectKey, setPartialTicket]);
 
   return (
     <>

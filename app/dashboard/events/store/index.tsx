@@ -19,7 +19,7 @@ type Actions = {
   search: (props?: { query?: string; allEvents?: Events[] }) => void;
 
   addEvent: (event: Events) => void;
-  removeEvent: (eventId: number) => void;
+  removeEvent: (eventId: Events["id"]) => void;
   setPartialEvent: (event: Partial<Events>) => void;
   toggleEventIsExpanded: (eventId: Events["id"]) => void;
   toggleEventShowCancelledTickets: (eventId: Events["id"]) => void;

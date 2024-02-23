@@ -30,7 +30,7 @@ export default function CouponCodeField({
         setCoupon(coupon);
       });
     }
-  }, []);
+  }, [defaultCode, setCoupon, startValidatingCoupon, validate]);
 
   return (
     <div className="relative me-auto w-40">

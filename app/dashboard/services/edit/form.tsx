@@ -52,7 +52,7 @@ export default function ServiceForm({
     ticket_types: Yup.array()
       .of(
         Yup.object().shape({
-          id: Yup.number(),
+          id: Yup.string(),
           label: Yup.string()
             .required("Názov je povinný")
             .min(3, "Zadajte aspoň 3 znaky"),

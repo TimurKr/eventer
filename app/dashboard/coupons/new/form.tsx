@@ -102,7 +102,7 @@ export default function NewCouponForm({ onSubmit }: { onSubmit?: () => void }) {
           icon={HiOutlineExclamationCircle}
         >
           {errorMessages.map((message) => (
-            <p>{message}</p>
+            <p key={message}>{message}</p>
           ))}
         </Alert>
       )}

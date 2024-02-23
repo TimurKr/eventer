@@ -225,21 +225,15 @@ function TicketRow({
               localUpdate: () =>
                 setPartialTicket({
                   id: ticket.id,
-                  type_id: parseInt(e.target.value),
-                  type: ticketTypes.find(
-                    (t) => t.id == parseInt(e.target.value),
-                  )!,
-                  price: ticketTypes.find(
-                    (t) => t.id == parseInt(e.target.value),
-                  )!.price,
+                  type_id: e.target.value,
+                  type: ticketTypes.find((t) => t.id == e.target.value)!,
+                  price: ticketTypes.find((t) => t.id == e.target.value)!.price,
                 }),
               databaseUpdate: () =>
                 updateTicketFields({
                   id: ticket.id,
-                  type_id: parseInt(e.target.value),
-                  price: ticketTypes.find(
-                    (t) => t.id == parseInt(e.target.value),
-                  )!.price,
+                  type_id: e.target.value,
+                  price: ticketTypes.find((t) => t.id == e.target.value)!.price,
                 }),
               localRevert: () =>
                 setPartialTicket({
@@ -1000,7 +994,7 @@ export default function EventsComponent() {
   const query = useSearchParams().get("query");
   useEffect(() => {
     if (query) search({ query });
-  }, []);
+  }, [search, query]);
 
   return (
     <>
