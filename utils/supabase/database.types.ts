@@ -1,20 +1,32 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export interface Database {
   public: {
     Tables: {
       businesses: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           created_at: string;
           id: string;
           name: string | null;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           created_at?: string;
           id: string;
           name?: string | null;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           created_at?: string;
           id?: string;
           name?: string | null;
@@ -31,29 +43,35 @@ export interface Database {
       };
       contacts: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           address: string;
           business_id: string;
           created_at: string;
           email: string;
-          id: number;
+          id: string;
           name: string;
           phone: string;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           address?: string;
           business_id?: string;
           created_at?: string;
           email?: string;
-          id?: number;
+          id?: string;
           name: string;
           phone?: string;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           address?: string;
           business_id?: string;
           created_at?: string;
           email?: string;
-          id?: number;
+          id?: string;
           name?: string;
           phone?: string;
         };
@@ -69,34 +87,40 @@ export interface Database {
       };
       coupons: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           amount: number;
           business_id: string;
           code: string;
-          contact_id: number | null;
+          contact_id: string | null;
           created_at: string;
-          id: number;
+          id: string;
           note: string | null;
           original_amount: number;
           valid_until: string | null;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           amount: number;
           business_id?: string;
           code: string;
-          contact_id?: number | null;
+          contact_id?: string | null;
           created_at?: string;
-          id?: number;
+          id?: string;
           note?: string | null;
           original_amount: number;
           valid_until?: string | null;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           amount?: number;
           business_id?: string;
           code?: string;
-          contact_id?: number | null;
+          contact_id?: string | null;
           created_at?: string;
-          id?: number;
+          id?: string;
           note?: string | null;
           original_amount?: number;
           valid_until?: string | null;
@@ -120,29 +144,35 @@ export interface Database {
       };
       events: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           created_at: string;
           datetime: string;
-          id: number;
+          id: string;
           is_public: boolean;
-          service_id: number;
+          service_id: string;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           created_at?: string;
           datetime: string;
-          id?: number;
+          id?: string;
           is_public?: boolean;
-          service_id: number;
+          service_id: string;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           created_at?: string;
           datetime?: string;
-          id?: number;
+          id?: string;
           is_public?: boolean;
-          service_id?: number;
+          service_id?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "events_service_id_fkey";
+            foreignKeyName: "public_events_service_id_fkey";
             columns: ["service_id"];
             isOneToOne: false;
             referencedRelation: "services";
@@ -152,21 +182,27 @@ export interface Database {
       };
       services: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           business_id: string;
           created_at: string;
-          id: number;
+          id: string;
           name: string;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           business_id?: string;
           created_at?: string;
-          id?: number;
+          id?: string;
           name: string;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           business_id?: string;
           created_at?: string;
-          id?: number;
+          id?: string;
           name?: string;
         };
         Relationships: [
@@ -181,31 +217,37 @@ export interface Database {
       };
       ticket_types: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           capacity: number | null;
           created_at: string;
-          id: number;
+          id: string;
           is_vip: boolean;
           label: string;
           price: number;
-          service_id: number;
+          service_id: string;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           capacity?: number | null;
           created_at?: string;
-          id?: number;
+          id?: string;
           is_vip?: boolean;
           label: string;
           price: number;
-          service_id: number;
+          service_id: string;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           capacity?: number | null;
           created_at?: string;
-          id?: number;
+          id?: string;
           is_vip?: boolean;
           label?: string;
           price?: number;
-          service_id?: number;
+          service_id?: string;
         };
         Relationships: [
           {
@@ -219,88 +261,94 @@ export interface Database {
       };
       tickets: {
         Row: {
+          _deleted: boolean;
+          _modified: string;
           arrived: boolean;
-          billing_id: number;
-          coupon_created_id: number | null;
-          coupon_redeemed_id: number | null;
+          billing_id: string;
+          coupon_created_id: string | null;
+          coupon_redeemed_id: string | null;
           created_at: string;
-          event_id: number;
-          guest_id: number;
+          event_id: string;
+          guest_id: string;
           id: string;
           note: string | null;
           payment_status: string;
           price: number;
-          type_id: number;
+          type_id: string;
         };
         Insert: {
+          _deleted?: boolean;
+          _modified?: string;
           arrived?: boolean;
-          billing_id: number;
-          coupon_created_id?: number | null;
-          coupon_redeemed_id?: number | null;
+          billing_id: string;
+          coupon_created_id?: string | null;
+          coupon_redeemed_id?: string | null;
           created_at?: string;
-          event_id: number;
-          guest_id: number;
+          event_id: string;
+          guest_id: string;
           id?: string;
           note?: string | null;
           payment_status?: string;
           price: number;
-          type_id: number;
+          type_id: string;
         };
         Update: {
+          _deleted?: boolean;
+          _modified?: string;
           arrived?: boolean;
-          billing_id?: number;
-          coupon_created_id?: number | null;
-          coupon_redeemed_id?: number | null;
+          billing_id?: string;
+          coupon_created_id?: string | null;
+          coupon_redeemed_id?: string | null;
           created_at?: string;
-          event_id?: number;
-          guest_id?: number;
+          event_id?: string;
+          guest_id?: string;
           id?: string;
           note?: string | null;
           payment_status?: string;
           price?: number;
-          type_id?: number;
+          type_id?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "public_tickets_type_id_fkey";
-            columns: ["type_id"];
-            isOneToOne: false;
-            referencedRelation: "ticket_types";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "tickets_billing_id_fkey";
+            foreignKeyName: "public_tickets_billing_id_fkey";
             columns: ["billing_id"];
             isOneToOne: false;
             referencedRelation: "contacts";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_coupon_created_id_fkey";
+            foreignKeyName: "public_tickets_coupon_created_id_fkey";
             columns: ["coupon_created_id"];
             isOneToOne: false;
             referencedRelation: "coupons";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_coupon_redeemed_id_fkey";
+            foreignKeyName: "public_tickets_coupon_redeemed_id_fkey";
             columns: ["coupon_redeemed_id"];
             isOneToOne: false;
             referencedRelation: "coupons";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_event_id_fkey";
+            foreignKeyName: "public_tickets_event_id_fkey";
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tickets_guest_id_fkey";
+            foreignKeyName: "public_tickets_guest_id_fkey";
             columns: ["guest_id"];
             isOneToOne: false;
             referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "public_tickets_type_id_fkey";
+            columns: ["type_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
             referencedColumns: ["id"];
           },
         ];
@@ -347,7 +395,9 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -366,7 +416,9 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -385,7 +437,9 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  PublicEnumNameOrOptions extends keyof Database["public"]["Enums"] | { schema: keyof Database },
+  PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
@@ -398,8 +452,10 @@ export type Enums<
 // Schema: public
 // Tables
 export type Businesses = Database["public"]["Tables"]["businesses"]["Row"];
-export type InsertBusinesses = Database["public"]["Tables"]["businesses"]["Insert"];
-export type UpdateBusinesses = Database["public"]["Tables"]["businesses"]["Update"];
+export type InsertBusinesses =
+  Database["public"]["Tables"]["businesses"]["Insert"];
+export type UpdateBusinesses =
+  Database["public"]["Tables"]["businesses"]["Update"];
 
 export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
 export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
@@ -418,8 +474,10 @@ export type InsertServices = Database["public"]["Tables"]["services"]["Insert"];
 export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
 
 export type TicketTypes = Database["public"]["Tables"]["ticket_types"]["Row"];
-export type InsertTicketTypes = Database["public"]["Tables"]["ticket_types"]["Insert"];
-export type UpdateTicketTypes = Database["public"]["Tables"]["ticket_types"]["Update"];
+export type InsertTicketTypes =
+  Database["public"]["Tables"]["ticket_types"]["Insert"];
+export type UpdateTicketTypes =
+  Database["public"]["Tables"]["ticket_types"]["Update"];
 
 export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
 export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];

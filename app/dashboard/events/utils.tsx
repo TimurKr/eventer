@@ -27,7 +27,7 @@ export function ticketSortFunction(
   b: TicketWitchContacts,
 ) {
   // Sort by billing name
-  if (a.billing_id !== b.billing_id) a.billing_id - b.billing_id;
+  if (a.billing_id !== b.billing_id) a.billing_id.localeCompare(b.billing_id);
   // if (a.billing != null && b.billing == null) return -1;
   // if (a.billing != null && b.billing != null) {
   //   if (a.billing.name == null && b.billing.name != null) return 1;
@@ -41,7 +41,7 @@ export function ticketSortFunction(
   if (!a.type.is_vip && b.type.is_vip) return 1;
   if (a.type.is_vip && !b.type.is_vip) return -1;
   // Sort by guest name
-  if (a.guest_id !== b.guest_id) a.guest_id - b.guest_id;
+  if (a.guest_id !== b.guest_id) a.guest_id.localeCompare(b.guest_id);
   // if (a.guest == null && b.guest != null) return 1;
   // if (a.guest != null && b.guest == null) return -1;
   // if (a.guest != null && b.guest != null) {

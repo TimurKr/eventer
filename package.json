@@ -4,6 +4,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "next lint",
     "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f"
   },
   "dependencies": {
@@ -39,6 +40,11 @@
     "autoprefixer": "^10.4.17",
     "better-supabase-types": "^2.7.1",
     "encoding": "^0.1.13",
+    "eslint": "8.56.0",
+    "eslint-config-next": "14.1.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.29.1",
     "postcss": "^8.4.33",
     "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",

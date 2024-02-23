@@ -88,7 +88,7 @@ export default function Services() {
   const q = useSearchParams().get("query");
   useEffect(() => {
     if (q) search(q);
-  }, []);
+  }, [q, search]);
 
   return (
     <>

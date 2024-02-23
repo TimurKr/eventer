@@ -81,7 +81,7 @@ export default function NewTicketsForm({
           name: Yup.string().min(2, "Zadajte aspoň 2 znaky").optional(),
           email: Yup.string().email("Zadajte platný email").optional(),
           phone: Yup.string().optional(),
-          type_id: Yup.number()
+          type_id: Yup.string()
             .oneOf(
               ticketTypes.map((t) => t.id),
               "Zadajte platnú možnosť",
@@ -350,8 +350,8 @@ export default function NewTicketsForm({
                                   getFieldHelpers(
                                     `tickets[${index}].price`,
                                   ).setValue(
-                                    ticketTypes.find((t) => t.id == parseInt(v))
-                                      ?.price || 0,
+                                    ticketTypes.find((t) => t.id == v)?.price ||
+                                      0,
                                   );
                                 }}
                               >
