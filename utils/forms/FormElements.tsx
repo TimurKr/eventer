@@ -5,11 +5,13 @@ import {
   CheckIcon,
   ChevronUpDownIcon,
   PencilIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
-import { Badge, Button, ToggleSwitch } from "flowbite-react";
+import { Badge, Button, Datepicker, ToggleSwitch } from "flowbite-react";
 import { Field, FieldMetaProps, FieldProps, useField } from "formik";
 import Fuse from "fuse.js";
+import moment from "moment";
 import { Fragment, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
@@ -143,7 +145,7 @@ export const FormikSelectField = ({
       }`}
     >
       {label && (
-        <label className="p-1 text-gray-700" htmlFor={field.name}>
+        <label className="p-1 text-sm text-gray-600" htmlFor={field.name}>
           {label}
         </label>
       )}
@@ -191,8 +193,8 @@ export const FormikCheckboxField = ({
       >
         {label && (
           <label
-            className="p-1 text-gray-700"
-            // htmlFor={props.field.name}
+            className="p-1 text-sm text-gray-600"
+            htmlFor={props.field.name}
           >
             {label}
           </label>
@@ -224,6 +226,7 @@ export function CustomComboBox<T extends {}>({
   iconEnd,
   iconStart,
   error,
+  inline = false,
 }: {
   options: T[];
   defaultValue?: T;
@@ -239,13 +242,21 @@ export function CustomComboBox<T extends {}>({
   iconEnd?: React.ReactNode;
   iconStart?: React.ReactNode;
   error?: React.ReactNode;
+  inline?: boolean;
 }) {
   const [value, setValue] = useState<T | null>(defaultValue || null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(
+    defaultValue ? displayFun(defaultValue) : "",
+  );
   const fuse = new Fuse<T>(options, {
     keys: searchKeys,
     shouldSort: true,
   });
+
+  useEffect(() => {
+    setValue(defaultValue || null);
+    setQuery(defaultValue ? displayFun(defaultValue) : "");
+  }, [defaultValue]);
 
   const filteredOptions =
     query !== ""
@@ -268,22 +279,22 @@ export function CustomComboBox<T extends {}>({
           }`}
         >
           {label && (
-            <Combobox.Label className="p-1 text-gray-700">
+            <Combobox.Label className="p-1 text-sm text-gray-600">
               {label}
             </Combobox.Label>
           )}
           <div className="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm">
             <Combobox.Input
-              className={`w-full border-none bg-transparent py-1 text-gray-900 focus:ring-0 ${
+              className={`w-full border-none bg-transparent text-gray-900 focus:ring-0 ${
                 iconStart ? "ps-7" : " ps-3"
-              } ${iconEnd ? "pe-8" : "pe-10"}`}
+              } ${iconEnd ? "pe-8" : "pe-10"} ${inline ? "py-0.5" : "py-1"}`}
               onChange={(event) => setQuery(event.target.value)}
-              displayValue={displayFun}
+              displayValue={() => query}
               autoComplete="off"
               placeholder={placeholder}
-              // onBlur={(e) => {
-              //   setQuery(value ? displayFun(value) : "");
-              // }}
+              onBlur={(e) => {
+                setQuery(value ? displayFun(value) : "");
+              }}
             />
             <div className="absolute inset-y-0 left-1 grid items-center p-1">
               {iconStart}
@@ -318,18 +329,21 @@ export function CustomComboBox<T extends {}>({
             leaveTo="opacity-0"
           >
             <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-              {query.length > 0 && newValueBuilder && (
-                <Combobox.Option
-                  value={newValueBuilder(query)}
-                  className={({ active }) =>
-                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                      active ? "bg-teal-600 text-white" : "text-gray-900"
-                    }`
-                  }
-                >
-                  Vytvoriť "{query}"
-                </Combobox.Option>
-              )}
+              {query.length > 0 &&
+                newValueBuilder &&
+                (!defaultValue || query != displayFun(defaultValue)) && (
+                  <Combobox.Option
+                    value={newValueBuilder(query)}
+                    className={({ active }) =>
+                      `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                        active ? "bg-teal-600 text-white" : "text-gray-900"
+                      }`
+                    }
+                  >
+                    {(defaultValue ? "Upraviť na " : "Vytvoriť nový kontakt ") +
+                      `"${query}"`}
+                  </Combobox.Option>
+                )}
               {filteredOptions.length === 0 ? (
                 query === "" ? (
                   <div className="relative cursor-default select-none px-4 py-2 text-gray-700">
@@ -380,6 +394,77 @@ export function CustomComboBox<T extends {}>({
         </div>
       </Combobox>
     </>
+  );
+}
+
+export function CustomDatePicker({
+  value,
+  onChange,
+  label,
+  vertical = false,
+}: {
+  value: Date | null;
+  onChange: (date: Date | null) => void;
+  label?: string;
+  vertical?: boolean;
+}) {
+  return (
+    <div
+      className={`w-full ${
+        vertical ? "" : "flex flex-row items-center justify-between gap-8"
+      }`}
+    >
+      {label && <label className="p-1 text-sm text-gray-600">{label}</label>}
+      <div className="flex w-full items-center justify-end">
+        {value ? (
+          <div className="py-0.5 w-full">
+            <Datepicker
+              language="sk-SK"
+              autoHide
+              showClearButton={false}
+              showTodayButton={false}
+              defaultDate={new Date(value)}
+              weekStart={1}
+              onSelectedDateChanged={onChange}
+              theme={{
+                root: {
+                  input: {
+                    field: {
+                      input: {
+                        base: "!py-1 text-sm text-end !px-2 font-mono w-full border-gray-200 bg-gray-50",
+                      },
+                      icon: { base: "hidden" },
+                    },
+                  },
+                },
+              }}
+            />
+            <p className="px-2 text-end text-xs text-gray-500">
+              {moment(value).endOf("day").fromNow()}
+            </p>
+          </div>
+        ) : (
+          <p className="px-2 text-gray-500">-</p>
+        )}
+        <button
+          type="button"
+          className={`p-2 transition-all text-gray-600 duration-100 hover:scale-105 ${
+            value
+              ? "hover:text-red-500 active:text-red-700"
+              : "hover:text-green-500 active:text-green-700"
+          }`}
+          onClick={() =>
+            value ? onChange(null) : onChange(moment().add(1, "month").toDate())
+          }
+        >
+          <XCircleIcon
+            className={`w-4 transition-transform ${
+              value ? "rotate-0" : "rotate-45"
+            }`}
+          />
+        </button>
+      </div>
+    </div>
   );
 }
 

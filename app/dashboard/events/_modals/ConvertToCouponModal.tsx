@@ -104,7 +104,7 @@ export default function ConvertToCouponModal({
               icon={HiOutlineExclamationCircle}
             >
               {errorMessages.map((message) => (
-                <p>{message}</p>
+                <p key={message}>{message}</p>
               ))}
             </Alert>
           )}

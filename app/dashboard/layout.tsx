@@ -64,6 +64,7 @@ export default async function DashboardLayout({
           }),
         },
         coupons: {
+          coupons: coupons.data,
           allCoupons: coupons.data,
         },
       }}

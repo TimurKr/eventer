@@ -236,7 +236,6 @@ export default function NewTicketsForm({
         <Form>
           <p className="ps-1 font-bold">Fakturčné údaje</p>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
-            {/* {getFieldMeta("billingName").value} */}
             <CustomComboBox
               options={contacts as Partial<Contacts>[]}
               displayFun={(c) => c?.name || ""}

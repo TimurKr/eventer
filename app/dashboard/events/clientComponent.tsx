@@ -364,11 +364,6 @@ function TicketRow({
             }
           />
           <LinkUnlinkContact
-            // identicalContactFound={
-            //   allContacts
-            //     .filter((c, i, a) => a.findIndex((c2) => c.id == c2.id) === i)
-            //     .filter((c) => contactsEqual(c, ticket.guest!)).length
-            // }
             groupSize={groupSize}
             ticket={ticket}
             type="guest_id"

@@ -154,6 +154,7 @@ export async function bulkUpsertContacts(contacts: InsertContacts[]) {
     .upsert(contacts, {
       onConflict: "name,email,phone,address",
       ignoreDuplicates: false,
+      defaultToNull: false,
     })
     .select();
   if (!res.error) {
@@ -351,6 +352,13 @@ export async function deleteTickets(ticketIds: Tickets["id"][]) {
 //   }
 //   return deleteQ;
 // }
+
+/**
+ * Merges a contact with another contact by updating references in related entities and deleting the original contact.
+ * @param deleteContact - The contact to be deleted.
+ * @param contactDiff - The partial contact object containing the updated contact information.
+ * @returns A promise that resolves to the result of the delete operation, or any other that failed.
+ */
 export async function mergeContacts(
   deleteContact: Contacts,
   contactDiff: Partial<Contacts>,
@@ -358,7 +366,7 @@ export async function mergeContacts(
   // TODO: implement transaction
   const supabase = createServerSupabase(cookies());
   // Fetch target contact
-  let resTarget = await supabase
+  const resTarget = await supabase
     .from("contacts")
     .select()
     .match({
@@ -385,6 +393,13 @@ export async function mergeContacts(
     .eq("guest_id", deleteContact.id);
   if (resGuest.error) {
     return resGuest;
+  }
+  const resCoupon = await supabase
+    .from("coupons")
+    .update({ contact_id: resTarget.data.id })
+    .eq("contact_id", deleteContact.id);
+  if (resCoupon.error) {
+    return resCoupon;
   }
   // Delete contact
   const resDelete = await supabase

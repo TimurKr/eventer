@@ -162,7 +162,7 @@ export default function EditEventForm(
                   icon={HiOutlineExclamationCircle}
                 >
                   {errorMessages.map((message) => (
-                    <p>{message}</p>
+                    <p key={message}>{message}</p>
                   ))}
                 </Alert>
               )}
