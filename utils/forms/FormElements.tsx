@@ -50,6 +50,7 @@ type FormikTextFieldProps = {
 };
 
 export const FormikTextField = ({
+  //TODO V2: TextField with optional Formik prop
   name,
   optional = false,
   vertical = false,
@@ -471,6 +472,8 @@ export function CustomDatePicker({
 type InstantFieldProps<T> = {
   defaultValue: T;
   placeholder?: string;
+  label?: string;
+  vertical?: boolean;
   className?: string;
   validate?: (value: T) => Promise<string | null>;
   updateDatabase: (value: T) => void | Promise<any>;
@@ -707,6 +710,8 @@ export function InstantTextField({
   type = "text",
   defaultValue,
   placeholder = " - ",
+  label,
+  vertical,
   inline = false,
   className,
   validate,
@@ -782,38 +787,45 @@ export function InstantTextField({
   };
 
   return isEditing ? (
-    <input
-      type={type}
-      className={`m-0.5 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
-        error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-      } ${inline ? "font-mono" : ""} ${className}`}
-      value={value}
-      placeholder={placeholder}
-      autoFocus={autoFocus || !showAlways}
-      size={inline ? value?.length || placeholder?.length || 3 : undefined}
-      onChange={async (e) => {
-        setValue(e.target.value);
-        if (validate) {
-          const err = await validate(e.target.value);
-          if (err) setError(err);
-          else setError(null);
-        }
-        if (inline) e.target.size = e.target.value.length || 4;
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          (e.target as HTMLInputElement).blur();
-        }
-        if (e.key === "Escape") {
-          (e.target as HTMLInputElement).value = defaultValue || "";
-          setValue(defaultValue || "");
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      onBlur={(e) => {
-        submit(e.target.value, () => e.target.focus());
-      }}
-    />
+    <div
+      className={`${
+        inline ? "inline-flex" : vertical ? "flex flex-col" : "flex"
+      } `}
+    >
+      {label && <label className="p-1 text-sm text-gray-600">{label}</label>}
+      <input
+        type={type}
+        className={`m-0.5 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
+          error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
+        } ${inline ? "font-mono" : ""} ${className}`}
+        value={value}
+        placeholder={placeholder}
+        autoFocus={autoFocus || !showAlways}
+        size={inline ? value?.length || placeholder?.length || 3 : undefined}
+        onChange={async (e) => {
+          setValue(e.target.value);
+          if (validate) {
+            const err = await validate(e.target.value);
+            if (err) setError(err);
+            else setError(null);
+          }
+          if (inline) e.target.size = e.target.value.length || 4;
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+          if (e.key === "Escape") {
+            (e.target as HTMLInputElement).value = defaultValue || "";
+            setValue(defaultValue || "");
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onBlur={(e) => {
+          submit(e.target.value, () => e.target.focus());
+        }}
+      />
+    </div>
   ) : (
     <button
       className="group flex items-center gap-2"

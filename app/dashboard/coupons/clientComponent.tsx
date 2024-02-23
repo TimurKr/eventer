@@ -300,6 +300,12 @@ export default function Coupons() {
                                   className={`w-4 transition-transform`}
                                 />
                               </button>
+                              {/* <Link
+                                href={`/dashboard/contacts/${contact.id.toString()}`}
+                                className="p-1 transition-all duration-100 hover:scale-105 hover:text-blue-500 active:text-blue-700"
+                              >
+                                <ArrowTopRightOnSquareIcon className="w-4" />
+                              </Link> */}
                             </>
                           )}
                         </div>
