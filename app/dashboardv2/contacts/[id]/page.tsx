@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import ContactDetail from "./body";
 
 export default async function Page({ params }: { params: { id: string } }) {
-  if (!params.id) redirect("/dashboard");
+  if (!params.id) redirect("/dashboardv2");
 
   return (
     <div>

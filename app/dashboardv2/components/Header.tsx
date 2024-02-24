@@ -19,7 +19,7 @@ export default function Header({
     results: number;
   };
   refresh?: {
-    refresh: () => void;
+    refresh?: () => void;
     isRefreshing: boolean;
   };
   actionButton?: React.ReactNode;
@@ -69,7 +69,7 @@ export default function Header({
               />
             </div>
           )}
-          {refresh && (
+          {refresh && (!!refresh.refresh || refresh.isRefreshing) && (
             <button
               className="flex items-center gap-2 rounded-md border border-gray-200 p-1 px-2 text-sm font-normal hover:bg-gray-100"
               onClick={refresh.refresh}
@@ -77,7 +77,7 @@ export default function Header({
               <ArrowPathIcon
                 className={`h-5 w-5 ${refresh.isRefreshing && "animate-spin"}`}
               />
-              Obnoviť
+              {refresh.refresh && "Obnoviť"}
             </button>
           )}
         </div>

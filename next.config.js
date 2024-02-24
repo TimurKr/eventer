@@ -3,6 +3,7 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
+  productionBrowserSourceMaps: true,
 };
 
 module.exports = nextConfig;

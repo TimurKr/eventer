@@ -74,7 +74,7 @@ export default function CouponRelationManager({
                     : "text-green-500 active:text-green-600"
                 }`}
                 href={{
-                  pathname: "/dashboard/coupons",
+                  pathname: "/dashboardv2/coupons",
                   query: { query: "=" + ticket[objectKey]!.code },
                 }}
               >

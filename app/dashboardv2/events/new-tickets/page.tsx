@@ -6,7 +6,7 @@ export default async function Page({
 }: {
   searchParams: { eventId: string; couponCode?: string };
 }) {
-  if (!searchParams.eventId) redirect("/dashboard/events");
+  if (!searchParams.eventId) redirect("/dashboardv2/events");
 
   return (
     <div>

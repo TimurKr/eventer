@@ -508,7 +508,7 @@ export default function Coupons() {
                             ({coupon.redeemed_from.length})
                             <Link
                               href={{
-                                pathname: "/dashboard/events",
+                                pathname: "/dashboardv2/events",
                                 query: {
                                   query:
                                     "=" +
@@ -531,7 +531,7 @@ export default function Coupons() {
                             ({coupon.created_from.length})
                             <Link
                               href={{
-                                pathname: "/dashboard/events",
+                                pathname: "/dashboardv2/events",
                                 query: {
                                   query:
                                     "=" +

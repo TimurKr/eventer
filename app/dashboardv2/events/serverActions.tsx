@@ -26,8 +26,8 @@ export async function fetchEvents() {
     .select(
       `*,
       tickets (*,
-        coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
-        coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
+        coupon_created:coupons!public_tickets_coupon_created_id_fkey(id, code),
+        coupon_redeemed:coupons!public_tickets_coupon_redeemed_id_fkey(id, code),
         type:ticket_types!public_tickets_type_id_fkey(*)
         )`,
     )
@@ -61,8 +61,8 @@ export type EventWithTickets = NonNullable<
 export async function fetchContacts() {
   const r = await createServerSupabase(cookies(), ["contacts"]).from("contacts")
     .select(`*,
-      guest_usage:tickets!tickets_guest_id_fkey(count),
-      billing_usage:tickets!tickets_billing_id_fkey(count)
+      guest_usage:tickets!public_tickets_guest_id_fkey(count),
+      billing_usage:tickets!public_tickets_billing_id_fkey(count)
       `);
   if (r.error) {
     return r;
@@ -101,7 +101,7 @@ export async function deleteEvent(eventId: number) {
   const supabase = createServerSupabase(cookies());
   const result = await supabase.from("events").delete().match({ id: eventId });
   if (!result.error) {
-    revalidatePath("/dashboard/events");
+    revalidatePath("/dashboardv2/events");
   }
   return result;
 }
@@ -131,7 +131,7 @@ export async function updateEvent(event: UpdateEvents & { id: Events["id"] }) {
 //     .update({ is_public: isPublic })
 //     .match({ id: eventId });
 //   if (!result.error) {
-//     revalidatePath("/dashboard/events");
+//     revalidatePath("/dashboardv2/events");
 //   }
 //   return result;
 // }
@@ -171,10 +171,10 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
     .insert(tickets)
     .select(
       `*,
-      billing:contacts!tickets_billing_id_fkey(*),
-      guest:contacts!tickets_guest_id_fkey(*),
-      coupon_created:coupons!tickets_coupon_created_id_fkey(id, code),
-      coupon_redeemed:coupons!tickets_coupon_redeemed_id_fkey(id, code),
+      billing:contacts!pubic_tickets_billing_id_fkey(*),
+      guest:contacts!pubic_tickets_guest_id_fkey(*),
+      coupon_created:coupons!pubic_tickets_coupon_created_id_fkey(id, code),
+      coupon_redeemed:coupons!pubic_tickets_coupon_redeemed_id_fkey(id, code),
       type:ticket_types!public_tickets_type_id_fkey(*)
       `,
     );

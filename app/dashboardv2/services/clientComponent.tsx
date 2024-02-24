@@ -1,26 +1,21 @@
 "use client";
 
-import { InstantTextField } from "@/utils/forms/FormElements";
-import { optimisticUpdate } from "@/utils/misc";
+import { Tables } from "@/utils/supabase/database.types";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
+import Fuse from "fuse.js";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { RxDocument } from "rxdb";
+import { useRxData } from "rxdb-hooks";
 import Header from "../components/Header";
-import { useStoreContext } from "../store_dep";
+import { InstantTextField } from "../utils/forms/FormElements";
 import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
-import { Services, deleteService, updateService } from "./serverActions";
 
-function ServiceRow({ service }: { service: Services }) {
-  const { eventsCount, setPartialService, removeService, addServices } =
-    useStoreContext((state) => ({
-      eventsCount: state.events.allEvents.filter(
-        (e) => e.service_id == service.id,
-      ),
-      ...state.services,
-    }));
+function ServiceRow({ service }: { service: RxDocument<Tables<"services">> }) {
+  // TODO: query the events
 
   return (
     <li key={service.id}>
@@ -28,14 +23,8 @@ function ServiceRow({ service }: { service: Services }) {
         <div>
           <InstantTextField
             defaultValue={service.name}
-            setLocalValue={(v) =>
-              setPartialService({ id: service.id, name: v || undefined })
-            }
-            updateDatabase={(v) =>
-              updateService({ id: service.id, name: v || undefined })
-            }
+            updateValue={async (name) => await service.patch({ name })}
             type="text"
-            // onBlur={() => setIsEditing(false)}
             showAlways={false}
             autoFocus
             inline
@@ -43,12 +32,11 @@ function ServiceRow({ service }: { service: Services }) {
           />
         </div>
         <div className="me-4 ms-auto text-xs text-gray-500">
-          <p>Typy lístkov: {service.ticket_types.length}</p>
-          <p>Počet udalostí: {eventsCount.length}</p>
+          <p>Počet udalostí: TODO</p>
         </div>
         <Link
           href={{
-            pathname: "/dashboard/services/edit",
+            pathname: "/dashboardv2/services/edit",
             query: { serviceId: service.id },
           }}
         >
@@ -56,23 +44,7 @@ function ServiceRow({ service }: { service: Services }) {
         </Link>
         <button
           className="transition-all hover:scale-110 hover:text-red-500"
-          onClick={async () => {
-            if (eventsCount.length > 0) {
-              alert(
-                "Nemôžete vymazať predstavenie, na ktoré existujú udalosti",
-              );
-              return;
-            }
-            optimisticUpdate({
-              value: {},
-              localUpdate: () => removeService(service.id),
-              databaseUpdate: () => deleteService(service.id),
-              localRevert: () => addServices([service]),
-              confirmation: "Naozaj chcete zmazať toto predstavenie?",
-              successMessage: "Predstavenie bolo vymazané",
-              loadingMessage: "Vymazávam...",
-            });
-          }}
+          onClick={async () => await service.remove()} // TODO disable if events already exist
         >
           <TrashIcon className="h-5 w-5" />
         </button>
@@ -82,19 +54,33 @@ function ServiceRow({ service }: { service: Services }) {
 }
 
 export default function Services() {
-  const { services, searchTerm, search, refresh, isRefreshing } =
-    useStoreContext((state) => state.services);
-
   const q = useSearchParams().get("query");
-  useEffect(() => {
-    if (q) search(q);
-  }, []);
+  const [searchTerm, search] = useState(q || "");
+
+  const { result: allServices, isFetching } = useRxData<Tables<"services">>(
+    "services",
+    useCallback(
+      (collection) =>
+        collection.find().sort({
+          name: "asc",
+        }),
+      [],
+    ),
+  );
+
+  const services = useMemo(() => {
+    if (allServices.length === 0 || searchTerm === "") return allServices;
+    const fuse = new Fuse(allServices, {
+      keys: ["name"],
+    });
+    return fuse.search(searchTerm).map((result) => result.item);
+  }, [allServices, searchTerm]);
 
   return (
     <>
       <Header
         title="Predstavenia"
-        refresh={{ refresh, isRefreshing }}
+        refresh={{ isRefreshing: isFetching }}
         search={{ search, searchTerm, results: services.length }}
         actionButton={<NewServiceButton />}
       />
@@ -108,9 +94,12 @@ export default function Services() {
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />
           <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
-            Vytvorte si svoje prvé predstavenie
+            {allServices.length === 0
+              ? "Vytvorte si svoje prvé predstavenie"
+              : "Takéto predstavenie neexistuje, chcete si také vyrobiť?"}
           </p>
           <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+            {/* TODO: Autofil the searchTerm */}
             <ServiceForm onSubmit={() => {}} />
           </div>
         </div>

@@ -24,7 +24,7 @@
     "react-icons": "^5.0.1",
     "react-toastify": "^10.0.3",
     "rxdb": "^15.9.1",
-    "rxdb-supabase": "^1.0.4",
+    "rxdb-hooks": "^5.0.2",
     "server-only": "^0.0.1",
     "typescript": "5.1.3",
     "uuid": "^9.0.1",

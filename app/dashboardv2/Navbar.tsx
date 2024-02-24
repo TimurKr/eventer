@@ -17,17 +17,17 @@ type route = {
 const routes: route[] = [
   {
     title: "Predstavenia",
-    href: "/dashboard/services",
+    href: "/dashboardv2/services",
     icon: <FaTheaterMasks className="h-5 w-5" />,
   },
   {
     title: "Udalosti",
-    href: "/dashboard/events",
+    href: "/dashboardv2/events",
     icon: <HiCalendarDays className="h-5 w-5" />,
   },
   {
     title: "Poukazy",
-    href: "/dashboard/coupons",
+    href: "/dashboardv2/coupons",
     icon: <FaTicketAlt className="h-5 w-5" />,
   },
 ];

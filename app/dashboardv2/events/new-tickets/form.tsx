@@ -201,7 +201,7 @@ export default function NewTicketsForm({
   };
 
   if (event === undefined) {
-    return redirect("/dashboard/events");
+    return redirect("/dashboardv2/events");
   }
 
   if (ticketTypes.length === 0) {

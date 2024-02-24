@@ -12,7 +12,7 @@ export default function ContactDetail({ id }: { id: string }) {
   }));
   const router = useRouter();
   if (!contact) {
-    router.replace("/dashboard"); // TODO v2: error as search param
+    router.replace("/dashboardv2"); // TODO v2: error as search param
     return null;
   }
   return (

@@ -7,7 +7,7 @@ export default function EditEventButton(params: EditEventFormProps) {
   return (
     <Link
       href={{
-        pathname: "/dashboard/events/edit-event",
+        pathname: "/dashboardv2/events/edit-event",
         query: params,
       }}
       className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm ${

@@ -7,7 +7,7 @@ export default function NewTicketsButton(params: {
   return (
     <Link
       href={{
-        pathname: "/dashboard/events/new-tickets",
+        pathname: "/dashboardv2/events/new-tickets",
         query: params,
       }}
       className="rounded-md bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600"
