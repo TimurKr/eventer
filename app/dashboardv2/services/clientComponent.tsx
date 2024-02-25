@@ -15,7 +15,13 @@ import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
 
 function ServiceRow({ service }: { service: RxDocument<Tables<"services">> }) {
-  // TODO: query the events
+  const { result: events, isFetching } = useRxData<Tables<"events">>(
+    "events",
+    useCallback(
+      (collection) => collection.find().where("service_id").eq(service.id),
+      [service.id],
+    ),
+  );
 
   return (
     <li key={service.id}>
@@ -32,7 +38,7 @@ function ServiceRow({ service }: { service: RxDocument<Tables<"services">> }) {
           />
         </div>
         <div className="me-4 ms-auto text-xs text-gray-500">
-          <p>Počet udalostí: TODO</p>
+          <p>Počet udalostí: {events.length}</p>
         </div>
         <Link
           href={{
@@ -44,7 +50,15 @@ function ServiceRow({ service }: { service: RxDocument<Tables<"services">> }) {
         </Link>
         <button
           className="transition-all hover:scale-110 hover:text-red-500"
-          onClick={async () => await service.remove()} // TODO disable if events already exist
+          onClick={async () => {
+            if (events.length > 0) {
+              console.log(
+                "Nemôžete vymazať predstavenie, ktoré už má udalosti. Vymažte najprv udalosti.",
+              );
+              return;
+            }
+            await service.remove();
+          }}
         >
           <TrashIcon className="h-5 w-5" />
         </button>
@@ -100,7 +114,7 @@ export default function Services() {
           </p>
           <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
             {/* TODO: Autofil the searchTerm */}
-            <ServiceForm onSubmit={() => {}} />
+            <ServiceForm onSubmit={() => {}} initialTitle={searchTerm} />
           </div>
         </div>
       )}

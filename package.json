@@ -5,7 +5,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f"
+    "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f",
+    "postgres-to-json": "npx pgtables2jsonschema -c ./rxdb/config.json",
+    "json-to-ts": "ts-node ./json-to-ts/index.ts -d rxdb/schemas",
+    "generate:rxdb": "npm run postgres-to-json && npm run json-to-ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
@@ -45,10 +48,13 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.29.1",
+    "jsonfile": "^6.1.0",
+    "pg-tables-to-jsonschema": "^1.1.2",
     "postcss": "^8.4.33",
     "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2"
   }
 }

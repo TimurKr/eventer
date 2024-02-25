@@ -14,28 +14,21 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Alert, Tooltip } from "flowbite-react";
-import { Field, FieldArray, Form, Formik, FormikHelpers } from "formik";
+import { Field, FieldArray, Form, Formik } from "formik";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { toast } from "react-toastify";
 import * as Yup from "yup";
 import { useStoreContext } from "../../store_dep";
-import {
-  bulkUpsertTicketTypes,
-  deleteService,
-  deleteTicketTypes,
-  insertServices,
-  insertTicketTypes,
-  updateService,
-} from "../serverActions";
 
 export type ServiceFormProps = {
   serviceId?: string;
+  initialTitle?: string;
 };
 
 export default function ServiceForm({
   serviceId,
+  initialTitle,
   onSubmit,
 }: ServiceFormProps & { onSubmit?: () => void }) {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -67,100 +60,100 @@ export default function ServiceForm({
 
   type FormValues = Yup.InferType<typeof validationSchema>;
 
-  const create = async (
-    values: FormValues,
-    helpers: FormikHelpers<FormValues>,
-  ) => {
-    // TODO: implement transaction
-    const { ticket_types: bin, ...serviceValues } = values;
-    const resServices = await insertServices([serviceValues]);
-    if (resServices.error) {
-      if (
-        resServices.error.message.includes("services_unique_name_constraint")
-      ) {
-        setErrorMessages([]);
-        helpers.setFieldError(
-          "name",
-          "Už máte jedno predstavenie s týmto názvom",
-        );
-      } else {
-        setErrorMessages(resServices.error.message.split("\n"));
-      }
-      return;
-    }
-    const resTicketTypes = await insertTicketTypes(
-      values.ticket_types.map((t) => ({
-        ...t,
-        service_id: resServices.data[0].id,
-      })),
-    );
-    if (resTicketTypes.error) {
-      const res = await deleteService(resServices.data[0].id);
-      if (res.error) {
-        console.error(res.error);
-        toast.error("Nepodarilo sa vytvoriť typy lístkov");
-        router.back();
-      }
-      setErrorMessages(resTicketTypes.error.message.split("\n"));
-      return;
-    }
-    addServices([
-      { ...resServices.data[0], ticket_types: resTicketTypes.data },
-    ]);
-    toast.success("Predstavenie vytvorené!", { autoClose: 1500 });
-    onSubmit ? onSubmit() : router.back();
-  };
+  // const create = async (
+  //   values: FormValues,
+  //   helpers: FormikHelpers<FormValues>,
+  // ) => {
+  //   // TODO: implement transaction
+  //   const { ticket_types: bin, ...serviceValues } = values;
+  //   const resServices = await insertServices([serviceValues]);
+  //   if (resServices.error) {
+  //     if (
+  //       resServices.error.message.includes("services_unique_name_constraint")
+  //     ) {
+  //       setErrorMessages([]);
+  //       helpers.setFieldError(
+  //         "name",
+  //         "Už máte jedno predstavenie s týmto názvom",
+  //       );
+  //     } else {
+  //       setErrorMessages(resServices.error.message.split("\n"));
+  //     }
+  //     return;
+  //   }
+  //   const resTicketTypes = await insertTicketTypes(
+  //     values.ticket_types.map((t) => ({
+  //       ...t,
+  //       service_id: resServices.data[0].id,
+  //     })),
+  //   );
+  //   if (resTicketTypes.error) {
+  //     const res = await deleteService(resServices.data[0].id);
+  //     if (res.error) {
+  //       console.error(res.error);
+  //       toast.error("Nepodarilo sa vytvoriť typy lístkov");
+  //       router.back();
+  //     }
+  //     setErrorMessages(resTicketTypes.error.message.split("\n"));
+  //     return;
+  //   }
+  //   addServices([
+  //     { ...resServices.data[0], ticket_types: resTicketTypes.data },
+  //   ]);
+  //   toast.success("Predstavenie vytvorené!", { autoClose: 1500 });
+  //   onSubmit ? onSubmit() : router.back();
+  // };
 
-  const update = async (
-    values: FormValues,
-    helpers: FormikHelpers<FormValues>,
-  ) => {
-    // TODO implement transactions
-    if (!service) return;
-    if (service.name !== values.name) {
-      const res = await updateService({
-        id: service.id,
-        name: values.name,
-      });
-      if (res.error) {
-        setErrorMessages(res.error.message.split("\n"));
-        return;
-      }
-      setPartialService(res.data[0]);
-    }
-    const res = await bulkUpsertTicketTypes(
-      values.ticket_types.map((t) => ({ ...t, service_id: service.id })),
-    );
-    if (res.error) {
-      setErrorMessages(res.error.message.split("\n"));
-      return;
-    }
+  // const update = async (
+  //   values: FormValues,
+  //   helpers: FormikHelpers<FormValues>,
+  // ) => {
+  //   // TODO implement transactions
+  //   if (!service) return;
+  //   if (service.name !== values.name) {
+  //     const res = await updateService({
+  //       id: service.id,
+  //       name: values.name,
+  //     });
+  //     if (res.error) {
+  //       setErrorMessages(res.error.message.split("\n"));
+  //       return;
+  //     }
+  //     setPartialService(res.data[0]);
+  //   }
+  //   const res = await bulkUpsertTicketTypes(
+  //     values.ticket_types.map((t) => ({ ...t, service_id: service.id })),
+  //   );
+  //   if (res.error) {
+  //     setErrorMessages(res.error.message.split("\n"));
+  //     return;
+  //   }
 
-    const ticketTypesToDelete = service.ticket_types
-      .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
-      .map((t) => t.id);
-    const resDelete = await deleteTicketTypes(ticketTypesToDelete);
-    if (resDelete.error) {
-      if (resDelete.error.message.includes("foreign key constraint")) {
-        setErrorMessages([
-          "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
-        ]);
-      } else {
-        setErrorMessages([
-          "Failed to delete ticketTypes: ",
-          ...resDelete.error.message.split("\n"),
-        ]);
-      }
-      refresh();
-      return;
-    }
-    setPartialService({
-      id: service.id,
-      ticket_types: res.data,
-    });
-    toast.success("Predstavenie upravené!", { autoClose: 1500 });
-    onSubmit ? onSubmit() : router.back();
-  };
+  //   const ticketTypesToDelete = service.ticket_types
+  //     .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
+  //     .map((t) => t.id);
+  //   const resDelete = await deleteTicketTypes(ticketTypesToDelete);
+  //   if (resDelete.error) {
+  //     if (resDelete.error.message.includes("foreign key constraint")) {
+  //       setErrorMessages([
+  //         "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
+  //       ]);
+  //     } else {
+  //       setErrorMessages([
+  //         "Failed to delete ticketTypes: ",
+  //         ...resDelete.error.message.split("\n"),
+  //       ]);
+  //     }
+  //     refresh();
+  //     return;
+  //   }
+  //   setPartialService({
+  //     id: service.id,
+  //     ticket_types: res.data,
+  //   });
+  //   toast.success("Predstavenie upravené!", { autoClose: 1500 });
+  //   onSubmit ? onSubmit() : router.back();
+  // };
 
   return (
     <>
@@ -175,7 +168,7 @@ export default function ServiceForm({
                 })),
               }
             : {
-                name: "",
+                name: initialTitle || "",
                 ticket_types: [
                   {
                     id: undefined,
@@ -187,7 +180,8 @@ export default function ServiceForm({
                 ],
               }) as FormValues
         }
-        onSubmit={service?.id ? update : create}
+        // onSubmit={service?.id ? update : create}
+        onSubmit={() => alert("Not implemented")}
         validationSchema={validationSchema}
       >
         {({ values, isSubmitting, getFieldMeta }) => (

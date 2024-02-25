@@ -4,11 +4,11 @@ import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import React from "react";
+import LocalDbProvider from "../../rxdb/db";
 import Navbar from "./Navbar";
 import { fetchCoupons } from "./coupons/serverActions";
 import { fetchContacts, fetchEvents } from "./events/serverActions";
 import { mergeNewEvents } from "./events/store/helpers";
-import LocalDbProvider from "./localDB";
 import { fetchServices } from "./services/serverActions";
 import { ContextProvider } from "./store_dep";
 

@@ -1,0 +1,38 @@
+{
+  "pg": {
+    "host": "aws-0-eu-central-1.pooler.supabase.com",
+    "port": 5432,
+    "database": "postgres",
+    "user": "postgres.fexmeqvoxejxnzexljdi",
+    "password": "0FYN34xsZQ5Z8hd7"
+  },
+  "input": {
+    "schemas": ["public", "auth", "extensions"],
+    "exclude": [
+      "audit_log_entries",
+      "flow_state",
+      "identities",
+      "instances",
+      "mfa_amr_claims",
+      "mfa_challenges",
+      "mfa_factors",
+      "refresh_tokens",
+      "saml_providers",
+      "saml_relay_states",
+      "schema_migrations",
+      "sessions",
+      "sso_domains",
+      "sso_providers",
+      "pg_stat_statements",
+      "pg_stat_statements_info"
+    ],
+    "include": []
+  },
+  "output": {
+    "additionalProperties": false,
+    "defaultDescription": "Missing description",
+    "indentSpaces": 2,
+    "outDir": "./rxdb/schemas",
+    "unwrap": false
+  }
+}

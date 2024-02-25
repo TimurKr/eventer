@@ -288,7 +288,7 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
 
   private watchPostgresChanges() {
     this.realtimeChannel = this.options.supabaseClient
-      .channel(`rxdb-supabase-${this.replicationIdentifierHash}`)
+      .channel(`rxdb-supabase-${this.replicationIdentifier}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: this.table },

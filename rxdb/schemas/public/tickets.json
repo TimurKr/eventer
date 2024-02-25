@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "/public/tickets.json",
+  "title": "tickets",
+  "description": "Missing description",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: gen_random_uuid()"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Missing description. Database type: timestamp with time zone. Default value: now()"
+    },
+    "price": {
+      "type": "number",
+      "description": "Missing description. Database type: real. Default value: null"
+    },
+    "payment_status": {
+      "type": "string",
+      "description": "Missing description. Database type: text. Default value: 'reserved'"
+    },
+    "note": {
+      "type": "string",
+      "description": "Missing description. Database type: text. Default value: null"
+    },
+    "arrived": {
+      "type": "boolean",
+      "description": "Missing description. Database type: boolean. Default value: false"
+    },
+    "_modified": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Missing description. Database type: timestamp with time zone. Default value: now()"
+    },
+    "_deleted": {
+      "type": "boolean",
+      "description": "Missing description. Database type: boolean. Default value: false"
+    },
+    "guest_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    },
+    "billing_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    },
+    "coupon_created_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    },
+    "coupon_redeemed_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    },
+    "type_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Missing description. Database type: uuid. Default value: null"
+    }
+  },
+  "required": [
+    "price",
+    "guest_id",
+    "billing_id",
+    "type_id",
+    "event_id"
+  ],
+  "type": "object"
+}
