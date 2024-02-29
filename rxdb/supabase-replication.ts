@@ -173,7 +173,7 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
    * Pulls all changes since the last checkpoint from supabase.
    */
   private async pullHandler(
-    lastCheckpoint: SupabaseReplicationCheckpoint,
+    lastCheckpoint: SupabaseReplicationCheckpoint | undefined,
     batchSize: number,
   ): Promise<
     ReplicationPullHandlerResult<RxDocType, SupabaseReplicationCheckpoint>
@@ -200,7 +200,7 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
     if (error) throw error;
     if (data.length == 0) {
       return {
-        checkpoint: lastCheckpoint,
+        checkpoint: lastCheckpoint || null,
         documents: [],
       };
     } else {

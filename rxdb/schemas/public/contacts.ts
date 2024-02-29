@@ -45,10 +45,9 @@ const schemaLiteral = {
   "primaryKey": "id"
 } as const;
 
-const schemaTyped = toTypedRxJsonSchema(schemaLiteral);
+export const contactsSchema = toTypedRxJsonSchema(schemaLiteral);
 
-export type ContactsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof schemaTyped>;
+export type ContactsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof contactsSchema>;
 export type ContactsDocument = RxDocument<ContactsDocumentType>;
 export type ContactsCollection = RxCollection<ContactsDocumentType>;
 
-export const contactsSchema: RxJsonSchema<ContactsDocumentType> = schemaLiteral;

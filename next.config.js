@@ -4,6 +4,7 @@ const nextConfig = {
     typedRoutes: true,
   },
   productionBrowserSourceMaps: true,
+  reactStrictMode: false,
 };
 
 module.exports = nextConfig;

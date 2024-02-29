@@ -14,17 +14,25 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Alert, Tooltip } from "flowbite-react";
-import { Field, FieldArray, Form, Formik } from "formik";
+import { Field, FieldArray, Form, Formik, useFormikContext } from "formik";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import * as Yup from "yup";
-import { useStoreContext } from "../../store_dep";
 
 export type ServiceFormProps = {
   serviceId?: string;
   initialTitle?: string;
 };
+
+function FieldSyncer({ name, value }: { name: string; value: any }) {
+  const { setFieldValue, getFieldMeta } = useFormikContext();
+  const touched = getFieldMeta(name).touched;
+  useEffect(() => {
+    if (!touched) setFieldValue(name, value);
+  }, [value, name, setFieldValue, touched]);
+  return null;
+}
 
 export default function ServiceForm({
   serviceId,
@@ -34,11 +42,23 @@ export default function ServiceForm({
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
-  const {
-    services: { addServices, allServices, setPartialService, refresh },
-    events: { allEvents },
-  } = useStoreContext((state) => state);
-  const service = allServices.find((s) => s.id.toString() == serviceId);
+  // const service = allServices.find((s) => s.id.toString() == serviceId);
+
+  // const { result: service } = useRxData<ServicesDocumentType>( // Is service a list???
+  //   "services",
+  //   useCallback((collection) => collection.findOne(serviceId), [serviceId]),
+  // );
+
+  // const { result: ticket_types } = useRxData<TicketTypesDocumentType>(
+  //   "ticket_types",
+  //   useCallback(
+  //     (collection) => collection.find().where("service_id").eq(serviceId),
+  //     [serviceId],
+  //   ),
+  // );
+
+  const service = undefined;
+  const ticket_types = [];
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("Názov je povinný"),
@@ -162,7 +182,7 @@ export default function ServiceForm({
           (service !== undefined
             ? {
                 ...service,
-                ticket_types: service.ticket_types.map((t) => ({
+                ticket_types: ticket_types.map((t) => ({
                   ...t,
                   capacity: t.capacity || undefined,
                 })),
@@ -184,7 +204,7 @@ export default function ServiceForm({
         onSubmit={() => alert("Not implemented")}
         validationSchema={validationSchema}
       >
-        {({ values, isSubmitting, getFieldMeta }) => (
+        {({ values, isSubmitting, getFieldMeta, setFieldValue }) => (
           <Form className="flex flex-col gap-2">
             <FormikTextField
               name="name"
@@ -192,6 +212,7 @@ export default function ServiceForm({
               vertical
               type="text"
             />
+            <FieldSyncer name="name" value={initialTitle} />
             <div className="flex items-center gap-6 pt-4">
               <p className="text-sm text-gray-600">Typy lístkov</p>
               <div className="h-px flex-grow bg-gray-400" />
@@ -235,18 +256,19 @@ export default function ServiceForm({
                     <tbody>
                       {values.ticket_types &&
                         values.ticket_types.map((ticket_type, index) => {
-                          const canDelete =
-                            !!serviceId &&
-                            allEvents.some(
-                              (e) =>
-                                e.service_id.toString() == serviceId &&
-                                (e.tickets.some(
-                                  (t) => t.type_id == ticket_type.id,
-                                ) ||
-                                  e.tickets.some(
-                                    (t) => t.type_id == ticket_type.id,
-                                  )),
-                            );
+                          // TODO: implement canDelete
+                          // const canDelete =
+                          //   !!serviceId &&
+                          //   allEvents.some(
+                          //     (e) =>
+                          //       e.service_id.toString() == serviceId &&
+                          //       (e.tickets.some(
+                          //         (t) => t.type_id == ticket_type.id,
+                          //       ) ||
+                          //         e.tickets.some(
+                          //           (t) => t.type_id == ticket_type.id,
+                          //         )),
+                          //   );
                           return (
                             <tr key={index}>
                               <td className="px-1">
@@ -293,11 +315,15 @@ export default function ServiceForm({
                                     className="self-center p-2 text-red-600 transition-all hover:scale-110 hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:scale-100 disabled:hover:text-gray-300"
                                     onClick={() => remove(index)}
                                     title={
-                                      canDelete
+                                      // canDelete
+                                      true
                                         ? "Nemôžete zmazať, typ je už použitý"
                                         : "Vymyzať"
                                     }
-                                    disabled={canDelete}
+                                    disabled={
+                                      // canDelete
+                                      true
+                                    }
                                   >
                                     <TrashIcon className="h-5 w-5" />
                                   </button>

@@ -57,10 +57,9 @@ const schemaLiteral = {
   "primaryKey": "id"
 } as const;
 
-const schemaTyped = toTypedRxJsonSchema(schemaLiteral);
+export const couponsSchema = toTypedRxJsonSchema(schemaLiteral);
 
-export type CouponsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof schemaTyped>;
+export type CouponsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof couponsSchema>;
 export type CouponsDocument = RxDocument<CouponsDocumentType>;
 export type CouponsCollection = RxCollection<CouponsDocumentType>;
 
-export const couponsSchema: RxJsonSchema<CouponsDocumentType> = schemaLiteral;

@@ -39,10 +39,9 @@ const schemaLiteral = {
   "primaryKey": "id"
 } as const;
 
-const schemaTyped = toTypedRxJsonSchema(schemaLiteral);
+export const eventsSchema = toTypedRxJsonSchema(schemaLiteral);
 
-export type EventsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof schemaTyped>;
+export type EventsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof eventsSchema>;
 export type EventsDocument = RxDocument<EventsDocumentType>;
 export type EventsCollection = RxCollection<EventsDocumentType>;
 
-export const eventsSchema: RxJsonSchema<EventsDocumentType> = schemaLiteral;

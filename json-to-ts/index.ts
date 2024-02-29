@@ -46,18 +46,25 @@ program
 
           const content = JSON.stringify(schema, undefined, 2);
 
-          const title = schema.title as string;
-          const Title = title.charAt(0).toUpperCase() + title.slice(1);
+          const title = (schema.title as string)
+            .split("_")
+            .map((p, i) =>
+              i === 0 ? p : p.charAt(0).toUpperCase() + p.slice(1),
+            )
+            .join("");
+          const Title = title
+            .split("_")
+            .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+            .join("");
 
           let tsContent = `import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";\n\n`;
           tsContent += `const schemaLiteral = ${content.trim()} as const;`;
           tsContent += "\n\n";
-          tsContent += `const schemaTyped = toTypedRxJsonSchema(schemaLiteral);`;
+          tsContent += `export const ${title}Schema = toTypedRxJsonSchema(schemaLiteral);`;
           tsContent += "\n\n";
-          tsContent += `export type ${Title}DocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof schemaTyped>;\n`;
+          tsContent += `export type ${Title}DocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof ${title}Schema>;\n`;
           tsContent += `export type ${Title}Document = RxDocument<${Title}DocumentType>;\n`;
           tsContent += `export type ${Title}Collection = RxCollection<${Title}DocumentType>;\n\n`;
-          tsContent += `export const ${title}Schema: RxJsonSchema<${Title}DocumentType> = schemaLiteral;\n`;
 
           const tsFilePath = path.join(
             dirPath,
