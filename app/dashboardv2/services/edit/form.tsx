@@ -5,7 +5,7 @@ import {
   FormikCheckboxField,
   FormikTextField,
   SubmitButton,
-} from "@/utils/forms/FormElements";
+} from "@/utils/forms/FormElements_dep";
 import {
   CurrencyEuroIcon,
   InformationCircleIcon,
@@ -58,7 +58,7 @@ export default function ServiceForm({
   // );
 
   const service = undefined;
-  const ticket_types = [];
+  const ticket_types: any[] = [];
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("Názov je povinný"),

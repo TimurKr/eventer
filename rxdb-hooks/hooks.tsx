@@ -1,4 +1,5 @@
 import {
+  PropsWithChildren,
   createContext,
   useContext,
   useEffect,
@@ -10,12 +11,12 @@ import { RxCollection, RxDatabase, RxQuery } from "rxdb";
 import { SupabaseReplication } from "../rxdb/supabase-replication";
 
 export function RxHookBuilder<
-  Collections extends { [P in K]: RxCollection },
-  K extends keyof Collections,
+  Collections extends { [P in CollectionKeys]: RxCollection },
+  CollectionKeys extends keyof Collections,
 >(
   dbInitializator: () => Promise<{
     db: RxDatabase<Collections>;
-    replications: { [P in K]: SupabaseReplication<any> };
+    replications: { [P in CollectionKeys]: SupabaseReplication<any> };
   }>,
 ) {
   const Context = createContext<RxDatabase<Collections> | null>(null);
@@ -24,19 +25,56 @@ export function RxHookBuilder<
 
   let dbPromise: ReturnType<typeof dbInitializator> | undefined;
 
-  function DbProvider({ children }: { children: React.ReactNode }) {
+  /**
+   * Provides a database context for the application.
+   *
+   * @param handleOffline - The callback function to handle offline events. Don't forget to use `useCallback`.
+   * @param handleOnline - The callback function to handle online events. Don't forget to use `useCallback`.
+   */
+  function DbProvider({
+    children,
+    handleOffline,
+    handleOnline,
+  }: PropsWithChildren<{
+    handleOnline?: () => any;
+    handleOffline?: () => any;
+  }>) {
     "use client";
 
     const [db, setDb] = useState<RxDatabase<Collections> | null>(null);
+    const [replications, setReplications] =
+      useState<{ [P in CollectionKeys]: SupabaseReplication<any> }>();
 
     useEffect(() => {
-      console.log("I am in the hook, should fire once");
+      function _handleOnline() {
+        console.log("Online");
+        handleOnline && handleOnline();
+        if (replications) {
+          for (const key in replications) {
+            replications[key].reSync();
+          }
+        }
+      }
+
+      function _handleOffline() {
+        handleOffline && handleOffline();
+      }
+
+      handleOnline && window.addEventListener("online", _handleOnline);
+      handleOffline && window.addEventListener("offline", _handleOffline);
+      return () => {
+        handleOnline && window.removeEventListener("online", _handleOnline);
+        handleOffline && window.removeEventListener("offline", _handleOffline);
+      };
+    }, [handleOffline, handleOnline, replications]);
+
+    useEffect(() => {
       if (!dbPromise) {
-        console.log(
-          "I am in the hoook, in the if, should really fire only once!!!",
-        );
         dbPromise = dbInitializator();
-        dbPromise.then((r) => setDb(r.db));
+        dbPromise.then((r) => {
+          setDb(r.db);
+          setReplications(r.replications);
+        });
         return () => {
           if (!dbPromise) return;
           console.log("I am canceling my subscriptions!");
@@ -47,8 +85,6 @@ export function RxHookBuilder<
           });
         };
       }
-
-      return;
     }, []);
 
     return <Context.Provider value={db}>{children}</Context.Provider>;
@@ -76,7 +112,7 @@ export function RxHookBuilder<
    * @param name The name of the collection.
    * @returns The RxCollection instance or null if the db is loading.
    */
-  function useRxCollection<Key extends keyof Collections>(
+  function useRxCollection<Key extends CollectionKeys>(
     name: Key,
   ): Collections[Key] | null {
     const [collection, setCollection] = useState<Collections[Key] | null>(null);
@@ -173,7 +209,7 @@ export function RxHookBuilder<
    * @param query The query function that takes the collection and returns an RxQuery.
    * @returns The state object containing the query result and fetch status.
    */
-  function useRxData<CollectionKey extends keyof Collections, Result>(
+  function useRxData<CollectionKey extends CollectionKeys, Result>(
     collectionKey: CollectionKey,
     queryConstructor: (
       collection: Collections[CollectionKey],
@@ -193,7 +229,7 @@ export function RxHookBuilder<
       [collection, queryConstructor],
     );
 
-    useRxQuery(_query);
+    return useRxQuery(_query);
   }
 
   return {

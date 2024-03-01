@@ -4,7 +4,7 @@ import {
   InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
-} from "@/utils/forms/FormElements";
+} from "@/utils/forms/FormElements_dep";
 import { optimisticUpdate } from "@/utils/misc";
 import {
   EllipsisHorizontalIcon,

@@ -1,37 +1,35 @@
 "use client";
 
+import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
-import { InstantTextField } from "@/utils/forms/FormElements";
+import InlineLoading from "@/utils/components/InlineLoading";
+import { TextField } from "@/utils/forms/Fields";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import Fuse from "fuse.js";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { useRxData } from "rxdb-hooks";
 import Header from "../components/Header";
-import { Tables } from "../utils/supabase/database.types";
 import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
 
 function ServiceRow({ service }: { service: ServicesDocument }) {
-  // const { result: events, isFetching } = useRxData<Tables<"events">>(
-  //   "events",
-  //   useCallback(
-  //     (collection) => collection.find().where("service_id").eq(service.id),
-  //     [service.id],
-  //   ),
-  // );
-
-  const events = [];
+  const { result: events, isFetching } = useRxData(
+    "events",
+    useCallback(
+      (collection) => collection.find().where("service_id").eq(service.id),
+      [service.id],
+    ),
+  );
 
   return (
     <li key={service.id}>
       <div className="flex items-center gap-4 py-1">
         <div>
-          <InstantTextField
+          <TextField
             defaultValue={service.name}
-            updateValue={async (name) => await service.patch({ name })}
+            updateValue={(name) => service.patch({ name: name || undefined })}
             type="text"
             showAlways={false}
             autoFocus
@@ -40,7 +38,7 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
           />
         </div>
         <div className="me-4 ms-auto text-xs text-gray-500">
-          <p>Počet udalostí: {events.length}</p>
+          {events ? <p>Počet udalostí: {events?.length}</p> : <InlineLoading />}
         </div>
         <Link
           href={{
@@ -52,8 +50,9 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
         </Link>
         <button
           className="transition-all hover:scale-110 hover:text-red-500"
+          disabled={events === undefined}
           onClick={async () => {
-            if (events.length > 0) {
+            if (events!.length > 0) {
               console.log(
                 "Nemôžete vymazať predstavenie, ktoré už má udalosti. Vymažte najprv udalosti.",
               );
@@ -73,28 +72,10 @@ export default function Page() {
   const q = useSearchParams().get("query");
   const [searchTerm, search] = useState(q || "");
 
-  const { result: allServices, isFetching } = useRxData<Tables<"services">>(
+  const { result: allServices, isFetching } = useRxData(
     "services",
-    useCallback((collection) => {
-      console.log("using collection builder", collection);
-      return collection.find();
-    }, []),
+    useCallback((collection) => collection.find().sort({ name: "asc" }), []),
   );
-
-  // const db = useRxDB();
-  // const [allServices, setAllServices] = useState<ServicesDocument[]>([]);
-  // useEffect(() => {
-  //   if (!db) return;
-  //   const myCollection = db.services;
-  //   myCollection.find({}).$.subscribe((documents) => {
-  //     console.log("query has found " + documents.length + " documents");
-  //     console.log(documents);
-  //   });
-  // .$.subscribe((services) => {
-  //   setAllServices(services);
-  // });
-  // return () => sub?.unsubscribe();
-  // }, [db]);
 
   const services = useMemo(() => {
     if (!allServices || allServices.length === 0) return [];

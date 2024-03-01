@@ -1,9 +1,7 @@
 "use client";
 
-import { initialize } from "@/rxdb/db";
-import React, { useEffect, useState } from "react";
-import { RxDatabase } from "rxdb";
-import { Provider } from "rxdb-hooks";
+import { DbProvider } from "@/rxdb/db";
+import React from "react";
 import Navbar from "./Navbar";
 
 export default function DashboardLayout({
@@ -13,16 +11,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
   modals: React.ReactNode;
 }) {
-  const [db, setDb] = useState<RxDatabase<any> | null>(null);
+  // const [db, setDb] = useState<RxDatabase<any> | null>(null);
 
-  useEffect(() => {
-    // RxDB instantiation can be asynchronous
-    initialize().then((r) => setDb(r.db));
-  }, []);
+  // useEffect(() => {
+  //   // RxDB instantiation can be asynchronous
+  //   initialize().then((r) => setDb(r.db));
+  // }, []);
+
+  // TODO: Create a toast and pass handleOnline and handleOffline to alert
 
   return (
-    // <ContextProvider>
-    <Provider db={db}>
+    <DbProvider>
+      {/* <Provider db={db}> */}
       <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
         <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
           <p className="hidden px-4 text-lg font-bold tracking-wider md:inline">
@@ -54,7 +54,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </section>
-    </Provider>
-    // </ContextProvider>
+      {/* </Provider> */}
+    </DbProvider>
   );
 }
