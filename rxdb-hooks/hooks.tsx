@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { RxCollection, RxDatabase, RxQuery } from "rxdb";
-import { SupabaseReplication } from "../rxdb-supabase/supabase-replication";
+import { RxReplicationState } from "rxdb/plugins/replication";
 
 export function RxHookBuilder<
   Collections extends { [P in CollectionKeys]: RxCollection },
@@ -16,7 +16,7 @@ export function RxHookBuilder<
 >(
   dbInitializator: () => Promise<{
     db: RxDatabase<Collections>;
-    replications: { [P in CollectionKeys]: SupabaseReplication<any> };
+    replications: { [P in CollectionKeys]: RxReplicationState<any, any> };
   }>,
 ) {
   const Context = createContext<RxDatabase<Collections> | null>(null);
@@ -28,8 +28,8 @@ export function RxHookBuilder<
   /**
    * Provides a database context for the application.
    *
-   * @param handleOffline - The callback function to handle offline events. Don't forget to use `useCallback`.
-   * @param handleOnline - The callback function to handle online events. Don't forget to use `useCallback`.
+   * @param handleOffline The callback function to handle offline events. Don't forget to use `useCallback`.
+   * @param handleOnline The callback function to handle online events. Don't forget to use `useCallback`.
    */
   function DbProvider({
     children,
@@ -43,7 +43,7 @@ export function RxHookBuilder<
 
     const [db, setDb] = useState<RxDatabase<Collections> | null>(null);
     const [replications, setReplications] =
-      useState<{ [P in CollectionKeys]: SupabaseReplication<any> }>();
+      useState<{ [P in CollectionKeys]: RxReplicationState<any, any> }>();
 
     useEffect(() => {
       function _handleOnline() {

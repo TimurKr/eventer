@@ -110,47 +110,47 @@ export class SchemaConverter {
         }
       }
 
-      // Process all the views in the schema
-      //
-      for (const view of schema.views) {
-        const viewName = view.name;
+      // // Process all the views in the schema
+      // //
+      // for (const view of schema.views) {
+      //   const viewName = view.name;
 
-        // Check if the entity is included and/or excluded
-        //
-        if (
-          this.config.input.exclude.indexOf(viewName) === -1 &&
-          (this.config.input.include.length === 0 ||
-            this.config.input.include.indexOf(viewName) !== -1)
-        ) {
-          console.warn(`Processing view ${viewName}`);
-          const jsonSchema = await this.exportEntity({
-            entity: view,
-          });
+      //   // Check if the entity is included and/or excluded
+      //   //
+      //   if (
+      //     this.config.input.exclude.indexOf(viewName) === -1 &&
+      //     (this.config.input.include.length === 0 ||
+      //       this.config.input.include.indexOf(viewName) !== -1)
+      //   ) {
+      //     console.warn(`Processing view ${viewName}`);
+      //     const jsonSchema = await this.exportEntity({
+      //       entity: view,
+      //     });
 
-          outputSchemas.push(jsonSchema);
-        }
-      }
+      //     outputSchemas.push(jsonSchema);
+      //   }
+      // }
 
-      // Process all the materialized views in the schema
-      //
-      for (const view of schema.materializedViews) {
-        const viewName = view.name;
+      // // Process all the materialized views in the schema
+      // //
+      // for (const view of schema.materializedViews) {
+      //   const viewName = view.name;
 
-        // Check if the entity is included and/or excluded
-        //
-        if (
-          this.config.input.exclude.indexOf(viewName) === -1 &&
-          (this.config.input.include.length === 0 ||
-            this.config.input.include.indexOf(viewName) !== -1)
-        ) {
-          console.warn(`Processing materialized view ${viewName}`);
-          const jsonSchema = await this.exportEntity({
-            entity: view,
-          });
+      //   // Check if the entity is included and/or excluded
+      //   //
+      //   if (
+      //     this.config.input.exclude.indexOf(viewName) === -1 &&
+      //     (this.config.input.include.length === 0 ||
+      //       this.config.input.include.indexOf(viewName) !== -1)
+      //   ) {
+      //     console.warn(`Processing materialized view ${viewName}`);
+      //     const jsonSchema = await this.exportEntity({
+      //       entity: view,
+      //     });
 
-          outputSchemas.push(jsonSchema);
-        }
-      }
+      //     outputSchemas.push(jsonSchema);
+      //   }
+      // }
     }
 
     return outputSchemas;
@@ -204,7 +204,7 @@ export class SchemaConverter {
     if (this.config.output.outDir) {
       const folderName = join(this.config.output.outDir, table.schema.name);
       await mkdirp(folderName);
-      const fileName = join(folderName, `${name}.ts`);
+      const fileName = join(folderName, `${table.name}.ts`);
 
       const Title = baseName
         .split("_")
@@ -213,7 +213,8 @@ export class SchemaConverter {
 
       const title = Title[0].toLowerCase() + Title.slice(1);
 
-      let tsContent = `import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";\n\n`;
+      let tsContent = `import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";\n`;
+      tsContent += `import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"\n\n`; //TODO: IMPORTANT - replace with correct path
       tsContent += `const schemaLiteral = ${JSON.stringify(jsonSchema, undefined, 2)} as const;`;
       tsContent += "\n\n";
       tsContent += `export const ${title}Schema = toTypedRxJsonSchema(schemaLiteral);`;
@@ -221,6 +222,14 @@ export class SchemaConverter {
       tsContent += `export type ${Title}DocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof ${title}Schema>;\n`;
       tsContent += `export type ${Title}Document = RxDocument<${Title}DocumentType>;\n`;
       tsContent += `export type ${Title}Collection = RxCollection<${Title}DocumentType>;\n\n`;
+
+      tsContent += `export type ${Title}Constraints =`;
+      for (const constraint of table.constraints) {
+        tsContent += `\n  | "${constraint.name}"`;
+      }
+      tsContent += ";\n\n";
+
+      tsContent += `export class ${Title}Replication extends SupabaseReplication<\n${Title}DocumentType,\n${Title}Constraints\n> {}`;
 
       writeFile(fileName, tsContent, (err) => {
         if (err) throw err;

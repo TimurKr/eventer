@@ -20,7 +20,10 @@ const DEFAULT_LAST_MODIFIED_FIELD = "_modified";
 const DEFAULT_DELETED_FIELD = "_deleted";
 const POSTGRES_DUPLICATE_KEY_ERROR_CODE = "23505";
 
-export type SupabaseReplicationOptions<RxDocType> = Omit<
+export type SupabaseReplicationOptions<
+  RxDocType,
+  ConstraintKeys extends string,
+> = Omit<
   // We don't support waitForLeadership. You should just run in a SharedWorker anyways, no?
   ReplicationOptions<RxDocType, any>,
   "pull" | "push" | "waitForLeadership"
@@ -47,7 +50,7 @@ export type SupabaseReplicationOptions<RxDocType> = Omit<
    * When supabase update fails, the message includes the name of the constraint that failed.
    * By providing a map between the constraints and string to display,
    */
-  constraintMap?: Record<string, string>;
+  constraintMap?: Partial<Record<ConstraintKeys, string>>;
 
   onError?: (error: Error) => void;
 
@@ -120,21 +123,23 @@ type HandlerRespnse<RxDocType> = {
  * See SupabaseReplicationOptions for the various configuration options. For a general introduction
  * to RxDB's replication protocol, see https://rxdb.info/replication.html
  */
-export class SupabaseReplication<RxDocType> extends RxReplicationState<
+export class SupabaseReplication<
   RxDocType,
-  SupabaseReplicationCheckpoint
-> {
+  ConstraintKeys extends string,
+> extends RxReplicationState<RxDocType, SupabaseReplicationCheckpoint> {
   private readonly table: string;
   private readonly primaryKey: string;
   private readonly lastModifiedFieldName: string;
-  readonly constraintMap?: Record<string, string>;
+  readonly constraintMap?: Partial<Record<ConstraintKeys, string>>;
 
   private readonly realtimeChanges: Subject<
     RxReplicationPullStreamItem<RxDocType, SupabaseReplicationCheckpoint>
   >;
   private realtimeChannel?: RealtimeChannel;
 
-  constructor(private options: SupabaseReplicationOptions<RxDocType>) {
+  constructor(
+    private options: SupabaseReplicationOptions<RxDocType, ConstraintKeys>,
+  ) {
     const realtimeChanges = new Subject<
       RxReplicationPullStreamItem<RxDocType, SupabaseReplicationCheckpoint>
     >();
@@ -335,8 +340,11 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
     if (success) return []; // Success :)
     // Fetch current state and let conflict handler resolve it.
     const masterState = await this.fetchByPrimaryKey(row.newDocumentState);
+    const error = new Error(
+      `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`, //TODO: Customize this via options
+    );
 
-    return [{ masterState, error: new Error("There") }];
+    return [{ masterState, error }];
   }
 
   /**

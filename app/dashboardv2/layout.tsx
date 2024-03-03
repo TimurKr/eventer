@@ -1,7 +1,8 @@
 "use client";
 
 import { DbProvider } from "@/rxdb/db";
-import React from "react";
+import React, { useCallback } from "react";
+import { Id, toast } from "react-toastify";
 import Navbar from "./Navbar";
 
 export default function DashboardLayout({
@@ -19,9 +20,25 @@ export default function DashboardLayout({
   // }, []);
 
   // TODO: Create a toast and pass handleOnline and handleOffline to alert
+  const offlineToastId = React.useRef<Id>();
+  const handleOffline = useCallback(
+    () =>
+      (offlineToastId.current = toast.warn(
+        "Nie ste pripojený na internet. Vaše zmeny nemusia byť uložené!",
+        { autoClose: false },
+      )),
+    [],
+  );
+  const handleOnline = useCallback(() => {
+    toast.update(offlineToastId.current!, {
+      render: "Pripojený!",
+      type: "success",
+      autoClose: 1500,
+    });
+  }, []);
 
   return (
-    <DbProvider>
+    <DbProvider handleOffline={handleOffline} handleOnline={handleOnline}>
       {/* <Provider db={db}> */}
       <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
         <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">

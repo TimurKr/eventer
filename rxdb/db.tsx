@@ -6,15 +6,17 @@ import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 
 import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";
-import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication";
 import { toast } from "react-toastify";
 import { addRxPlugin } from "rxdb";
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
 import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
-import { EventsDocument, eventsSchema } from "./schemas/public/events";
-import { ServicesDocument, servicesSchema } from "./schemas/public/services";
-import { ticketTypesSchema } from "./schemas/public/ticket_types";
+import { EventsReplication, eventsSchema } from "./schemas/public/events";
+import { ServicesReplication, servicesSchema } from "./schemas/public/services";
+import {
+  TicketTypesReplication,
+  ticketTypesSchema,
+} from "./schemas/public/ticket_types";
 
 addRxPlugin(RxDBDevModePlugin);
 addRxPlugin(RxDBQueryBuilderPlugin);
@@ -43,7 +45,6 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-
   // Remove database if there is one already, TODO: Only in development
   await removeRxDatabase("mydatabase", storage);
 
@@ -55,14 +56,14 @@ export const {
 
   const myCollections = await db.addCollections(collections);
 
+  // Create Replications with supabase
+
   const supabaseClient = createBrowserSupabase();
+  const safeUserId =
+    (await supabaseClient.auth.getUser()).data?.user?.id.replace("-", "") ||
+    "anonymous";
 
-  // TODO: Implement Error handling
-  // Provide a callback that shuold execute on errors
-  // A way of translating error messages to readable messages
-  // A way to transform back the value if constrain failed
-
-  const servicesReplication = new SupabaseReplication<ServicesDocument>({
+  const servicesReplication = new ServicesReplication({
     supabaseClient: supabaseClient,
     collection: myCollections.services,
     constraintMap: {
@@ -70,44 +71,25 @@ export const {
     },
     onError: (error) => toast.error(error.message),
     replicationIdentifier:
-      "services" +
-        process.env["NEXT_PUBLIC_SUPABASE_URL"]! +
-        (await supabaseClient.auth.getUser()).data?.user?.id?.replace(
-          "-",
-          "",
-        ) || "anonymous",
+      "services" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
     pull: {},
     push: {},
   });
 
-  // servicesReplication.error$.subscribe((error) => {
-  //   toast.error(error.message);
-  // });
-
-  const eventsReplication = new SupabaseReplication<EventsDocument>({
+  const eventsReplication = new EventsReplication({
     supabaseClient: supabaseClient,
     collection: myCollections.events,
     replicationIdentifier:
-      "events" +
-        process.env["NEXT_PUBLIC_SUPABASE_URL"]! +
-        (await supabaseClient.auth.getUser()).data?.user?.id?.replace(
-          "-",
-          "",
-        ) || "anonymous",
+      "events" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
     pull: {},
     push: {},
   });
 
-  const ticketTypesReplication = new SupabaseReplication({
+  const ticketTypesReplication = new TicketTypesReplication({
     supabaseClient: supabaseClient,
     collection: myCollections.ticket_types,
     replicationIdentifier:
-      "ticket_types" +
-        process.env["NEXT_PUBLIC_SUPABASE_URL"]! +
-        (await supabaseClient.auth.getUser()).data?.user?.id?.replace(
-          "-",
-          "",
-        ) || "anonymous",
+      "ticket_types" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
     pull: {},
     push: {},
   });

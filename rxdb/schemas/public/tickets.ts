@@ -1,66 +1,67 @@
 import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";
+import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
   "title": "tickets",
-  "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time)",
+  "description": "",
   "version": 0,
   "properties": {
     "id": {
       "maxLength": 64,
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: gen_random_uuid()",
+      "description": ". Database type: uuid. Default value: gen_random_uuid()",
       "type": "string",
       "format": "uuid"
     },
     "created_at": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: now()",
+      "description": ". Database type: timestamp with time zone. Default value: now()",
       "type": "string",
       "format": "date-time"
     },
     "price": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: real. Default value: null",
+      "description": ". Database type: real. Default value: null",
       "type": "number"
     },
     "payment_status": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: 'reserved'",
+      "description": ". Database type: text. Default value: 'reserved'",
       "type": "string",
       "default": "'reserved'"
     },
     "note": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: null",
+      "description": ". Database type: text. Default value: null",
       "type": "string"
     },
     "arrived": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: boolean. Default value: false",
+      "description": ". Database type: boolean. Default value: false",
       "type": "boolean",
       "default": "false"
     },
     "guest_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "billing_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "coupon_created_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "coupon_redeemed_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "type_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "event_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
+      "description": ". Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     }
@@ -83,3 +84,16 @@ export type TicketsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeo
 export type TicketsDocument = RxDocument<TicketsDocumentType>;
 export type TicketsCollection = RxCollection<TicketsDocumentType>;
 
+export type TicketsConstraints =
+  | "public_tickets_billing_id_fkey"
+  | "public_tickets_coupon_created_id_fkey"
+  | "public_tickets_coupon_redeemed_id_fkey"
+  | "public_tickets_event_id_fkey"
+  | "public_tickets_guest_id_fkey"
+  | "public_tickets_type_id_fkey"
+  | "tickets_pkey";
+
+export class TicketsReplication extends SupabaseReplication<
+TicketsDocumentType,
+TicketsConstraints
+> {}

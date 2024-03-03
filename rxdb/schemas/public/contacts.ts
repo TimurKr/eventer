@@ -1,42 +1,43 @@
 import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";
+import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
   "title": "contacts",
-  "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time)",
+  "description": "",
   "version": 0,
   "properties": {
     "created_at": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: now()",
+      "description": ". Database type: timestamp with time zone. Default value: now()",
       "type": "string",
       "format": "date-time"
     },
     "name": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: null",
+      "description": ". Database type: text. Default value: null",
       "type": "string"
     },
     "email": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: ''",
+      "description": ". Database type: text. Default value: ''",
       "type": "string",
       "default": "''"
     },
     "phone": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: ''",
+      "description": ". Database type: text. Default value: ''",
       "type": "string",
       "default": "''"
     },
     "address": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: ''",
+      "description": ". Database type: text. Default value: ''",
       "type": "string",
       "default": "''"
     },
     "business_id": {
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: auth.uid()",
+      "description": ". Database type: uuid. Default value: auth.uid()",
       "type": "string",
       "format": "uuid"
     },
     "id": {
       "maxLength": 64,
-      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: gen_random_uuid()",
+      "description": ". Database type: uuid. Default value: gen_random_uuid()",
       "type": "string",
       "format": "uuid"
     }
@@ -55,3 +56,12 @@ export type ContactsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<type
 export type ContactsDocument = RxDocument<ContactsDocumentType>;
 export type ContactsCollection = RxCollection<ContactsDocumentType>;
 
+export type ContactsConstraints =
+  | "contacts_pkey"
+  | "contacts_unique_constraint"
+  | "public_contacts_business_id_fkey";
+
+export class ContactsReplication extends SupabaseReplication<
+ContactsDocumentType,
+ContactsConstraints
+> {}

@@ -113,9 +113,7 @@ import { IConfiguration } from "./config";
     output: {
       outDir: options.out?.toString() || configFile.output?.outDir || "",
       defaultDescription:
-        options.desc ||
-        configFile.output?.defaultDescription ||
-        `Generated at ${new Date()}`,
+        options.desc || configFile.output?.defaultDescription || "",
       schemaVersion:
         options.schemaVersion || configFile.output?.schemaVersion || "0",
       unwrap: options.unwrap || configFile.output?.unwrap || false,
