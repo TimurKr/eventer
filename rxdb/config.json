@@ -1,11 +1,4 @@
 {
-  "pg": {
-    "host": "aws-0-eu-central-1.pooler.supabase.com",
-    "port": 5432,
-    "database": "postgres",
-    "user": "postgres.fexmeqvoxejxnzexljdi",
-    "password": "0FYN34xsZQ5Z8hd7"
-  },
   "input": {
     "schemas": ["public", "auth", "extensions"],
     "exclude": [
@@ -29,9 +22,7 @@
     "include": []
   },
   "output": {
-    "additionalProperties": false,
-    "defaultDescription": "Missing description",
-    "indentSpaces": 2,
+    "schemaVersion": 0,
     "outDir": "./rxdb/schemas",
     "unwrap": false
   }

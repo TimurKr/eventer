@@ -2,7 +2,14 @@
 
 import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
 import { Badge } from "flowbite-react";
-import { Field, FieldMetaProps, FieldProps, useField } from "formik";
+import {
+  Field,
+  FieldMetaProps,
+  FieldProps,
+  useField,
+  useFormikContext,
+} from "formik";
+import { useEffect } from "react";
 
 export function CustomErrorMessage({
   fieldMeta,
@@ -23,6 +30,21 @@ export function CustomErrorMessage({
       </>
     </p>
   );
+}
+
+export function FormikFieldSyncer({
+  name,
+  value,
+}: {
+  name: string;
+  value: any;
+}) {
+  const { setFieldValue, getFieldMeta } = useFormikContext();
+  const touched = getFieldMeta(name).touched;
+  useEffect(() => {
+    if (!touched) setFieldValue(name, value);
+  }, [value, name, setFieldValue, touched]);
+  return null;
 }
 
 type FormikTextFieldProps = {

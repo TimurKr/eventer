@@ -2,29 +2,29 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 
 const schemaLiteral = {
   "title": "businesses",
-  "description": "Missing description",
+  "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time)",
+  "version": 0,
   "properties": {
     "id": {
+      "maxLength": 64,
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: null",
-      "maxLength": 64
+      "format": "uuid"
     },
     "created_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: now()",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: now()"
+      "format": "date-time"
     },
     "name": {
-      "type": "string",
-      "description": "Missing description. Database type: text. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: null",
+      "type": "string"
     }
   },
   "required": [
     "id"
   ],
   "type": "object",
-  "version": 0,
   "primaryKey": "id"
 } as const;
 

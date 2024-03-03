@@ -3,179 +3,186 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 const schemaLiteral = {
   "title": "users",
   "description": "Auth: Stores user login data within a secure schema.",
+  "version": 0,
   "properties": {
     "instance_id": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: null"
+      "format": "uuid"
     },
     "id": {
+      "maxLength": 64,
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: null",
-      "maxLength": 64
+      "format": "uuid"
     },
     "aud": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "role": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "email": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "encrypted_password": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "email_confirmed_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "invited_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "confirmation_token": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "confirmation_sent_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "recovery_token": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "recovery_sent_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "email_change_token_new": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "email_change": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: null",
+      "type": "string"
     },
     "email_change_sent_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "last_sign_in_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "raw_app_meta_data": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: jsonb. Default value: null",
       "type": "object",
-      "properties": {},
-      "description": "Missing description. Database type: jsonb. Default value: null"
+      "properties": {}
     },
     "raw_user_meta_data": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: jsonb. Default value: null",
       "type": "object",
-      "properties": {},
-      "description": "Missing description. Database type: jsonb. Default value: null"
+      "properties": {}
     },
     "is_super_admin": {
-      "type": "boolean",
-      "description": "Missing description. Database type: boolean. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: boolean. Default value: null",
+      "type": "boolean"
     },
     "created_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "updated_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "phone": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: NULL::character varying",
       "type": "string",
-      "description": "Missing description. Database type: text. Default value: NULL::character varying"
+      "default": "NULL::character varying"
     },
     "phone_confirmed_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "phone_change": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: ''",
       "type": "string",
-      "description": "Missing description. Database type: text. Default value: ''"
+      "default": "''"
     },
     "phone_change_token": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: ''"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: ''",
+      "type": "string",
+      "default": "''"
     },
     "phone_change_sent_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "confirmed_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: LEAST(email_confirmed_at, phone_confirmed_at)",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: LEAST(email_confirmed_at, phone_confirmed_at)"
+      "format": "date-time"
     },
     "email_change_token_current": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: ''"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: ''",
+      "type": "string",
+      "default": "''"
     },
     "email_change_confirm_status": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: smallint. Default value: 0",
       "type": "integer",
-      "description": "Missing description. Database type: smallint. Default value: 0"
+      "default": "0"
     },
     "banned_until": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "reauthentication_token": {
-      "type": "string",
       "maxLength": 255,
-      "description": "Missing description. Database type: character varying. Default value: ''"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: character varying. Default value: ''",
+      "type": "string",
+      "default": "''"
     },
     "reauthentication_sent_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     },
     "is_sso_user": {
+      "description": "Auth: Set this column to true when the account comes from SSO. These accounts can have duplicate emails.. Database type: boolean. Default value: false",
       "type": "boolean",
-      "description": "Auth: Set this column to true when the account comes from SSO. These accounts can have duplicate emails.. Database type: boolean. Default value: false"
+      "default": "false"
     },
     "deleted_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: null",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: null"
+      "format": "date-time"
     }
   },
   "required": [
     "id"
   ],
   "type": "object",
-  "version": 0,
   "primaryKey": "id"
 } as const;
 

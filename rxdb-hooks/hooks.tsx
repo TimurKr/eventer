@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { RxCollection, RxDatabase, RxQuery } from "rxdb";
-import { SupabaseReplication } from "../rxdb/supabase-replication";
+import { SupabaseReplication } from "../rxdb-supabase/supabase-replication";
 
 export function RxHookBuilder<
   Collections extends { [P in CollectionKeys]: RxCollection },
@@ -179,10 +179,10 @@ export function RxHookBuilder<
    * Custom hook for executing an RxQuery and managing its state.
    *
    * @param query The RxQuery instance to execute.
-   * @returns The state object containing the query result and fetch status.
+   * @returns result - The query result, or undefined if the query is still fetching.
    */
   function useRxQuery<DocType, Result>(
-    query: RxQuery<DocType, Result, {}, any> | undefined,
+    query: RxQuery<DocType, Result, {}, any> | undefined, // TODO: add onChange argument
   ) {
     const [state, dispatch] = useReducer(reducer<Result>, {
       result: undefined,
@@ -229,7 +229,7 @@ export function RxHookBuilder<
       [collection, queryConstructor],
     );
 
-    return useRxQuery(_query);
+    return { collection, ...useRxQuery(_query) };
   }
 
   return {

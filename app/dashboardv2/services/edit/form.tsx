@@ -1,11 +1,13 @@
 "use client";
 
+import { useRxData } from "@/rxdb/db";
 import {
   CustomErrorMessage,
   FormikCheckboxField,
   FormikTextField,
   SubmitButton,
 } from "@/utils/forms/FormElements_dep";
+import { FormikFieldSyncer } from "@/utils/forms/FormikElements";
 import {
   CurrencyEuroIcon,
   InformationCircleIcon,
@@ -14,25 +16,36 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Alert, Tooltip } from "flowbite-react";
-import { Field, FieldArray, Form, Formik, useFormikContext } from "formik";
+import { Field, FieldArray, Form, Formik, FormikHelpers } from "formik";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import * as Yup from "yup";
+
+const validationSchema = Yup.object().shape({
+  name: Yup.string().required("Názov je povinný"),
+  ticket_types: Yup.array()
+    .of(
+      Yup.object().shape({
+        id: Yup.string(),
+        label: Yup.string()
+          .required("Názov je povinný")
+          .min(3, "Zadajte aspoň 3 znaky"),
+        capacity: Yup.number().integer("Zadajte celé číslo"),
+        price: Yup.number().required("Cena je povinná"),
+        is_vip: Yup.boolean(),
+      }),
+    )
+    .min(1, "Musíte mať aspoň 1 typ lístka")
+    .required("Musíte mať aspoň 1 typ lístka"),
+});
+
+type FormValues = Yup.InferType<typeof validationSchema>;
 
 export type ServiceFormProps = {
   serviceId?: string;
   initialTitle?: string;
 };
-
-function FieldSyncer({ name, value }: { name: string; value: any }) {
-  const { setFieldValue, getFieldMeta } = useFormikContext();
-  const touched = getFieldMeta(name).touched;
-  useEffect(() => {
-    if (!touched) setFieldValue(name, value);
-  }, [value, name, setFieldValue, touched]);
-  return null;
-}
 
 export default function ServiceForm({
   serviceId,
@@ -42,164 +55,130 @@ export default function ServiceForm({
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
-  // const service = allServices.find((s) => s.id.toString() == serviceId);
+  const { result: service, collection: servicesCollection } = useRxData(
+    "services",
+    useCallback((collection) => collection.findOne(serviceId), [serviceId]),
+  );
 
-  // const { result: service } = useRxData<ServicesDocumentType>( // Is service a list???
-  //   "services",
-  //   useCallback((collection) => collection.findOne(serviceId), [serviceId]),
-  // );
+  const { result: ticket_types, collection: ticketTypesCollection } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) => collection.find().where("service_id").eq(serviceId),
+      [serviceId],
+    ),
+  );
 
-  // const { result: ticket_types } = useRxData<TicketTypesDocumentType>(
-  //   "ticket_types",
-  //   useCallback(
-  //     (collection) => collection.find().where("service_id").eq(serviceId),
-  //     [serviceId],
-  //   ),
-  // );
+  const initialValues: FormValues = {
+    name: service?.name || initialTitle || "",
+    ticket_types: ticket_types?.map((tt) => ({
+      ...tt,
+      capacity: tt.capacity || undefined,
+    })) || [
+      {
+        id: undefined,
+        label: "Standard",
+        price: 20,
+        capacity: 100,
+        is_vip: false,
+      },
+    ],
+  };
 
-  const service = undefined;
-  const ticket_types: any[] = [];
+  const create = async (
+    values: FormValues,
+    helpers: FormikHelpers<FormValues>,
+  ) => {
+    if (!servicesCollection || !ticketTypesCollection) {
+      console.error("Collections not found");
+      return;
+    }
 
-  const validationSchema = Yup.object().shape({
-    name: Yup.string().required("Názov je povinný"),
-    ticket_types: Yup.array()
-      .of(
-        Yup.object().shape({
-          id: Yup.number(),
-          label: Yup.string()
-            .required("Názov je povinný")
-            .min(3, "Zadajte aspoň 3 znaky"),
-          capacity: Yup.number().integer("Zadajte celé číslo").nullable(),
-          price: Yup.number().required("Cena je povinná"),
-          is_vip: Yup.boolean(),
-        }),
-      )
-      .min(1, "Musíte mať aspoň 1 typ lístka")
-      .required("Musíte mať aspoň 1 typ lístka"),
-  });
+    const { ticket_types: bin, ...serviceValues } = values;
+    const newService = await servicesCollection.insert(serviceValues); // TODO: implement error handling
+    const newTicketTypes = await ticketTypesCollection.bulkInsert(
+      // TODO: implement error handling
+      values.ticket_types.map((t) => ({
+        ...t,
+        service_id: newService.id!,
+      })),
+    );
+    onSubmit ? onSubmit() : router.back();
+  };
 
-  type FormValues = Yup.InferType<typeof validationSchema>;
+  const update = async (
+    values: FormValues,
+    helpers: FormikHelpers<FormValues>,
+  ) => {
+    // TODO implement transactions
+    if (!service) {
+      console.error("Service is undefined");
+      return;
+    }
 
-  // const create = async (
-  //   values: FormValues,
-  //   helpers: FormikHelpers<FormValues>,
-  // ) => {
-  //   // TODO: implement transaction
-  //   const { ticket_types: bin, ...serviceValues } = values;
-  //   const resServices = await insertServices([serviceValues]);
-  //   if (resServices.error) {
-  //     if (
-  //       resServices.error.message.includes("services_unique_name_constraint")
-  //     ) {
-  //       setErrorMessages([]);
-  //       helpers.setFieldError(
-  //         "name",
-  //         "Už máte jedno predstavenie s týmto názvom",
-  //       );
-  //     } else {
-  //       setErrorMessages(resServices.error.message.split("\n"));
-  //     }
-  //     return;
-  //   }
-  //   const resTicketTypes = await insertTicketTypes(
-  //     values.ticket_types.map((t) => ({
-  //       ...t,
-  //       service_id: resServices.data[0].id,
-  //     })),
-  //   );
-  //   if (resTicketTypes.error) {
-  //     const res = await deleteService(resServices.data[0].id);
-  //     if (res.error) {
-  //       console.error(res.error);
-  //       toast.error("Nepodarilo sa vytvoriť typy lístkov");
-  //       router.back();
-  //     }
-  //     setErrorMessages(resTicketTypes.error.message.split("\n"));
-  //     return;
-  //   }
-  //   addServices([
-  //     { ...resServices.data[0], ticket_types: resTicketTypes.data },
-  //   ]);
-  //   toast.success("Predstavenie vytvorené!", { autoClose: 1500 });
-  //   onSubmit ? onSubmit() : router.back();
-  // };
+    if (!servicesCollection) {
+      console.error("servicesCollection is undefined");
+      return;
+    }
 
-  // const update = async (
-  //   values: FormValues,
-  //   helpers: FormikHelpers<FormValues>,
-  // ) => {
-  //   // TODO implement transactions
-  //   if (!service) return;
-  //   if (service.name !== values.name) {
-  //     const res = await updateService({
-  //       id: service.id,
-  //       name: values.name,
-  //     });
-  //     if (res.error) {
-  //       setErrorMessages(res.error.message.split("\n"));
-  //       return;
-  //     }
-  //     setPartialService(res.data[0]);
-  //   }
-  //   const res = await bulkUpsertTicketTypes(
-  //     values.ticket_types.map((t) => ({ ...t, service_id: service.id })),
-  //   );
-  //   if (res.error) {
-  //     setErrorMessages(res.error.message.split("\n"));
-  //     return;
-  //   }
+    if (!ticketTypesCollection) {
+      console.error("ticketTypesCollection is undefined");
+      return;
+    }
 
-  //   const ticketTypesToDelete = service.ticket_types
-  //     .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
-  //     .map((t) => t.id);
-  //   const resDelete = await deleteTicketTypes(ticketTypesToDelete);
-  //   if (resDelete.error) {
-  //     if (resDelete.error.message.includes("foreign key constraint")) {
-  //       setErrorMessages([
-  //         "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
-  //       ]);
-  //     } else {
-  //       setErrorMessages([
-  //         "Failed to delete ticketTypes: ",
-  //         ...resDelete.error.message.split("\n"),
-  //       ]);
-  //     }
-  //     refresh();
-  //     return;
-  //   }
-  //   setPartialService({
-  //     id: service.id,
-  //     ticket_types: res.data,
-  //   });
-  //   toast.success("Predstavenie upravené!", { autoClose: 1500 });
-  //   onSubmit ? onSubmit() : router.back();
-  // };
+    if (!ticket_types) {
+      console.error("ticket_types is undefined");
+      return;
+    }
+
+    await service.incrementalPatch({ name: values.name });
+
+    await ticketTypesCollection.bulkRemove(
+      ticket_types
+        .filter((tt) => !values.ticket_types.some((t) => t.id === tt.id))
+        .map((tt) => tt.id!),
+    );
+
+    const deleteTicketTypes = async (ids: string[]) => {
+      // TODO: Implement the logic to delete ticket types with the given ids
+    };
+
+    await deleteTicketTypes(ticketTypesToDeleteIds);
+
+    ticketTypesCollection.bulkUpsert(
+      values.ticket_types.map((t) => ({ ...t, service_id: service.id })),
+    );
+
+    // const ticketTypesToDelete = service.ticket_types
+    //   .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
+    //   .map((t) => t.id);
+    // const resDelete = await deleteTicketTypes(ticketTypesToDelete);
+    // if (resDelete.error) {
+    //   if (resDelete.error.message.includes("foreign key constraint")) {
+    //     setErrorMessages([
+    //       "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
+    //     ]);
+    //   } else {
+    //     setErrorMessages([
+    //       "Failed to delete ticketTypes: ",
+    //       ...resDelete.error.message.split("\n"),
+    //     ]);
+    //   }
+    //   refresh();
+    //   return;
+    // }
+    // setPartialService({
+    //   id: service.id,
+    //   ticket_types: res.data,
+    // });
+    // toast.success("Predstavenie upravené!", { autoClose: 1500 });
+    onSubmit ? onSubmit() : router.back();
+  };
 
   return (
     <>
       <Formik
-        initialValues={
-          (service !== undefined
-            ? {
-                ...service,
-                ticket_types: ticket_types.map((t) => ({
-                  ...t,
-                  capacity: t.capacity || undefined,
-                })),
-              }
-            : {
-                name: initialTitle || "",
-                ticket_types: [
-                  {
-                    id: undefined,
-                    label: "Standard",
-                    price: 20,
-                    capacity: 100,
-                    is_vip: false,
-                  },
-                ],
-              }) as FormValues
-        }
+        initialValues={initialValues}
+        enableReinitialize
         // onSubmit={service?.id ? update : create}
         onSubmit={() => alert("Not implemented")}
         validationSchema={validationSchema}
@@ -212,7 +191,7 @@ export default function ServiceForm({
               vertical
               type="text"
             />
-            <FieldSyncer name="name" value={initialTitle} />
+            <FormikFieldSyncer name="name" value={initialTitle} />
             <div className="flex items-center gap-6 pt-4">
               <p className="text-sm text-gray-600">Typy lístkov</p>
               <div className="h-px flex-grow bg-gray-400" />

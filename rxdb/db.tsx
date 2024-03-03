@@ -6,17 +6,15 @@ import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 
 import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";
-import { SupabaseReplication } from "@/rxdb/supabase-replication";
+import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication";
+import { toast } from "react-toastify";
 import { addRxPlugin } from "rxdb";
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
 import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { EventsDocument, eventsSchema } from "./schemas/public/events";
 import { ServicesDocument, servicesSchema } from "./schemas/public/services";
-import {
-  TicketTypesDocument,
-  ticketTypesSchema,
-} from "./schemas/public/ticket_types";
+import { ticketTypesSchema } from "./schemas/public/ticket_types";
 
 addRxPlugin(RxDBDevModePlugin);
 addRxPlugin(RxDBQueryBuilderPlugin);
@@ -59,9 +57,18 @@ export const {
 
   const supabaseClient = createBrowserSupabase();
 
+  // TODO: Implement Error handling
+  // Provide a callback that shuold execute on errors
+  // A way of translating error messages to readable messages
+  // A way to transform back the value if constrain failed
+
   const servicesReplication = new SupabaseReplication<ServicesDocument>({
     supabaseClient: supabaseClient,
     collection: myCollections.services,
+    constraintMap: {
+      services_unique_name_constraint: "Už máte predstavenie s týmto názvom",
+    },
+    onError: (error) => toast.error(error.message),
     replicationIdentifier:
       "services" +
         process.env["NEXT_PUBLIC_SUPABASE_URL"]! +
@@ -72,6 +79,10 @@ export const {
     pull: {},
     push: {},
   });
+
+  // servicesReplication.error$.subscribe((error) => {
+  //   toast.error(error.message);
+  // });
 
   const eventsReplication = new SupabaseReplication<EventsDocument>({
     supabaseClient: supabaseClient,
@@ -87,7 +98,7 @@ export const {
     push: {},
   });
 
-  const ticketTypesReplication = new SupabaseReplication<TicketTypesDocument>({
+  const ticketTypesReplication = new SupabaseReplication({
     supabaseClient: supabaseClient,
     collection: myCollections.ticket_types,
     replicationIdentifier:

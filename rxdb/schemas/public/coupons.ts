@@ -2,58 +2,59 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 
 const schemaLiteral = {
   "title": "coupons",
-  "description": "Missing description",
+  "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time)",
+  "version": 0,
   "properties": {
     "created_at": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: timestamp with time zone. Default value: now()",
       "type": "string",
-      "format": "date-time",
-      "description": "Missing description. Database type: timestamp with time zone. Default value: now()"
+      "format": "date-time"
     },
     "amount": {
-      "type": "number",
-      "description": "Missing description. Database type: real. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: real. Default value: null",
+      "type": "number"
     },
     "code": {
-      "type": "string",
-      "description": "Missing description. Database type: text. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: null",
+      "type": "string"
     },
     "valid_until": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: date. Default value: null",
       "type": "string",
-      "format": "date",
-      "description": "Missing description. Database type: date. Default value: null"
+      "format": "date"
     },
     "original_amount": {
-      "type": "number",
-      "description": "Missing description. Database type: real. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: real. Default value: null",
+      "type": "number"
     },
     "note": {
-      "type": "string",
-      "description": "Missing description. Database type: text. Default value: null"
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: text. Default value: null",
+      "type": "string"
     },
     "business_id": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: auth.uid()",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: auth.uid()"
+      "format": "uuid"
     },
     "contact_id": {
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: null"
+      "format": "uuid"
     },
     "id": {
+      "maxLength": 64,
+      "description": "Generated at Sun Mar 03 2024 15:33:36 GMT+0100 (Central European Standard Time). Database type: uuid. Default value: gen_random_uuid()",
       "type": "string",
-      "format": "uuid",
-      "description": "Missing description. Database type: uuid. Default value: gen_random_uuid()",
-      "maxLength": 64
+      "format": "uuid"
     }
   },
   "required": [
     "amount",
     "code",
-    "original_amount"
+    "original_amount",
+    "id"
   ],
   "type": "object",
-  "version": 0,
   "primaryKey": "id"
 } as const;
 

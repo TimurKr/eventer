@@ -81,7 +81,7 @@ export default function NewTicketsForm({
           name: Yup.string().min(2, "Zadajte aspoň 2 znaky").optional(),
           email: Yup.string().email("Zadajte platný email").optional(),
           phone: Yup.string().optional(),
-          type_id: Yup.number()
+          type_id: Yup.string()
             .oneOf(
               ticketTypes.map((t) => t.id),
               "Zadajte platnú možnosť",

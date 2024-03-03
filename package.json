@@ -6,15 +6,15 @@
     "start": "next start",
     "lint": "next lint",
     "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f",
-    "postgres-to-json": "bun run pgtables2jsonschema -c ./rxdb/config.json",
-    "json-to-ts": "bun ./json-to-ts/index.ts -d rxdb/schemas",
-    "generate:rxdb": "bun run postgres-to-json && bun run json-to-ts"
+    "generate:schemas": "ts-node rxdb-supabase/cli.ts -c ./rxdb/config.json"
   },
   "dependencies": {
+    "@commander-js/extra-typings": "^12.0.1",
     "@headlessui/react": "^1.7.18",
     "@heroicons/react": "^2.1.1",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "^2.39.7",
+    "commander": "^12.0.0",
     "flowbite": "^2.2.1",
     "flowbite-react": "^0.7.2",
     "formik": "^2.4.5",
@@ -35,7 +35,10 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",
+    "@types/jsonfile": "^6.1.4",
+    "@types/lodash": "^4.14.202",
     "@types/node": "20.3.1",
+    "@types/prompts": "^2.4.9",
     "@types/react": "^18.2.58",
     "@types/react-dom": "18.2.5",
     "@types/uuid": "^9.0.8",

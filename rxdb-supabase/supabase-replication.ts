@@ -1,8 +1,13 @@
-import { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
+import {
+  PostgrestError,
+  RealtimeChannel,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import {
   ReplicationOptions,
   ReplicationPullHandlerResult,
   ReplicationPullOptions,
+  ReplicationPushHandler,
   ReplicationPushOptions,
   RxReplicationPullStreamItem,
   RxReplicationWriteToMasterRow,
@@ -15,7 +20,11 @@ const DEFAULT_LAST_MODIFIED_FIELD = "_modified";
 const DEFAULT_DELETED_FIELD = "_deleted";
 const POSTGRES_DUPLICATE_KEY_ERROR_CODE = "23505";
 
-export type SupabaseReplicationOptions<RxDocType> = {
+export type SupabaseReplicationOptions<RxDocType> = Omit<
+  // We don't support waitForLeadership. You should just run in a SharedWorker anyways, no?
+  ReplicationOptions<RxDocType, any>,
+  "pull" | "push" | "waitForLeadership"
+> & {
   /**
    * The SupabaseClient to replicate with.
    */
@@ -33,6 +42,14 @@ export type SupabaseReplicationOptions<RxDocType> = {
    */
   // TODO: Support composite primary keys.
   primaryKey?: string;
+
+  /**
+   * When supabase update fails, the message includes the name of the constraint that failed.
+   * By providing a map between the constraints and string to display,
+   */
+  constraintMap?: Record<string, string>;
+
+  onError?: (error: Error) => void;
 
   /**
    * Options for pulling data from supabase. Set to {} to pull with the default
@@ -64,7 +81,7 @@ export type SupabaseReplicationOptions<RxDocType> = {
    * options, as no data will be pushed if the field is absent.
    */
   // TODO: enable custom batch size (currently always one row at a time)
-  push?: Omit<ReplicationPushOptions<RxDocType>, "handler" | "batchSize"> & {
+  push?: Omit<ReplicationPushOptions<RxDocType>, "handler"> & {
     /**
      * Handler for pushing row updates to supabase. Must return true iff the UPDATE was
      * applied to the supabase table. Returning false signalises a write conflict, in
@@ -79,11 +96,7 @@ export type SupabaseReplicationOptions<RxDocType> = {
       row: RxReplicationWriteToMasterRow<RxDocType>,
     ) => Promise<boolean>;
   };
-} & Omit<
-  // We don't support waitForLeadership. You should just run in a SharedWorker anyways, no?
-  ReplicationOptions<RxDocType, any>,
-  "pull" | "push" | "waitForLeadership"
->;
+};
 
 /**
  * The checkpoint stores until which point the client and supabse have been synced.
@@ -95,6 +108,11 @@ export interface SupabaseReplicationCheckpoint {
   modified: string;
   primaryKeyValue: string | number;
 }
+
+type HandlerRespnse<RxDocType> = {
+  masterState: WithDeleted<RxDocType>;
+  error: Error | PostgrestError;
+}[];
 
 /**
  * Replicates the local RxDB database with the given Supabase client.
@@ -109,6 +127,7 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
   private readonly table: string;
   private readonly primaryKey: string;
   private readonly lastModifiedFieldName: string;
+  readonly constraintMap?: Record<string, string>;
 
   private readonly realtimeChanges: Subject<
     RxReplicationPullStreamItem<RxDocType, SupabaseReplicationCheckpoint>
@@ -131,7 +150,6 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
       },
       options.push && {
         ...options.push,
-        batchSize: 1, // TODO: support batch insertion
         handler: (rows) => this.pushHandler(rows),
       },
       typeof options.live === "undefined" ? true : options.live,
@@ -144,6 +162,7 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
       options.primaryKey || options.collection.schema.primaryPath;
     this.lastModifiedFieldName =
       options.pull?.lastModifiedField || DEFAULT_LAST_MODIFIED_FIELD;
+    this.constraintMap = options.constraintMap;
 
     if (this.autoStart) {
       this.start();
@@ -214,56 +233,126 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
   /**
    * Pushes local changes to supabase.
    */
-  private async pushHandler(
-    rows: RxReplicationWriteToMasterRow<RxDocType>[],
-  ): Promise<WithDeleted<RxDocType>[]> {
-    if (rows.length != 1) throw new Error("Invalid batch size");
-    const row = rows[0];
-    //console.debug("Pushing changes...", row.newDocumentState)
-    return row.assumedMasterState
-      ? this.handleUpdate(row)
-      : this.handleInsertion(row.newDocumentState);
+  private pushHandler: ReplicationPushHandler<RxDocType> = async (rows) => {
+    const updateRows = rows.filter((row) => !!row.assumedMasterState);
+    const insertRows = rows.filter((row) => !row.assumedMasterState);
+
+    const bulkInsertPromise = this.bulkInsertHandler(insertRows);
+    const bulkUpdatePromise = this.bulkUpdateHandler(updateRows);
+
+    const errors = (
+      await Promise.all([bulkInsertPromise, bulkUpdatePromise])
+    ).flat();
+
+    if (errors.length === 0) {
+      return []; // Success :)
+    }
+
+    // Emit errors so the client can display them to user
+    errors.forEach((error) =>
+      this.options.onError?.(
+        error.error instanceof Error
+          ? error.error
+          : new Error(error.error.message),
+      ),
+    );
+
+    return errors.map((error) => error.masterState);
+  };
+
+  /**
+   * Inserts new row into supabase.
+   *
+   * @returns void if no error, on error an object The error should be later
+   * safelly emitted to the client and local state should be resolved based
+   * on the current master state.
+   */
+  private async insertHandler(
+    row: RxReplicationWriteToMasterRow<RxDocType>,
+  ): Promise<HandlerRespnse<RxDocType>> {
+    const { error } = await this.options.supabaseClient
+      .from(this.table)
+      .insert(row.newDocumentState);
+
+    if (!error) {
+      return []; // Success :)
+    }
+    // Fetch the actual master
+    const masterState = await this.fetchByPrimaryKey(row.newDocumentState);
+    const errorMessage = this.mapError(error);
+
+    return [{ masterState: masterState, error: errorMessage }];
   }
 
   /**
-   * Tries to insert a new row. Returns the current state of the row in case of a conflict.
+   * Bulk inserts new rows into supabase.
+   * @returns The current master state of all conflicting writes, so that they can be resolved on the client.
    */
-  private async handleInsertion(
-    doc: WithDeleted<RxDocType>,
-  ): Promise<WithDeleted<RxDocType>[]> {
+  private async bulkInsertHandler(
+    rows: RxReplicationWriteToMasterRow<RxDocType>[],
+  ): Promise<HandlerRespnse<RxDocType>> {
+    if (rows.length === 0) return [];
+
+    if (rows.length === 1) {
+      return await this.insertHandler(rows[0]);
+    }
+
     const { error } = await this.options.supabaseClient
       .from(this.table)
-      .insert(doc);
+      .insert(rows.map((r) => r.newDocumentState));
+
     if (!error) {
       return []; // Success :)
-    } else if (error.code == POSTGRES_DUPLICATE_KEY_ERROR_CODE) {
-      // The row was already inserted. Fetch current state and let conflict handler resolve it.
-      return [await this.fetchByPrimaryKey((doc as any)[this.primaryKey])];
-    } else {
-      throw error;
     }
+
+    const masterStates = await this.fetchByPrimaryKeys(
+      rows.map((r) => r.newDocumentState),
+    );
+    const errorMessage = this.mapError(error);
+    return masterStates.map((masterState) => ({
+      masterState,
+      error: errorMessage,
+    }));
   }
 
   /**
    * Updates a row in supabase if all fields match the local state. Otherwise, the current
    * state is fetched and passed to the conflict handler.
    */
-  private async handleUpdate(
+  private async updateHandler(
     row: RxReplicationWriteToMasterRow<RxDocType>,
-  ): Promise<WithDeleted<RxDocType>[]> {
+  ): Promise<HandlerRespnse<RxDocType>> {
     const updateHandler =
       this.options.push?.updateHandler || this.defaultUpdateHandler.bind(this);
-    if (await updateHandler(row)) return []; // Success :)
+    let success = false;
+    try {
+      success = await updateHandler(row);
+    } catch (err: any) {
+      const masterState = await this.fetchByPrimaryKey(row.newDocumentState);
+      const error = this.mapError(err);
+      return [{ masterState, error }];
+    }
+    if (success) return []; // Success :)
     // Fetch current state and let conflict handler resolve it.
-    return [
-      await this.fetchByPrimaryKey(
-        (row.newDocumentState as any)[this.primaryKey],
-      ),
-    ];
+    const masterState = await this.fetchByPrimaryKey(row.newDocumentState);
+
+    return [{ masterState, error: new Error("There") }];
+  }
+
+  /**
+   * Updates all rows in parrallel and returns the errors and master states of conficts
+   */
+  private async bulkUpdateHandler(
+    rows: RxReplicationWriteToMasterRow<RxDocType>[],
+  ): Promise<HandlerRespnse<RxDocType>> {
+    const updatePromises = rows.map((row) => this.updateHandler(row));
+    return (await Promise.all(updatePromises)).flat();
   }
 
   /**
    * Updates the row only if all database fields match the expected state.
+   * Throws error on any error
+   * @returns bool if update updated exactly one row
    */
   private async defaultUpdateHandler(
     row: RxReplicationWriteToMasterRow<RxDocType>,
@@ -273,10 +362,10 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
       .update(row.newDocumentState, { count: "exact" });
     Object.entries(row.assumedMasterState!).forEach(([field, value]) => {
       const type = typeof value;
-      if (type === "string" || type === "number") {
-        query = query.eq(field, value);
-      } else if (type === "boolean" || value === null) {
+      if (type === "boolean" || value === null) {
         query = query.is(field, value);
+      } else if (type === "string" || type === "number") {
+        query = query.eq(field, value);
       } else {
         throw new Error(`replicateSupabase: Unsupported field of type ${type}`);
       }
@@ -304,17 +393,50 @@ export class SupabaseReplication<RxDocType> extends RxReplicationState<
       .subscribe();
   }
 
+  /**
+   * Maps a PostgrestError to an Error or PostgrestError based on the provided constraint map.
+   * If the error message contains a constraint from the map, it returns a new Error with the corresponding constraint message.
+   * If the error code is a duplicate key error, it returns a new Error with the message "Duplicate key".
+   * Otherwise, it returns the original PostgrestError.
+   *
+   * @param error - The PostgrestError to be mapped.
+   * @returns The mapped Error or PostgrestError.
+   */
+  private mapError(error: PostgrestError): Error | PostgrestError {
+    if (this.constraintMap) {
+      for (const constraint in this.constraintMap) {
+        if (error.message.toLowerCase().includes(constraint.toLowerCase()))
+          return new Error(this.constraintMap[constraint]);
+      }
+    }
+    return error;
+  }
+
   private async fetchByPrimaryKey(
-    primaryKeyValue: any,
+    row: RxDocType,
   ): Promise<WithDeleted<RxDocType>> {
     const { data, error } = await this.options.supabaseClient
       .from(this.table)
       .select()
-      .eq(this.primaryKey, primaryKeyValue)
-      .limit(1);
+      .eq(this.primaryKey, (row as any)[this.primaryKey]);
     if (error) throw error;
-    if (data.length != 1) throw new Error("No row with given primary key");
+    if (data.length === 0) throw new Error("No row with given primary key"); //TODO maybe insert it with _deleted?
     return this.rowToRxDoc(data[0]);
+  }
+
+  private async fetchByPrimaryKeys(
+    rows: RxDocType[],
+  ): Promise<WithDeleted<RxDocType>[]> {
+    const { data, error } = await this.options.supabaseClient
+      .from(this.table)
+      .select()
+      .in(
+        this.primaryKey,
+        rows.map((r) => (r as any)[this.primaryKey]),
+      );
+    if (error) throw error;
+    if (data.length === 0) throw new Error("No row with given primary key"); //TODO maybe insert it with _deleted?
+    return data.map((row) => this.rowToRxDoc(row));
   }
 
   private rowToRxDoc(row: any): WithDeleted<RxDocType> {
