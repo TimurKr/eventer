@@ -38,32 +38,38 @@ const schemaLiteral = {
     "guest_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "contacts"
     },
     "billing_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "contacts"
     },
     "coupon_created_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "coupons"
     },
     "coupon_redeemed_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "coupons"
     },
     "type_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "ticket_types"
     },
     "event_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "events"
     }
   },
   "required": [

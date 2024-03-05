@@ -35,12 +35,14 @@ const schemaLiteral = {
     "business_id": {
       "description": "Database type: uuid. Default value: auth.uid()",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "businesses"
     },
     "contact_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "contacts"
     },
     "id": {
       "maxLength": 64,

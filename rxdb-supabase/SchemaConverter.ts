@@ -193,6 +193,19 @@ export class SchemaConverter {
             : undefined,
       };
 
+      if (column.referencedColumns.length === 1) {
+        jsonSchema.properties[column.name].ref =
+          column.referencedColumns[0].entity?.name.replace(
+            `${table.schema.name}_`,
+            "",
+          );
+      } else if (column.referencedColumns.length > 1) {
+        // Log error
+        console.warn(
+          `WARNING: Column ${column.name} in table ${table.name} has more than one reference. We will not include the ref field`,
+        );
+      }
+
       // Check if the column is required
       //
       if (column.notNull && !column.default) {

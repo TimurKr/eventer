@@ -17,6 +17,7 @@ import {
   TicketTypesReplication,
   ticketTypesSchema,
 } from "./schemas/public/ticket_types";
+import { TicketsReplication, ticketsSchema } from "./schemas/public/tickets";
 
 addRxPlugin(RxDBDevModePlugin);
 addRxPlugin(RxDBQueryBuilderPlugin);
@@ -31,6 +32,9 @@ const collections = {
   },
   ticket_types: {
     schema: ticketTypesSchema,
+  },
+  tickets: {
+    schema: ticketsSchema,
   },
 } satisfies Record<string, RxCollectionCreator>;
 
@@ -98,12 +102,24 @@ export const {
     push: {},
   });
 
+  const ticketsReplication = new TicketsReplication({
+    supabaseClient: supabaseClient,
+    collection: myCollections.tickets,
+    replicationIdentifier:
+      "tickets" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
+    pull: {},
+    push: {},
+  });
+
   return {
     db,
     replications: {
       services: servicesReplication,
       events: eventsReplication,
       ticket_types: ticketTypesReplication,
+      tickets: ticketsReplication,
     },
   };
 });

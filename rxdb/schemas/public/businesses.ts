@@ -10,7 +10,8 @@ const schemaLiteral = {
       "maxLength": 64,
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "users"
     },
     "created_at": {
       "description": "Database type: timestamp with time zone. Default value: now()",

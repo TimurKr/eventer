@@ -24,7 +24,8 @@ const schemaLiteral = {
     "service_id": {
       "description": "Database type: uuid. Default value: null",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "ref": "services"
     },
     "id": {
       "maxLength": 64,
