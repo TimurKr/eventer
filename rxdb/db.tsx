@@ -45,7 +45,7 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-  // Remove database if there is one already, TODO: Only in development
+  // Remove database if there is one already, TODO: Not working, hot reloads still creates a new one
   await removeRxDatabase("mydatabase", storage);
 
   // Create your database
@@ -57,7 +57,6 @@ export const {
   const myCollections = await db.addCollections(collections);
 
   // Create Replications with supabase
-
   const supabaseClient = createBrowserSupabase();
   const safeUserId =
     (await supabaseClient.auth.getUser()).data?.user?.id.replace("-", "") ||
@@ -69,9 +68,10 @@ export const {
     constraintMap: {
       services_unique_name_constraint: "Už máte predstavenie s týmto názvom",
     },
-    onError: (error) => toast.error(error.message),
     replicationIdentifier:
       "services" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
     pull: {},
     push: {},
   });
@@ -81,6 +81,8 @@ export const {
     collection: myCollections.events,
     replicationIdentifier:
       "events" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
     pull: {},
     push: {},
   });
@@ -90,6 +92,8 @@ export const {
     collection: myCollections.ticket_types,
     replicationIdentifier:
       "ticket_types" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
     pull: {},
     push: {},
   });

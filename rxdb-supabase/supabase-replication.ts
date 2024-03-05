@@ -1,5 +1,6 @@
 import {
   PostgrestError,
+  REALTIME_CHANNEL_STATES,
   RealtimeChannel,
   SupabaseClient,
 } from "@supabase/supabase-js";
@@ -48,11 +49,34 @@ export type SupabaseReplicationOptions<
 
   /**
    * When supabase update fails, the message includes the name of the constraint that failed.
-   * By providing a map between the constraints and string to display,
+   * By providing a map between the constraints and string to display, you can display a
+   * custom error message to the user.
    */
   constraintMap?: Partial<Record<ConstraintKeys, string>>;
 
+  /**
+   * Provide a callback to run on every emitted error. This is useful for displaying
+   * error massages to the user.
+   */
   onError?: (error: Error) => void;
+
+  /**
+   * How long after user swithces tabs should the subscription to Postgres changes be cancelled.
+   * After the tab is reopened, the replication will be re-synced and resubscribed automatically.
+   * Set as `false` to disable, but be carefull, the connection will close automatically anyways
+   * and this will disable the resubcription and re-syncing.
+   *
+   * @default 30000
+   */
+  unsubscribeAfter?: number | false;
+
+  /**
+   * When the master state is not what rxdb expected, this message will be emmited. You can
+   * listen to the errors$ observable ot provide a the `onError` callback.
+   *
+   * @default "Conflict with the server. Overwriting local changes."
+   */
+  conflictErrorMessage?: string;
 
   /**
    * Options for pulling data from supabase. Set to {} to pull with the default
@@ -83,7 +107,6 @@ export type SupabaseReplicationOptions<
    * Options for pushing data to supabase. Set to {} to push with the default
    * options, as no data will be pushed if the field is absent.
    */
-  // TODO: enable custom batch size (currently always one row at a time)
   push?: Omit<ReplicationPushOptions<RxDocType>, "handler"> & {
     /**
      * Handler for pushing row updates to supabase. Must return true iff the UPDATE was
@@ -130,7 +153,7 @@ export class SupabaseReplication<
   private readonly table: string;
   private readonly primaryKey: string;
   private readonly lastModifiedFieldName: string;
-  readonly constraintMap?: Partial<Record<ConstraintKeys, string>>;
+  private cancelTimeoutID: NodeJS.Timeout | undefined;
 
   private readonly realtimeChanges: Subject<
     RxReplicationPullStreamItem<RxDocType, SupabaseReplicationCheckpoint>
@@ -167,7 +190,11 @@ export class SupabaseReplication<
       options.primaryKey || options.collection.schema.primaryPath;
     this.lastModifiedFieldName =
       options.pull?.lastModifiedField || DEFAULT_LAST_MODIFIED_FIELD;
-    this.constraintMap = options.constraintMap;
+    this.options.unsubscribeAfter = options.unsubscribeAfter ?? 30000;
+    this.options.conflictErrorMessage =
+      options.conflictErrorMessage ||
+      "Conflict with the server. Overwriting local changes.";
+    // this.constraintMap = options.constraintMap;
 
     if (this.autoStart) {
       this.start();
@@ -181,16 +208,56 @@ export class SupabaseReplication<
       (this.options.pull.realtimePostgresChanges ||
         typeof this.options.pull.realtimePostgresChanges === "undefined")
     ) {
-      this.watchPostgresChanges();
+      document.addEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange.bind(this),
+      );
+      this.subscribeToPostgresChanges();
     }
     return super.start();
   }
 
   public override async cancel(): Promise<any> {
     if (this.realtimeChannel) {
+      document.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange.bind(this),
+      );
       return Promise.all([super.cancel(), this.realtimeChannel.unsubscribe()]);
     }
     return super.cancel();
+  }
+
+  /**
+   * Handles the change in visibility. On start, an `eventListener` is added to the document
+   * that calls this function. It unsubscribes from the channel after a given timeout specified
+   * by the `options.unsubscribeAfter` property. If the user comes back before, it cancels
+   * the timeout, if after, it resyncs and resubscribes.
+   */
+  private handleVisibilityChange() {
+    if (!this.options.unsubscribeAfter) return;
+    if (document.visibilityState === "hidden") {
+      if (this.cancelTimeoutID) {
+        clearTimeout(this.cancelTimeoutID);
+      }
+      this.cancelTimeoutID = setTimeout(
+        this.unsubscribeFromPostgresChanges.bind(this),
+        this.options.unsubscribeAfter,
+      );
+    } else {
+      if (this.cancelTimeoutID) {
+        clearTimeout(this.cancelTimeoutID);
+        this.cancelTimeoutID = undefined;
+      }
+      if (this.realtimeChannel?.state === REALTIME_CHANNEL_STATES.closed) {
+        document.removeEventListener(
+          "visibilitychange",
+          this.handleVisibilityChange.bind(this),
+        );
+        this.reSync();
+        this.subscribeToPostgresChanges();
+      }
+    }
   }
 
   /**
@@ -218,7 +285,6 @@ export class SupabaseReplication<
       .order(this.lastModifiedFieldName)
       .order(this.primaryKey)
       .limit(batchSize);
-    //console.debug("Pulling changes since", lastCheckpoint?.modified, "with query", (query as any)['url'].toString())
 
     const { data, error } = await query;
     if (error) throw error;
@@ -340,9 +406,7 @@ export class SupabaseReplication<
     if (success) return []; // Success :)
     // Fetch current state and let conflict handler resolve it.
     const masterState = await this.fetchByPrimaryKey(row.newDocumentState);
-    const error = new Error(
-      `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`, //TODO: Customize this via options
-    );
+    const error = new Error(this.options.conflictErrorMessage!);
 
     return [{ masterState, error }];
   }
@@ -383,7 +447,8 @@ export class SupabaseReplication<
     return count == 1;
   }
 
-  private watchPostgresChanges() {
+  private subscribeToPostgresChanges() {
+    if (this.realtimeChannel?.state === REALTIME_CHANNEL_STATES.joined) return;
     this.realtimeChannel = this.options.supabaseClient
       .channel(`rxdb-supabase-${this.replicationIdentifier}`)
       .on(
@@ -397,8 +462,20 @@ export class SupabaseReplication<
             documents: [this.rowToRxDoc(payload.new)],
           });
         },
-      )
-      .subscribe();
+      );
+    this.realtimeChannel.subscribe((status) =>
+      console.log(
+        `Realtime at ${this.table}: `,
+        status,
+        new Date().toTimeString(),
+      ),
+    );
+  }
+
+  private async unsubscribeFromPostgresChanges() {
+    if (this.realtimeChannel) {
+      await this.realtimeChannel.unsubscribe();
+    }
   }
 
   /**
@@ -411,10 +488,10 @@ export class SupabaseReplication<
    * @returns The mapped Error or PostgrestError.
    */
   private mapError(error: PostgrestError): Error | PostgrestError {
-    if (this.constraintMap) {
-      for (const constraint in this.constraintMap) {
+    if (this.options.constraintMap) {
+      for (const constraint in this.options.constraintMap) {
         if (error.message.toLowerCase().includes(constraint.toLowerCase()))
-          return new Error(this.constraintMap[constraint]);
+          return new Error(this.options.constraintMap[constraint]);
       }
     }
     return error;
