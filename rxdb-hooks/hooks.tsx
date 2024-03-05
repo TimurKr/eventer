@@ -101,8 +101,6 @@ export function RxHookBuilder<
     const db = useContext(Context);
     if (db === undefined) {
       throw new Error("RxDB hooks must be used within a DbProvider");
-    } else if (db === null) {
-      console.log("STILL LOADING");
     }
     return db;
   }
@@ -182,7 +180,7 @@ export function RxHookBuilder<
    * @returns result - The query result, or undefined if the query is still fetching.
    */
   function useRxQuery<DocType, Result>(
-    query: RxQuery<DocType, Result, {}, any> | undefined, // TODO: add onChange argument
+    query: RxQuery<DocType, Result, {}, any> | undefined,
   ) {
     const [state, dispatch] = useReducer(reducer<Result>, {
       result: undefined,

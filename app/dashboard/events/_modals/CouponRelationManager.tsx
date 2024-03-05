@@ -10,7 +10,7 @@ import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
 import { Tooltip } from "flowbite-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 import {
   EventWithTickets,
   fetchCoupon,
@@ -52,7 +52,7 @@ export default function CouponRelationManager({
         localRevert: () => setPartialTicket(ticket),
       });
     }
-  }, [selectedCoupon, ticket, idKey, objectKey, setPartialTicket]);
+  }, [selectedCoupon]);
 
   return (
     <>

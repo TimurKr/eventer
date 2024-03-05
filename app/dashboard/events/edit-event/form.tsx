@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 import { insertEvent, updateEvent } from "../serverActions";
 
 export type EditEventFormProps = {

@@ -1,8 +1,8 @@
 import { Tickets } from "@/utils/supabase/database.types";
 import { createStoreSlice } from "zimmer-context";
+import { mergeNewEvents, search, type Events } from "../helpers";
 import { Contacts, fetchContacts, fetchEvents } from "../serverActions";
 import { ticketSortFunction } from "../utils";
-import { mergeNewEvents, search, type Events } from "./helpers";
 
 type State = {
   events: Events[];
@@ -19,7 +19,7 @@ type Actions = {
   search: (props?: { query?: string; allEvents?: Events[] }) => void;
 
   addEvent: (event: Events) => void;
-  removeEvent: (eventId: Events["id"]) => void;
+  removeEvent: (eventId: number) => void;
   setPartialEvent: (event: Partial<Events>) => void;
   toggleEventIsExpanded: (eventId: Events["id"]) => void;
   toggleEventShowCancelledTickets: (eventId: Events["id"]) => void;

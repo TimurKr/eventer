@@ -3,10 +3,10 @@
 import { Modal, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 import EventRows from "../_components/EventRow";
+import { Events } from "../helpers";
 import { bulkUpdateTicketFields } from "../serverActions";
-import { Events } from "../store/helpers";
 
 export default function MoveTicketsToDifferentEventModal({
   event,

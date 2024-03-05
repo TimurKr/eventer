@@ -3,7 +3,7 @@
 import { InstantTextField } from "@/utils/forms/FormElements_dep";
 import { useRouter } from "next/navigation";
 import { updateContactFields } from "../../events/serverActions";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 
 export default function ContactDetail({ id }: { id: string }) {
   const { contact, setPartialContact } = useStoreContext((state) => ({
@@ -12,7 +12,7 @@ export default function ContactDetail({ id }: { id: string }) {
   }));
   const router = useRouter();
   if (!contact) {
-    router.replace("/dashboard"); // TODO v2: error as search param
+    router.replace("/dashboard"); // TODO error as search param
     return null;
   }
   return (

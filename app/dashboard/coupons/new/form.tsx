@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import * as Yup from "yup";
 import { Contacts, bulkUpsertContacts } from "../../events/serverActions";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 import { Coupons, insertCoupons } from "../serverActions";
 import { validateCoupon } from "../utils";
 

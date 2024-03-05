@@ -26,7 +26,7 @@ import {
   mergeContacts,
   updateContactFields,
 } from "../events/serverActions";
-import { useStoreContext } from "../store";
+import { useStoreContext } from "../store_dep";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
 import NewCouponButton from "./new/button";
 import NewCouponForm from "./new/form";
@@ -54,7 +54,7 @@ export default function Coupons() {
   const q = useSearchParams().get("query");
   useEffect(() => {
     if (q) search(q);
-  }, [q, search]);
+  }, []);
 
   const changeDate = async (coupon: Coupons, date: Date | null) =>
     optimisticUpdate({

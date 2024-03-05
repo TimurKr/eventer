@@ -1,11 +1,12 @@
 "use client";
 
+import { useRxData } from "@/rxdb/db";
 import {
   CustomErrorMessage,
   FormikCheckboxField,
   FormikTextField,
-  SubmitButton,
-} from "@/utils/forms/FormElements_dep";
+} from "@/utils/forms/FormikElements";
+import SubmitButton from "@/utils/forms/SubmitButton";
 import {
   CurrencyEuroIcon,
   InformationCircleIcon,
@@ -16,98 +17,119 @@ import {
 import { Alert, Tooltip } from "flowbite-react";
 import { Field, FieldArray, Form, Formik, FormikHelpers } from "formik";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
-import { toast } from "react-toastify";
 import * as Yup from "yup";
-import { useStoreContext } from "../../store";
-import {
-  bulkUpsertTicketTypes,
-  deleteService,
-  deleteTicketTypes,
-  insertServices,
-  insertTicketTypes,
-  updateService,
-} from "../serverActions";
+
+const validationSchema = Yup.object().shape({
+  name: Yup.string().required("Názov je povinný"),
+  ticket_types: Yup.array()
+    .of(
+      Yup.object().shape({
+        id: Yup.string(),
+        label: Yup.string()
+          .required("Názov je povinný")
+          .min(3, "Zadajte aspoň 3 znaky"),
+        capacity: Yup.number().integer("Zadajte celé číslo"),
+        price: Yup.number().required("Cena je povinná"),
+        is_vip: Yup.boolean(),
+      }),
+    )
+    .required("Musíte mať aspoň 1 typ lístka"),
+});
+
+type FormValues = Yup.InferType<typeof validationSchema>;
 
 export type ServiceFormProps = {
   serviceId?: string;
+  initialTitle?: string;
 };
 
 export default function ServiceForm({
   serviceId,
+  initialTitle,
   onSubmit,
 }: ServiceFormProps & { onSubmit?: () => void }) {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
-  const {
-    services: { addServices, allServices, setPartialService, refresh },
-    events: { allEvents },
-  } = useStoreContext((state) => state);
-  const service = allServices.find((s) => s.id.toString() == serviceId);
+  const { result: service, collection: servicesCollection } = useRxData(
+    "services",
+    useCallback(
+      (collection) => collection.findOne(serviceId || "definitely not an ID"),
+      [serviceId],
+    ),
+  );
 
-  const validationSchema = Yup.object().shape({
-    name: Yup.string().required("Názov je povinný"),
-    ticket_types: Yup.array()
-      .of(
-        Yup.object().shape({
-          id: Yup.string(),
-          label: Yup.string()
-            .required("Názov je povinný")
-            .min(3, "Zadajte aspoň 3 znaky"),
-          capacity: Yup.number().integer("Zadajte celé číslo").nullable(),
-          price: Yup.number().required("Cena je povinná"),
-          is_vip: Yup.boolean(),
+  const { result: ticket_types, collection: ticketTypesCollection } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) => collection.find().where("service_id").eq(serviceId),
+      [serviceId],
+    ),
+  );
+
+  const { result: tickets } = useRxData(
+    "tickets",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: {
+            type_id: {
+              $in: ticket_types?.map((t) => t.id) || [],
+            },
+          },
         }),
-      )
-      .min(1, "Musíte mať aspoň 1 typ lístka")
-      .required("Musíte mať aspoň 1 typ lístka"),
-  });
+      [ticket_types],
+    ),
+  );
 
-  type FormValues = Yup.InferType<typeof validationSchema>;
+  const initialValues: FormValues = {
+    name: service?.name || initialTitle || "",
+    ticket_types: (service &&
+      ticket_types?.map((tt) => ({
+        ...tt._data,
+        capacity: tt.capacity || undefined,
+      }))) || [
+      {
+        id: undefined,
+        label: "Standard",
+        price: 20,
+        capacity: 100,
+        is_vip: false,
+      },
+    ],
+  };
 
   const create = async (
     values: FormValues,
     helpers: FormikHelpers<FormValues>,
   ) => {
-    // TODO: implement transaction
+    if (!servicesCollection || !ticketTypesCollection) {
+      console.error("Collections not found");
+      return;
+    }
+
     const { ticket_types: bin, ...serviceValues } = values;
-    const resServices = await insertServices([serviceValues]);
-    if (resServices.error) {
-      if (
-        resServices.error.message.includes("services_unique_name_constraint")
-      ) {
-        setErrorMessages([]);
-        helpers.setFieldError(
-          "name",
-          "Už máte jedno predstavenie s týmto názvom",
-        );
-      } else {
-        setErrorMessages(resServices.error.message.split("\n"));
-      }
+    const newService = await servicesCollection.insert({
+      ...serviceValues,
+      id: crypto.randomUUID(),
+    });
+    const { success: newTicketTypes, error } =
+      await ticketTypesCollection.bulkInsert(
+        values.ticket_types.map((t) => ({
+          ...t,
+          service_id: newService.id,
+          id: crypto.randomUUID(),
+        })),
+      );
+    if (error.length > 0) {
+      setErrorMessages([
+        "Nepodarilo sa vytvoriť niektoré typy lístkov, skúste znova",
+      ]);
       return;
     }
-    const resTicketTypes = await insertTicketTypes(
-      values.ticket_types.map((t) => ({
-        ...t,
-        service_id: resServices.data[0].id,
-      })),
-    );
-    if (resTicketTypes.error) {
-      const res = await deleteService(resServices.data[0].id);
-      if (res.error) {
-        console.error(res.error);
-        toast.error("Nepodarilo sa vytvoriť typy lístkov");
-        router.back();
-      }
-      setErrorMessages(resTicketTypes.error.message.split("\n"));
-      return;
-    }
-    addServices([
-      { ...resServices.data[0], ticket_types: resTicketTypes.data },
-    ]);
-    toast.success("Predstavenie vytvorené!", { autoClose: 1500 });
+
     onSubmit ? onSubmit() : router.back();
   };
 
@@ -115,82 +137,55 @@ export default function ServiceForm({
     values: FormValues,
     helpers: FormikHelpers<FormValues>,
   ) => {
-    // TODO implement transactions
-    if (!service) return;
-    if (service.name !== values.name) {
-      const res = await updateService({
-        id: service.id,
-        name: values.name,
-      });
-      if (res.error) {
-        setErrorMessages(res.error.message.split("\n"));
-        return;
-      }
-      setPartialService(res.data[0]);
-    }
-    const res = await bulkUpsertTicketTypes(
-      values.ticket_types.map((t) => ({ ...t, service_id: service.id })),
-    );
-    if (res.error) {
-      setErrorMessages(res.error.message.split("\n"));
+    if (!service) {
+      console.error("Service is undefined");
       return;
     }
 
-    const ticketTypesToDelete = service.ticket_types
-      .filter((ott) => !res.data.some((ntt) => ntt.id === ott.id))
-      .map((t) => t.id);
-    const resDelete = await deleteTicketTypes(ticketTypesToDelete);
-    if (resDelete.error) {
-      if (resDelete.error.message.includes("foreign key constraint")) {
-        setErrorMessages([
-          "Nepodarilo sa zmazať niektoré typy lístkov, pretože už sú použité",
-        ]);
-      } else {
-        setErrorMessages([
-          "Failed to delete ticketTypes: ",
-          ...resDelete.error.message.split("\n"),
-        ]);
-      }
-      refresh();
+    if (!servicesCollection) {
+      console.error("servicesCollection is undefined");
       return;
     }
-    setPartialService({
-      id: service.id,
-      ticket_types: res.data,
-    });
-    toast.success("Predstavenie upravené!", { autoClose: 1500 });
+
+    if (!ticketTypesCollection) {
+      console.error("ticketTypesCollection is undefined");
+      return;
+    }
+
+    if (!ticket_types) {
+      console.error("ticket_types is undefined");
+      return;
+    }
+
+    await service.incrementalPatch({ name: values.name });
+
+    await ticketTypesCollection.bulkRemove(
+      ticket_types
+        .filter((tt) => !values.ticket_types.some((t) => t.id === tt.id))
+        .map((tt) => tt.id!),
+    );
+
+    await ticketTypesCollection.bulkUpsert(
+      values.ticket_types.map((t) => ({
+        ...t,
+        service_id: service.id,
+        id: t.id || crypto.randomUUID(),
+      })),
+    );
+
     onSubmit ? onSubmit() : router.back();
   };
 
   return (
     <>
       <Formik
-        initialValues={
-          (service !== undefined
-            ? {
-                ...service,
-                ticket_types: service.ticket_types.map((t) => ({
-                  ...t,
-                  capacity: t.capacity || undefined,
-                })),
-              }
-            : {
-                name: "",
-                ticket_types: [
-                  {
-                    id: undefined,
-                    label: "Standard",
-                    price: 20,
-                    capacity: 100,
-                    is_vip: false,
-                  },
-                ],
-              }) as FormValues
-        }
+        initialValues={initialValues}
+        enableReinitialize
         onSubmit={service?.id ? update : create}
+        // onSubmit={() => alert("Not implemented")}
         validationSchema={validationSchema}
       >
-        {({ values, isSubmitting, getFieldMeta }) => (
+        {({ values, isSubmitting, getFieldMeta, setFieldValue, errors }) => (
           <Form className="flex flex-col gap-2">
             <FormikTextField
               name="name"
@@ -198,6 +193,7 @@ export default function ServiceForm({
               vertical
               type="text"
             />
+            {/* <FormikFieldSyncer name="name" value={initialTitle} /> */}
             <div className="flex items-center gap-6 pt-4">
               <p className="text-sm text-gray-600">Typy lístkov</p>
               <div className="h-px flex-grow bg-gray-400" />
@@ -241,21 +237,13 @@ export default function ServiceForm({
                     <tbody>
                       {values.ticket_types &&
                         values.ticket_types.map((ticket_type, index) => {
-                          const canDelete =
-                            !!serviceId &&
-                            allEvents.some(
-                              (e) =>
-                                e.service_id.toString() == serviceId &&
-                                (e.tickets.some(
-                                  (t) => t.type_id == ticket_type.id,
-                                ) ||
-                                  e.tickets.some(
-                                    (t) => t.type_id == ticket_type.id,
-                                  )),
-                            );
+                          // TODO: implement canDelete
+                          const canDelete = !tickets?.some(
+                            (t) => t.type_id === ticket_type.id,
+                          );
                           return (
                             <tr key={index}>
-                              <td className="px-1">
+                              <td className="px-1" valign="top">
                                 <Field
                                   name={`ticket_types[${index}].id`}
                                   type="hidden"
@@ -265,7 +253,7 @@ export default function ServiceForm({
                                   vertical
                                 />
                               </td>
-                              <td className="px-1">
+                              <td className="px-1" valign="top">
                                 <FormikTextField
                                   name={`ticket_types[${index}].capacity`}
                                   vertical
@@ -276,7 +264,7 @@ export default function ServiceForm({
                                   optional
                                 />
                               </td>
-                              <td className="px-1">
+                              <td className="px-1" valign="top">
                                 <FormikTextField
                                   name={`ticket_types[${index}].price`}
                                   vertical
@@ -286,24 +274,24 @@ export default function ServiceForm({
                                   }
                                 />
                               </td>
-                              <td className="p-1 text-end">
+                              <td className="p-1 text-end" valign="top">
                                 <FormikCheckboxField
                                   vertical
                                   name={`ticket_types[${index}].is_vip`}
                                 />
                               </td>
-                              <td>
+                              <td valign="top">
                                 {values.ticket_types.length > 1 && (
                                   <button
                                     type="button"
-                                    className="self-center p-2 text-red-600 transition-all hover:scale-110 hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:scale-100 disabled:hover:text-gray-300"
+                                    className="self-center p-2 text-red-600 transition-all enabled:hover:scale-110 enabled:hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300"
                                     onClick={() => remove(index)}
                                     title={
                                       canDelete
-                                        ? "Nemôžete zmazať, typ je už použitý"
-                                        : "Vymyzať"
+                                        ? "Vymyzať"
+                                        : "Nemôžete zmazať, typ je už použitý"
                                     }
-                                    disabled={canDelete}
+                                    disabled={!canDelete}
                                   >
                                     <TrashIcon className="h-5 w-5" />
                                   </button>
@@ -314,6 +302,15 @@ export default function ServiceForm({
                         })}
                     </tbody>
                   </table>
+                  {values.ticket_types.length === 0 && (
+                    <div className="p-2 flex items-center justify-center gap-2 text-yellow-500">
+                      <InformationCircleIcon className="h-4 w-4" />
+                      <p className="text-sm">
+                        Nevytvorili ste žiadne typy lístkov. Vytvorte aspoň 1
+                        aby ste mohli predávať lístky
+                      </p>
+                    </div>
+                  )}
                   <div className="p-1">
                     <button
                       className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-1 text-sm font-medium text-gray-500 hover:bg-gray-200"

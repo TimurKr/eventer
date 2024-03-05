@@ -1,9 +1,9 @@
 "use client";
 
+import SubmitButton from "@/utils/forms/SubmitButton";
 import { Alert } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { HiExclamationCircle } from "react-icons/hi2";
-import { SubmitButton } from "../../utils/forms/FormElements_dep";
 
 export default function LoginForm({
   action,

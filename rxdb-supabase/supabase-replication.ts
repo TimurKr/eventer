@@ -434,12 +434,14 @@ export class SupabaseReplication<
       .update(row.newDocumentState, { count: "exact" });
     Object.entries(row.assumedMasterState!).forEach(([field, value]) => {
       const type = typeof value;
-      if (type === "boolean" || value === null) {
+      if (type === "boolean" || value === null || value === undefined) {
         query = query.is(field, value);
       } else if (type === "string" || type === "number") {
         query = query.eq(field, value);
       } else {
-        throw new Error(`replicateSupabase: Unsupported field of type ${type}`);
+        throw new Error(
+          `replicateSupabase: Unsupported field "${field}" of type "${type}" with value ${value}`,
+        );
       }
     });
     const { error, count } = await query;

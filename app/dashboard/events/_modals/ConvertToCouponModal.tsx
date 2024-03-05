@@ -6,9 +6,9 @@ import { Alert, Modal, Spinner } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
+import { Events } from "../helpers";
 import { convertTicketsToCoupon } from "../serverActions";
-import { Events } from "../store/helpers";
 
 export default function ConvertToCouponModal({
   event,

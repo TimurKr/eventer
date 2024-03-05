@@ -23,7 +23,7 @@ import { useState } from "react";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-import { useStoreContext } from "../../store";
+import { useStoreContext } from "../../store_dep";
 import CouponCodeField from "../_modals/CouponCodeField";
 import {
   bulkInsertTickets,
@@ -350,8 +350,8 @@ export default function NewTicketsForm({
                                   getFieldHelpers(
                                     `tickets[${index}].price`,
                                   ).setValue(
-                                    ticketTypes.find((t) => t.id == v)?.price ||
-                                      0,
+                                    ticketTypes.find((t) => t.id == parseInt(v))
+                                      ?.price || 0,
                                   );
                                 }}
                               >

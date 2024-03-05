@@ -61,7 +61,7 @@ type FormikTextFieldProps = {
 };
 
 export const FormikTextField = ({
-  //TODO V2: TextField with optional Formik prop
+  //TODO : TextField with optional Formik prop
   name,
   optional = false,
   vertical = false,

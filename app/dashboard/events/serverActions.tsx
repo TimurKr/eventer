@@ -1,7 +1,6 @@
 "use server";
 
 import {
-  Coupons,
   Events,
   InsertContacts,
   InsertEvents,
@@ -98,7 +97,7 @@ export async function insertEvent(event: InsertEvents) {
 }
 
 // Delete event
-export async function deleteEvent(eventId: Events["id"]) {
+export async function deleteEvent(eventId: number) {
   const supabase = createServerSupabase(cookies());
   const result = await supabase.from("events").delete().match({ id: eventId });
   if (!result.error) {
@@ -172,11 +171,11 @@ export async function bulkInsertTickets(tickets: InsertTickets[]) {
     .insert(tickets)
     .select(
       `*,
-      billing:contacts!public_tickets_billing_id_fkey(*),
-      guest:contacts!public_tickets_guest_id_fkey(*),
-      coupon_created:coupons!public_tickets_coupon_created_id_fkey(id, code),
-      coupon_redeemed:coupons!public_tickets_coupon_redeemed_id_fkey(id, code),
-      type:ticket_types!public_tickets_event_id_fkey(*)
+      billing:contacts!pubic_tickets_billing_id_fkey(*),
+      guest:contacts!pubic_tickets_guest_id_fkey(*),
+      coupon_created:coupons!pubic_tickets_coupon_created_id_fkey(id, code),
+      coupon_redeemed:coupons!pubic_tickets_coupon_redeemed_id_fkey(id, code),
+      type:ticket_types!public_tickets_type_id_fkey(*)
       `,
     );
   if (!res.error) {
@@ -207,7 +206,7 @@ export async function validateCouponCode(code: string) {
 }
 
 // Redeem coupon
-export async function redeemCoupon(couponID: Coupons["id"], newAmount: number) {
+export async function redeemCoupon(couponID: number, newAmount: number) {
   const supabase = createServerSupabase(cookies());
   const res = await supabase
     .from("coupons")

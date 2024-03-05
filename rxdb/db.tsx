@@ -11,6 +11,9 @@ import { addRxPlugin } from "rxdb";
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
 import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
+import { businessesSchema } from "./schemas/public/businesses";
+import { ContactsReplication, contactsSchema } from "./schemas/public/contacts";
+import { CouponsReplication, couponsSchema } from "./schemas/public/coupons";
 import { EventsReplication, eventsSchema } from "./schemas/public/events";
 import { ServicesReplication, servicesSchema } from "./schemas/public/services";
 import {
@@ -35,6 +38,15 @@ const collections = {
   },
   tickets: {
     schema: ticketsSchema,
+  },
+  businesses: {
+    schema: businessesSchema,
+  },
+  contacts: {
+    schema: contactsSchema,
+  },
+  coupons: {
+    schema: couponsSchema,
   },
 } satisfies Record<string, RxCollectionCreator>;
 
@@ -113,6 +125,39 @@ export const {
     push: {},
   });
 
+  const businessesReplication = new TicketsReplication({
+    supabaseClient: supabaseClient,
+    collection: myCollections.businesses,
+    replicationIdentifier:
+      "businesses" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
+    pull: {},
+    push: {},
+  });
+
+  const contactsReplication = new ContactsReplication({
+    supabaseClient: supabaseClient,
+    collection: myCollections.contacts,
+    replicationIdentifier:
+      "contacts" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
+    pull: {},
+    push: {},
+  });
+
+  const couponsReplication = new CouponsReplication({
+    supabaseClient: supabaseClient,
+    collection: myCollections.coupons,
+    replicationIdentifier:
+      "coupons" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
+    onError: (error) => toast.error(error.message),
+    conflictErrorMessage: `Pozor, konflikt so serverom. Prepisujem lokálne zmeny.`,
+    pull: {},
+    push: {},
+  });
+
   return {
     db,
     replications: {
@@ -120,6 +165,9 @@ export const {
       events: eventsReplication,
       ticket_types: ticketTypesReplication,
       tickets: ticketsReplication,
+      businesses: businessesReplication,
+      contacts: contactsReplication,
+      coupons: couponsReplication,
     },
   };
 });

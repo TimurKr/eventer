@@ -1,26 +1,59 @@
+import { useRxData } from "@/rxdb/db";
+import { EventsDocument } from "@/rxdb/schemas/public/events";
+import InlineLoading from "@/utils/components/InlineLoading";
 import { Badge, Progress } from "flowbite-react";
 import moment from "moment";
-import { Services } from "../../services/serverActions";
-import { Events } from "../store/helpers";
+import { useCallback } from "react";
 
-export default function EventRows({
-  events,
-  services,
+export default function EventRow({
+  event,
   actionButton,
   onClick,
   className,
   onMouseEnter,
   onMouseLeave,
 }: {
-  events: Events[];
-  services: Services[];
-  actionButton?: (id: Events) => JSX.Element;
-  onClick?: (event: Events) => void;
+  event: EventsDocument;
+  actionButton?: (id: EventsDocument) => JSX.Element;
+  onClick?: (event: EventsDocument) => void;
   className?: string;
-  onMouseEnter?: (event: Events) => void;
-  onMouseLeave?: (event: Events) => void;
+  onMouseEnter?: (event: EventsDocument) => void;
+  onMouseLeave?: (event: EventsDocument) => void;
 }) {
-  return events.map((event) => (
+  const { result: services } = useRxData(
+    "services",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: { id: { $eq: event.service_id } },
+        }),
+      [event.service_id],
+    ),
+  );
+
+  const { result: ticket_types } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: { service_id: { $eq: event.service_id } },
+        }),
+      [event.service_id],
+    ),
+  );
+
+  const { result: tickets } = useRxData(
+    "tickets",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: { event_id: { $eq: event.id } },
+        }),
+      [event.id],
+    ),
+  );
+
+  return (
     <button
       key={event.id}
       type="button"
@@ -32,7 +65,7 @@ export default function EventRows({
     >
       <div className="flex min-w-0 flex-none flex-col gap-1 self-center py-0.5">
         <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
-          {services.find((s) => s.id == event.service_id)?.name}
+          {services?.find((s) => s.id == event.service_id)?.name}
           <Badge
             color={event.is_public ? "blue" : "purple"}
             className="rounded-md"
@@ -58,12 +91,10 @@ export default function EventRows({
         </div>
       </div>
       <div className="ms-auto flex flex-col flex-wrap items-center justify-end gap-x-2 lg:flex-row">
-        {services
-          .find((s) => s.id === event.service_id)!
-          .ticket_types.map((type) => {
-            const sold = event.tickets.filter(
-              (t) => t.type_id == type.id,
-            ).length;
+        {ticket_types ? (
+          ticket_types.map((type) => {
+            const sold =
+              tickets?.filter((t) => t.type_id == type.id).length || 0;
             return (
               <div key={type.label} className="w-28">
                 <div
@@ -102,9 +133,12 @@ export default function EventRows({
                 />
               </div>
             );
-          })}
+          })
+        ) : (
+          <InlineLoading />
+        )}
       </div>
       <div className="flex-shrink-0">{actionButton?.(event)}</div>
     </button>
-  ));
+  );
 }
