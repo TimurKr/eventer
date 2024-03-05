@@ -170,7 +170,7 @@ export class SchemaConverter {
       properties: {},
       required: [],
       type: "object",
-      primaryKey: "id",
+      primaryKey: "",
     };
 
     for (const column of table.columns) {
@@ -178,9 +178,14 @@ export class SchemaConverter {
         continue;
       }
 
+      const description =
+        column.comment || this.config.output.defaultDescription;
+
       jsonSchema.properties[column.name] = {
         maxLength: column.name === "id" ? 64 : column.length,
-        description: `${column.comment || this.config.output.defaultDescription}. Database type: ${column.type.name}. Default value: ${column.default}`,
+        description:
+          (description ? description + " - " : "") +
+          `Database type: ${column.type.name}. Default value: ${column.default}`,
         ...(this.convertColumnType({ column }) as Record<string, unknown>),
         default:
           column.default && !column.default.toString().includes("(")
@@ -193,10 +198,19 @@ export class SchemaConverter {
       if (column.notNull && !column.default) {
         (jsonSchema.required as string[]).push(column.name);
       }
-    }
 
-    if (!jsonSchema.required?.includes("id")) {
-      (jsonSchema.required as string[]).push("id");
+      // Check if the column is the primary key
+      //
+      // We only support one column as primary key, so the one named "id" always takes precedence.
+      if (
+        column.isPrimaryKey &&
+        (!jsonSchema.primaryKey || column.name === "id")
+      ) {
+        jsonSchema.primaryKey = column.name;
+        if (!jsonSchema.required?.includes(column.name)) {
+          (jsonSchema.required as string[]).push(column.name);
+        }
+      }
     }
 
     // Write to file if requested

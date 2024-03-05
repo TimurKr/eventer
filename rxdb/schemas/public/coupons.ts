@@ -7,44 +7,44 @@ const schemaLiteral = {
   "version": 0,
   "properties": {
     "created_at": {
-      "description": ". Database type: timestamp with time zone. Default value: now()",
+      "description": "Database type: timestamp with time zone. Default value: now()",
       "type": "string",
       "format": "date-time"
     },
     "amount": {
-      "description": ". Database type: real. Default value: null",
+      "description": "Database type: real. Default value: null",
       "type": "number"
     },
     "code": {
-      "description": ". Database type: text. Default value: null",
+      "description": "Database type: text. Default value: null",
       "type": "string"
     },
     "valid_until": {
-      "description": ". Database type: date. Default value: null",
+      "description": "Database type: date. Default value: null",
       "type": "string",
       "format": "date"
     },
     "original_amount": {
-      "description": ". Database type: real. Default value: null",
+      "description": "Database type: real. Default value: null",
       "type": "number"
     },
     "note": {
-      "description": ". Database type: text. Default value: null",
+      "description": "Database type: text. Default value: null",
       "type": "string"
     },
     "business_id": {
-      "description": ". Database type: uuid. Default value: auth.uid()",
+      "description": "Database type: uuid. Default value: auth.uid()",
       "type": "string",
       "format": "uuid"
     },
     "contact_id": {
-      "description": ". Database type: uuid. Default value: null",
+      "description": "Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "id": {
       "maxLength": 64,
-      "description": ". Database type: uuid. Default value: gen_random_uuid()",
+      "description": "Database type: uuid. Default value: gen_random_uuid()",
       "type": "string",
       "format": "uuid"
     }

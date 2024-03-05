@@ -7,28 +7,28 @@ const schemaLiteral = {
   "version": 0,
   "properties": {
     "created_at": {
-      "description": ". Database type: timestamp with time zone. Default value: now()",
+      "description": "Database type: timestamp with time zone. Default value: now()",
       "type": "string",
       "format": "date-time"
     },
     "datetime": {
-      "description": ". Database type: timestamp with time zone. Default value: null",
+      "description": "Database type: timestamp with time zone. Default value: null",
       "type": "string",
       "format": "date-time"
     },
     "is_public": {
-      "description": ". Database type: boolean. Default value: false",
+      "description": "Database type: boolean. Default value: false",
       "type": "boolean",
       "default": "false"
     },
     "service_id": {
-      "description": ". Database type: uuid. Default value: null",
+      "description": "Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "id": {
       "maxLength": 64,
-      "description": ". Database type: uuid. Default value: gen_random_uuid()",
+      "description": "Database type: uuid. Default value: gen_random_uuid()",
       "type": "string",
       "format": "uuid"
     }

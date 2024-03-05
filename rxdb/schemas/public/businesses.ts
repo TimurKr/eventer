@@ -8,17 +8,17 @@ const schemaLiteral = {
   "properties": {
     "id": {
       "maxLength": 64,
-      "description": ". Database type: uuid. Default value: null",
+      "description": "Database type: uuid. Default value: null",
       "type": "string",
       "format": "uuid"
     },
     "created_at": {
-      "description": ". Database type: timestamp with time zone. Default value: now()",
+      "description": "Database type: timestamp with time zone. Default value: now()",
       "type": "string",
       "format": "date-time"
     },
     "name": {
-      "description": ". Database type: text. Default value: null",
+      "description": "Database type: text. Default value: null",
       "type": "string"
     }
   },
