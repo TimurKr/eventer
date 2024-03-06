@@ -1,44 +1,52 @@
 "use client";
 
+import { useRxCollection, useRxData } from "@/rxdb/db";
+import { EventsDocument } from "@/rxdb/schemas/public/events";
+import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
+import InlineLoading from "@/utils/components/InlineLoading";
 import { Modal, Spinner } from "flowbite-react";
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store_dep";
-import EventRows from "../_components/EventRow";
-import { Events } from "../helpers";
-import { bulkUpdateTicketFields } from "../serverActions";
+import EventRow from "../_components/EventRow";
 
 export default function MoveTicketsToDifferentEventModal({
-  event,
+  selectedTickets,
 }: {
-  event: Events;
+  selectedTickets: TicketsDocument[];
 }) {
   const [isSubmitting, startSubmition] = useTransition();
-  const [hoveringEvent, setHoveringEvent] = useState<Events | null>(null);
+  const [hoveringEvent, setHoveringEvent] = useState<EventsDocument | null>(
+    null,
+  );
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { allEvents, refresh, selectedTickets, service } = useStoreContext(
-    (state) => ({
-      ...state.events,
-      selectedTickets: state.events.allEvents
-        .find((e) => e.id === event.id)!
-        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-      service: state.services.allServices.find(
-        (s) => s.id === event.service_id,
-      )!,
-    }),
+  const { result: allEvents } = useRxData(
+    "events",
+    useCallback((collection) => collection.find().sort("datetime"), []),
   );
 
-  const submit = (selectedEventId: Events["id"]) => {
+  const { result: ticketTypes } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: {
+            id: { $in: selectedTickets.map((t) => t.type_id) },
+          },
+        }),
+      [selectedTickets],
+    ),
+  );
+
+  const ticketsCollection = useRxCollection("tickets");
+
+  const submit = (selectedEvent: EventsDocument) => {
     startSubmition(async () => {
-      bulkUpdateTicketFields(
-        selectedTickets.map((t) => t.id),
-        {
-          event_id: selectedEventId,
-        },
+      if (!ticketsCollection) return;
+      await ticketsCollection.bulkUpsert(
+        selectedTickets.map((t) => ({ ...t, event_id: selectedEvent.id })),
       );
-      await refresh();
       toast.success("Lístky boli presunuté na inú udalosť", {
         autoClose: 1500,
       });
@@ -64,50 +72,35 @@ export default function MoveTicketsToDifferentEventModal({
         </Modal.Header>
         <Modal.Body>
           <div className="flex flex-wrap gap-2">
-            {selectedTickets
-              .map((t) => t.type)
-              .filter(
-                (value, index, self) =>
-                  self.findIndex((v) => v.id === value.id) === index,
-              )
-              .map((type) => (
-                <div
-                  key={type.id}
-                  className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1"
-                >
-                  <span className="font-semibold">{type.label}</span>:{" "}
-                  <span className="font-bold">
-                    {selectedTickets.filter((t) => t.type_id == type.id).length}
-                  </span>{" "}
-                  lístkov
-                </div>
-              ))}
+            {ticketTypes?.map((type) => (
+              <div
+                key={type.id}
+                className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1"
+              >
+                <span className="font-semibold">{type.label}</span>:{" "}
+                <span className="font-bold">
+                  {selectedTickets.filter((t) => t.type_id == type.id).length}
+                </span>{" "}
+                lístkov
+              </div>
+            )) || <InlineLoading />}
             {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
-          {
-            <EventRows
-              events={allEvents
-                .filter((e) => e.service_id === event.service_id)
-                .map((e) => ({
-                  ...e,
-                  tickets: e.tickets.concat(
-                    e.id === hoveringEvent?.id && hoveringEvent?.id != event.id
-                      ? selectedTickets
-                      : [],
-                  ),
-                }))}
+          {allEvents?.map((event) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              onClick={(e) => event.id != e.id && submit(event)}
+              onMouseEnter={(e) => setHoveringEvent(event)}
+              onMouseLeave={(e) => setHoveringEvent(null)}
               className={
                 hoveringEvent?.id == event.id
                   ? "cursor-not-allowed hover:!bg-red-100"
                   : ""
               }
-              services={[service]}
-              onClick={(e) => event.id != e.id && submit(e.id)}
-              onMouseEnter={(e) => setHoveringEvent(e)}
-              onMouseLeave={(e) => setHoveringEvent(null)}
             />
-          }
+          )) || <InlineLoading />}
         </Modal.Body>
       </Modal>
     </>

@@ -11,6 +11,7 @@ import {
   InstantTextField,
 } from "@/utils/forms/InstantFields";
 import { useBrowserUser } from "@/utils/supabase/browser";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import {
   EllipsisHorizontalIcon,
   LockClosedIcon,
@@ -35,11 +36,7 @@ import EditEventButton from "./edit-event/button";
 import EditEventForm from "./edit-event/form";
 import { searchTickets } from "./helpers";
 import NewTicketsButton from "./new-tickets/button";
-import {
-  EventWithTickets,
-  bulkUpsertContacts,
-  updateTicketFields,
-} from "./serverActions";
+import { TicketsSorting } from "./utils";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
@@ -49,20 +46,52 @@ function LinkUnlinkContact({
   type,
 }: {
   groupSize: number;
-  ticket: EventWithTickets["tickets"][0];
+  ticket: TicketsDocument;
   type: "guest_id" | "billing_id";
 }) {
-  const {
-    events: { contacts, refresh },
-    contact,
-  } = useStoreContext((state) => ({
-    ...state,
-    contact: state.events.contacts.find((c) => c.id == ticket[type])!,
-  }));
-  if (contact.usage_count < 2) return null;
+  // const {
+  //   events: { contacts, refresh },
+  //   contact,
+  // } = useStoreContext((state) => ({
+  //   ...state,
+  //   contact: state.events.contacts.find((c) => c.id == ticket[type])!,
+  // }));
+
+  const { result: contact, collection: contactsCollection } = useRxData(
+    "contacts",
+    useCallback(
+      (collection) => collection.findOne(ticket[type]),
+      [ticket, type],
+    ),
+  );
+
+  const { result: tickets } = useRxData(
+    "tickets",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: {
+            $or: [{ guest_id: ticket[type] }, { billing_id: ticket[type] }],
+          },
+        }),
+      [ticket, type],
+    ),
+  );
+
+  const usage_count = useMemo(() => {
+    if (!contact || !tickets) return 0;
+    let count = 0;
+    tickets.forEach((t) => {
+      if (t.guest_id === contact.id) count++;
+      if (t.billing_id === contact.id) count++;
+    });
+    return count;
+  }, [tickets, contact]);
+
+  if (!contact || !contactsCollection || usage_count < 2) return null;
   return (
     <div className="inline-flex">
-      {contact.usage_count > 1 && (groupSize > 1 || type === "guest_id") && (
+      {usage_count > 1 && (groupSize > 1 || type === "guest_id") && (
         <div
           className={`inline-block p-1 ${
             type === "guest_id" ? "invisible group-hover:visible" : ""
@@ -70,7 +99,7 @@ function LinkUnlinkContact({
         >
           <Tooltip
             content={`Tento kontakt sa používa na ${
-              contact.usage_count - 1
+              usage_count - 1
             } iných miestach. Kliknutím sem ${
               type === "guest_id"
                 ? "zrušíte tento link a umožníte zmeny iba na tomto mieste."
@@ -79,50 +108,43 @@ function LinkUnlinkContact({
           >
             <button
               onClick={async () => {
-                // TODO: Implement transaction
                 const toastId = toast.loading("Vytváram kópiu kontaktu...");
-                const { id, created_at, usage_count, ...contactData } =
-                  contacts.find((c) => c.id === ticket[type])!;
+                const {
+                  _data: {
+                    id,
+                    created_at,
+                    _attachments,
+                    _meta,
+                    _deleted,
+                    _rev,
+                    ...contactData
+                  },
+                } = contact;
                 let name = contactData.name + ` (kópia ${1})`;
                 for (let i = 2; true; i++) {
-                  if (!contacts.find((c) => c.name === name)) break;
+                  if (
+                    !(await contactsCollection
+                      .findOne({
+                        selector: { name: { $eq: name } },
+                      })
+                      .exec())
+                  )
+                    break;
                   name = contactData.name + ` (kópia ${i})`;
                 }
-                const r = await bulkUpsertContacts([{ ...contactData, name }]);
-                if (r.error) {
-                  toast.update(toastId, {
-                    render: r.error.message,
-                    type: "error",
-                    isLoading: false,
-                    closeButton: true,
-                  });
-                  return;
-                }
-                const r2 = await updateTicketFields({
-                  id: ticket.id,
-                  billing_id:
-                    type === "billing_id" ? r.data[0].id : ticket.billing_id,
-                  guest_id:
-                    type === "guest_id" || ticket.guest_id === ticket.billing_id
-                      ? r.data[0].id
-                      : ticket.guest_id,
+                const newContact = await contactsCollection.upsert({
+                  ...contactData,
+                  name,
+                  id: crypto.randomUUID(),
                 });
-                if (r2.error) {
-                  toast.update(toastId, {
-                    render: r2.error.message,
-                    type: "error",
-                    isLoading: false,
-                    closeButton: true,
+                if (ticket.guest_id === ticket.billing_id) {
+                  await ticket.incrementalPatch({
+                    guest_id: newContact.id,
+                    billing_id: newContact.id,
                   });
-                  return;
+                } else {
+                  await ticket.incrementalPatch({ [type]: newContact.id });
                 }
-                await refresh();
-                toast.update(toastId, {
-                  render: "Kontakt oddelený",
-                  type: "success",
-                  isLoading: false,
-                  autoClose: 1500,
-                });
               }}
             >
               <LiaUnlinkSolid
@@ -659,7 +681,11 @@ function EventDetail({
   const { result: allTickets, collection: ticketsCollection } = useRxData(
     "tickets",
     useCallback(
-      (collection) => collection.find().where("event_id").eq(event.id),
+      (collection) =>
+        collection.find({
+          selector: { event_id: { $eq: event.id } },
+          sort: TicketsSorting,
+        }),
       [event.id],
     ),
   );
@@ -823,8 +849,10 @@ function EventDetail({
               <p className="ms-auto text-sm text-gray-600">
                 (Označených: {selectedTickets.length})
               </p>
-              <MoveTicketsToDifferentEventModal event={event} />
-              <ConvertToCouponModal event={event} />
+              <MoveTicketsToDifferentEventModal
+                selectedTickets={selectedTickets}
+              />
+              <ConvertToCouponModal selectedTickets={selectedTickets} />
               <button
                 className="rounded-md bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 active:bg-red-800"
                 onClick={() => {
@@ -1011,7 +1039,7 @@ export default function Page() {
               $in: allServices?.map((s) => s.id) || [],
             },
           },
-          sort: [{ date: "desc" }],
+          sort: [{ datetime: "desc" }],
         }),
       [allServices],
     ),
@@ -1063,6 +1091,8 @@ export default function Page() {
     [allEvents, highlightedTickets],
   );
 
+  const isFetching = !allEvents || !allTickets || !allContacts;
+
   return (
     <>
       <Header
@@ -1085,6 +1115,13 @@ export default function Page() {
             <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
           ))}
         </ol>
+      ) : isFetching ? (
+        <div className="flex flex-col items-center p-10">
+          <ArrowPathIcon className="w-12 text-gray-400 animate-spin" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Načítavam predstavenia
+          </p>
+        </div>
       ) : allServices?.length ? (
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />

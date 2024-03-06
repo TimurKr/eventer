@@ -2,14 +2,14 @@
 
 import { DbProvider, useRxData } from "@/rxdb/db";
 import { InstantTextField } from "@/utils/forms/InstantFields";
-import { getBrowserUser } from "@/utils/supabase/browser";
-import { User } from "@supabase/supabase-js";
-import React, { useCallback, useEffect, useState } from "react";
+import { useBrowserUser } from "@/utils/supabase/browser";
+import React, { useCallback } from "react";
 import { Id, toast } from "react-toastify";
 import Navbar from "./Navbar";
 
 function BusinessTitle() {
-  const [user, setUser] = useState<User | null>(null);
+  const user = useBrowserUser();
+
   const { result: business } = useRxData(
     "businesses",
     useCallback(
@@ -17,10 +17,6 @@ function BusinessTitle() {
       [user],
     ),
   );
-
-  useEffect(() => {
-    getBrowserUser().then((user) => setUser(user));
-  }, []);
 
   return (
     <InstantTextField

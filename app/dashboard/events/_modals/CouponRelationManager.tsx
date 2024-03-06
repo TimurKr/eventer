@@ -1,7 +1,8 @@
 "use client";
 
-import { optimisticUpdate } from "@/utils/misc";
-import { Coupons } from "@/utils/supabase/database.types";
+import { useRxData } from "@/rxdb/db";
+import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
+import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import {
   TicketIcon as TicketIconOutline,
   TrashIcon,
@@ -9,55 +10,48 @@ import {
 import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
 import { Tooltip } from "flowbite-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useStoreContext } from "../../store_dep";
-import {
-  EventWithTickets,
-  fetchCoupon,
-  updateTicketFields,
-} from "../serverActions";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { validateCoupon } from "../../coupons/utils";
 import CouponCodeField from "./CouponCodeField";
+
+const idKey = {
+  created: "coupon_created_id",
+  redeemed: "coupon_redeemed_id",
+} as const;
 
 export default function CouponRelationManager({
   ticket,
   type,
 }: {
-  ticket: EventWithTickets["tickets"][0];
+  ticket: TicketsDocument;
   type: "created" | "redeemed";
 }) {
   const [selectedCoupon, setSelectedCoupon] = useState<
-    Coupons | null | undefined
+    CouponsDocument | null | undefined
   >();
 
-  const { setPartialTicket } = useStoreContext((state) => state.events);
-
-  const objectKey = type === "created" ? "coupon_created" : "coupon_redeemed";
-  const idKey = type === "created" ? "coupon_created_id" : "coupon_redeemed_id";
+  const key = useMemo(() => idKey[type], [type]);
 
   useEffect(() => {
     if (selectedCoupon) {
-      optimisticUpdate({
-        value: {},
-        localUpdate: () =>
-          setPartialTicket({
-            id: ticket.id,
-            [idKey]: selectedCoupon.id,
-            [objectKey]: selectedCoupon,
-          }),
-        databaseUpdate: async () =>
-          updateTicketFields({
-            id: ticket.id,
-            [idKey]: selectedCoupon.id,
-          }),
-        localRevert: () => setPartialTicket(ticket),
+      ticket.incrementalPatch({
+        [key]: selectedCoupon.id,
       });
     }
-  }, [selectedCoupon]);
+  }, [key, selectedCoupon, ticket]);
+
+  const { result: coupon, collection: couponsCollection } = useRxData(
+    "coupons",
+    useCallback(
+      (collection) => collection.findOne(ticket[key] || "NOT ID"),
+      [key, ticket],
+    ),
+  );
 
   return (
     <>
       <div className="flex items-center gap-2">
-        {ticket[objectKey] ? (
+        {coupon ? (
           <>
             <Tooltip
               content={
@@ -75,7 +69,7 @@ export default function CouponRelationManager({
                 }`}
                 href={{
                   pathname: "/dashboard/coupons",
-                  query: { query: "=" + ticket[objectKey]!.code },
+                  query: { query: "=" + coupon.code },
                 }}
               >
                 <TicketIconSolid className="h-4 w-4 hover:scale-105" />
@@ -83,25 +77,15 @@ export default function CouponRelationManager({
             </Tooltip>
             <button
               className="text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600"
-              onClick={() =>
-                optimisticUpdate({
-                  value: {},
-                  localUpdate: () =>
-                    setPartialTicket({
-                      id: ticket.id,
-                      [objectKey]: null,
-                      [idKey]: null,
-                    }),
-                  databaseUpdate: async () =>
-                    updateTicketFields({
-                      id: ticket.id,
-                      [idKey]: null,
-                    }),
-                  localRevert: () => setPartialTicket(ticket),
-                  confirmation:
-                    "Naozaj chcete vymazať prepojenie na tento poukaz?",
-                })
-              }
+              onClick={() => {
+                if (
+                  !confirm("Naozaj chcete vymazať prepojenie na tento poukaz?")
+                )
+                  return;
+                ticket.incrementalPatch({
+                  [key]: null,
+                });
+              }}
             >
               <TrashIcon className="h-3 w-3" />
             </button>
@@ -117,7 +101,19 @@ export default function CouponRelationManager({
                 <CouponCodeField
                   coupon={selectedCoupon}
                   setCoupon={setSelectedCoupon}
-                  validate={async (code) => fetchCoupon(code)}
+                  validate={async (code) => {
+                    if (!couponsCollection) {
+                      console.log("No collection");
+                      return undefined;
+                    }
+                    const coupon = await couponsCollection
+                      .findOne({ selector: { code } })
+                      .exec();
+                    if (coupon && validateCoupon(coupon)) {
+                      return coupon;
+                    }
+                    return null;
+                  }}
                 />
               </div>
               <TicketIconOutline

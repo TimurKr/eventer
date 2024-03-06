@@ -95,39 +95,3 @@ export function searchTickets(
 
   return fuse2.search(term).map((r) => r.item);
 }
-
-// export function mergeNewEvents({
-//   newEvents,
-//   oldEvents,
-//   searchTerm,
-//   contacts = [],
-// }: {
-//   newEvents: fetchEventsReturnType[];
-//   oldEvents?: Events[];
-//   searchTerm?: string;
-//   contacts?: Contacts[];
-// }): {
-//   allEvents: Events[];
-//   events: Events[];
-//   highlightedTicketIds: Tickets["id"][];
-// } {
-//   const allEvents = newEvents.map((event) => ({
-//     ...(oldEvents?.find((e) => e.id === event.id) || {
-//       lockedArrived: true,
-//       showCancelledTickets: false,
-//       isExpanded: false,
-//     }),
-//     ...event,
-//     tickets: event.tickets.sort(ticketSortFunction),
-//     cancelled_tickets: event.cancelled_tickets.sort(ticketSortFunction),
-//   }));
-//   if (!searchTerm) {
-//     return { allEvents, events: allEvents, highlightedTicketIds: [] };
-//   }
-//   const { events, highlightedTicketIds } = search(
-//     allEvents,
-//     searchTerm,
-//     contacts,
-//   );
-//   return { allEvents, events, highlightedTicketIds };
-// }

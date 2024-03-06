@@ -1,4 +1,4 @@
-import { Coupons } from "@/utils/supabase/database.types";
+import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { Spinner } from "flowbite-react";
 import {
   Dispatch,
@@ -8,15 +8,29 @@ import {
   useTransition,
 } from "react";
 
+/**
+ * Renders a coupon code input field.
+ */
 export default function CouponCodeField({
   coupon,
   setCoupon,
   validate,
   defaultCode,
 }: {
-  coupon: Coupons | null | undefined;
-  setCoupon: Dispatch<SetStateAction<Coupons | null | undefined>>;
-  validate: (code: string) => Promise<Coupons | null | undefined>;
+  /**
+   * The coupon document. Null if invalid, undefined if not validated yet.
+   */
+  coupon: CouponsDocument | null | undefined;
+  /**
+   * The function to set the coupon document. Well set it to null if invalid,
+   * undefined if not validated yet.
+   */
+  setCoupon: Dispatch<SetStateAction<CouponsDocument | null | undefined>>;
+  /**
+   * The function to validate the coupon code. Shuold return the coupon if valid,
+   * null if invalid, undefined if not validated yet.
+   */
+  validate: (code: string) => Promise<CouponsDocument | null | undefined>;
   defaultCode?: string;
 }) {
   const [code, setCode] = useState("");
@@ -30,7 +44,7 @@ export default function CouponCodeField({
         setCoupon(coupon);
       });
     }
-  }, []);
+  }, [defaultCode, setCoupon, validate]);
 
   return (
     <div className="relative me-auto w-40">

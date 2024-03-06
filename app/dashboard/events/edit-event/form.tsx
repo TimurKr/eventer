@@ -1,19 +1,18 @@
 "use client";
 
+import { useRxData } from "@/rxdb/db";
 import {
   FormikCheckboxField,
   FormikSelectField,
-  SubmitButton,
-} from "@/utils/forms/FormElements_dep";
+} from "@/utils/forms/FormikElements";
+import SubmitButton from "@/utils/forms/SubmitButton";
 import { Alert, Datepicker } from "flowbite-react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store_dep";
-import { insertEvent, updateEvent } from "../serverActions";
 
 export type EditEventFormProps = {
   eventId?: string;
@@ -22,84 +21,66 @@ export type EditEventFormProps = {
 export default function EditEventForm(
   props?: EditEventFormProps & { onSubmit?: () => void },
 ) {
-  const {
-    events: { addEvent, setPartialEvent, removeEvent },
-    services: { allServices },
-    event,
-  } = useStoreContext((state) => ({
-    ...state,
-    event: state.events.allEvents.find(
-      (e) => e.id.toString() === props?.eventId,
-    ),
-  }));
-
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const router = useRouter();
 
-  if (allServices.length === 0) {
+  const { result: allServices } = useRxData("services", (collection) =>
+    collection.find().sort("name"),
+  );
+
+  const { result: event, collection: eventsCollection } = useRxData(
+    "events",
+    (collection) => collection.findOne(props?.eventId || "Not an ID"),
+  );
+
+  const initialValues = useMemo(
+    () => ({
+      date: event
+        ? new Date(event.datetime).toDateString()
+        : new Date().toDateString(),
+      time: event
+        ? moment(event.datetime).startOf("hour").format("HH:mm")
+        : moment().startOf("hour").format("HH:mm"),
+      isPublic: event?.is_public || false,
+      service_id: event?.service_id || allServices?.[0]?.id || "",
+    }),
+    [allServices, event],
+  );
+
+  if (!allServices?.length) {
     return null;
   }
-
-  const initialValues = {
-    date: new Date().toDateString(),
-    time: moment().startOf("hour").format("HH:mm"),
-    isPublic: false,
-    service_id: event?.service_id || allServices[0].id,
-  };
 
   type Values = typeof initialValues;
 
   const create = async (values: Values) => {
-    const { data, error } = await insertEvent({
+    if (!eventsCollection) return;
+    await eventsCollection.insert({
+      id: crypto.randomUUID(),
       datetime: new Date(values.date + " " + values.time).toISOString(),
       is_public: values.isPublic,
       service_id: values.service_id,
-    });
-    if (error) {
-      setErrorMessages(error.message.split("\n"));
-      return;
-    }
-    addEvent({
-      ...data[0],
-      tickets: [],
-      cancelled_tickets: [],
-      isExpanded: true,
-      lockedArrived: true,
-      showCancelledTickets: false,
     });
     toast.success("Udalosť vytvorená!", { autoClose: 1500 });
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 
   const update = async (values: Values) => {
-    const { data, error } = await updateEvent({
-      id: event!.id,
+    if (!event) return;
+    await event.patch({
       datetime: new Date(values.date + " " + values.time).toISOString(),
       is_public: values.isPublic,
       service_id: values.service_id,
     });
-    if (error) {
-      setErrorMessages(error.message.split("\n"));
-      return;
-    }
-    setPartialEvent(data[0]);
     toast.success("Udalosť upravená!", { autoClose: 1500 });
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 
   return (
     <Formik
-      initialValues={{
-        date: event
-          ? new Date(event.datetime).toDateString()
-          : new Date().toDateString(),
-        time: event
-          ? moment(event.datetime).startOf("hour").format("HH:mm")
-          : moment().startOf("hour").format("HH:mm"),
-        isPublic: event?.is_public || false,
-        service_id: event?.service_id || allServices[0].id,
-      }}
+      enableReinitialize
+      initialValues={initialValues}
       onSubmit={event ? update : create}
     >
       {({ setFieldValue, isSubmitting }) => (
