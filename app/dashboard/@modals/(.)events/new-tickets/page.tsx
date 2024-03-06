@@ -11,7 +11,10 @@ export default function NewServiceModal({
 }) {
   const router = useRouter();
 
-  if (!searchParams.eventId) return null;
+  if (!searchParams.eventId) {
+    router.replace("/dashboard/events");
+    return null;
+  }
 
   return (
     <>

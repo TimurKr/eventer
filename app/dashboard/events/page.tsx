@@ -5,13 +5,13 @@ import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import InlineLoading from "@/utils/components/InlineLoading";
+import Loading from "@/utils/components/loading";
 import {
   InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
 } from "@/utils/forms/InstantFields";
 import { useBrowserUser } from "@/utils/supabase/browser";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import {
   EllipsisHorizontalIcon,
   LockClosedIcon,
@@ -728,7 +728,7 @@ function EventDetail({
       key={event.id}
       className={`flex flex-col rounded-lg transition-all first:mt-0 last:mb-0 ${
         isExpanded || searchTerm
-          ? "my-6 !border-slate-300 bg-slate-100"
+          ? "my-6 !border-slate-300 bg-slate-100 shadow-lg"
           : "my-2"
       }`}
     >
@@ -753,17 +753,6 @@ function EventDetail({
           <EditEventButton eventId={event.id.toString()} />
           <button
             type="button"
-            // onClick={() =>
-            //   optimisticUpdate({
-            //     value: { id: event.id, is_public: !event.is_public },
-            //     localUpdate: setPartialEvent,
-            //     databaseUpdate: updateEvent,
-            //     localRevert: () => setPartialEvent(event),
-            //     loadingMessage: "Mením status...",
-            //     successMessage: "Status zmenený",
-            //     hideToast: true,
-            //   })
-            // }
             onClick={() =>
               event.incrementalPatch({ is_public: !event.is_public })
             }
@@ -793,15 +782,6 @@ function EventDetail({
               }
               if (!confirm("Naozaj chcete vymazať túto udalosť?")) return;
               event.remove();
-              // optimisticUpdate({
-              //   confirmation: "Naozaj chcete vymazať túto udalosť?",
-              //   value: {},
-              //   localUpdate: () => removeEvent(event.id),
-              //   databaseUpdate: () => deleteEvent(event.id),
-              //   localRevert: () => addEvent(event),
-              //   loadingMessage: "Vymazávam...",
-              //   successMessage: "Udalosť vymazaná",
-              // });
             }}
           >
             Vymazať udalosť
@@ -869,17 +849,6 @@ function EventDetail({
                   ticketsCollection?.bulkRemove(
                     selectedTickets.map((t) => t.id),
                   );
-                  // optimisticUpdate({
-                  //   confirmation: `POZOR! Táto akcia je nevratná, stratíte všetky údaje. Naozaj chcete vymazať označené lístky (${selectedTickets.length})? Zvážte iba zmenu statusu na zrušené.`,
-                  //   value: selectedTickets.map((t) => t.id),
-                  //   localUpdate: () =>
-                  //     removeTickets(selectedTickets.map((t) => t.id)),
-                  //   databaseUpdate: () =>
-                  //     deleteTickets(selectedTickets.map((t) => t.id)),
-                  //   localRevert: () => addTickets(event.id, selectedTickets),
-                  //   loadingMessage: "Vymazávam...",
-                  //   successMessage: "Lístky vymazané",
-                  // });
                 }}
               >
                 Vymazať
@@ -1014,7 +983,7 @@ export default function Page() {
 
   const user = useBrowserUser();
 
-  const { result: allServices } = useRxData(
+  const { result: allServices, isFetching: servicesFetching } = useRxData(
     "services",
     useCallback(
       (collection) =>
@@ -1027,9 +996,10 @@ export default function Page() {
         }),
       [user],
     ),
+    { hold: !user, initialResult: [] },
   );
 
-  const { result: allEvents } = useRxData(
+  const { result: allEvents, isFetching: eventsFetching } = useRxData(
     "events",
     useCallback(
       (collection) =>
@@ -1043,9 +1013,10 @@ export default function Page() {
         }),
       [allServices],
     ),
+    { hold: servicesFetching, initialResult: [] },
   );
 
-  const { result: allTickets } = useRxData(
+  const { result: allTickets, isFetching: ticketsFetching } = useRxData(
     "tickets",
     useCallback(
       (collection) =>
@@ -1056,9 +1027,10 @@ export default function Page() {
         }),
       [allEvents],
     ),
+    { hold: eventsFetching, initialResult: [] },
   );
 
-  const { result: allContacts } = useRxData(
+  const { result: allContacts, isFetching: contactsFetching } = useRxData(
     "contacts",
     useCallback(
       (collection) =>
@@ -1072,6 +1044,7 @@ export default function Page() {
         }),
       [allTickets],
     ),
+    { hold: ticketsFetching, initialResult: [] },
   );
 
   const highlightedTickets = useMemo(
@@ -1085,13 +1058,16 @@ export default function Page() {
 
   const events = useMemo(
     () =>
-      allEvents?.filter((e) =>
-        highlightedTickets.some((t) => t.event_id === e.id),
-      ) || [],
+      highlightedTickets.length > 0
+        ? allEvents.filter((e) =>
+            highlightedTickets.some((t) => t.event_id === e.id),
+          )
+        : allEvents,
     [allEvents, highlightedTickets],
   );
 
-  const isFetching = !allEvents || !allTickets || !allContacts;
+  const isFetching =
+    servicesFetching || eventsFetching || ticketsFetching || contactsFetching;
 
   return (
     <>
@@ -1102,9 +1078,7 @@ export default function Page() {
           searchTerm,
           results: highlightedTickets.length,
         }}
-        actionButton={
-          allServices && allServices.length > 0 && <EditEventButton />
-        }
+        actionButton={allServices.length > 0 && <EditEventButton />}
       />
       {events.length > 0 ? (
         <ol
@@ -1116,13 +1090,8 @@ export default function Page() {
           ))}
         </ol>
       ) : isFetching ? (
-        <div className="flex flex-col items-center p-10">
-          <ArrowPathIcon className="w-12 text-gray-400 animate-spin" />
-          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
-            Načítavam predstavenia
-          </p>
-        </div>
-      ) : allServices?.length ? (
+        <Loading text="Načítavam udalosti..." />
+      ) : allServices.length ? (
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />
           <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">

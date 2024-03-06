@@ -14,6 +14,6 @@ export function contactsEqual(
 
 export const TicketsSorting = [
   { billing_id: "asc" },
-  { is_vip: "asc" },
+  { type_id: "asc" },
   { guest_id: "asc" },
 ] as Record<string, "asc" | "desc">[];

@@ -3,12 +3,9 @@
 import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
 import InlineLoading from "@/utils/components/InlineLoading";
+import Loading from "@/utils/components/loading";
 import { TextField } from "@/utils/forms/Fields";
-import {
-  ArrowPathIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import Fuse from "fuse.js";
 import Link from "next/link";
@@ -120,12 +117,7 @@ export default function Page() {
           ))}
         </ul>
       ) : isFetching ? (
-        <div className="flex flex-col items-center p-10">
-          <ArrowPathIcon className="w-12 text-gray-400 animate-spin" />
-          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
-            Načítavam predstavenia
-          </p>
-        </div>
+        <Loading text="Načítavam predstavenia..." />
       ) : (
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />
@@ -135,7 +127,6 @@ export default function Page() {
               : "Takéto predstavenie neexistuje, chcete si také vyrobiť?"}
           </p>
           <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
-            {/* TODO: Autofil the searchTerm */}
             <ServiceForm onSubmit={() => {}} initialTitle={searchTerm} />
           </div>
         </div>

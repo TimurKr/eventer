@@ -5,6 +5,7 @@ import { ContactsDocumentType } from "@/rxdb/schemas/public/contacts";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { TicketTypesDocument } from "@/rxdb/schemas/public/ticket_types";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
+import InlineLoading from "@/utils/components/InlineLoading";
 import CustomComboBox from "@/utils/forms/ComboBox";
 import {
   CustomErrorMessage,
@@ -22,7 +23,7 @@ import { CheckBadgeIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Alert, Tooltip } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import Link from "next/link";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
@@ -68,7 +69,7 @@ function AddTicketButton({
       type="button"
       className={`flex items-center gap-2 rounded-lg border p-0 px-2 py-1 text-sm ${
         type.capacity && creating > type.capacity - (soldTickets?.length || 0)
-          ? "border-red-100 bg-red-100 text-red-600"
+          ? "border-red-100 bg-red-100 text-red-600 hover:cursor-default"
           : type.capacity &&
               creating == type.capacity - (soldTickets?.length || 0)
             ? "border-gray-100 bg-gray-50 text-gray-400 hover:cursor-default"
@@ -108,7 +109,7 @@ function TooManySoldAlert({
     "tickets",
     useCallback(
       (c) =>
-        c.count({
+        c.find({
           selector: {
             type_id: type.id,
             payment_status: { $ne: "zrušené" },
@@ -117,11 +118,12 @@ function TooManySoldAlert({
         }),
       [eventId, type.id],
     ),
+    { initialResult: [] },
   );
 
   const afterSaleCount = useMemo(
     () =>
-      (soldTickets || 0) +
+      (soldTickets.length || 0) +
       creatingTickets.filter((t) => t.type_id == type.id).length,
     [creatingTickets, soldTickets, type.id],
   );
@@ -155,12 +157,12 @@ export default function NewTicketsForm({
     undefined,
   );
 
-  const { result: event } = useRxData(
+  const { result: event, isFetching: isEventFetching } = useRxData(
     "events",
     useCallback((collection) => collection.findOne(eventId), [eventId]),
   );
 
-  const { result: ticketTypes } = useRxData(
+  const { result: ticketTypes, isFetching: isFetchingTicketTypes } = useRxData(
     "ticket_types",
     useCallback(
       (collection) =>
@@ -169,6 +171,10 @@ export default function NewTicketsForm({
         }),
       [event?.service_id],
     ),
+    {
+      hold: isEventFetching,
+      initialResult: [],
+    },
   );
 
   const { result: allContacts, collection: contactsCollection } = useRxData(
@@ -315,11 +321,12 @@ export default function NewTicketsForm({
     router.back();
   };
 
-  if (event === undefined) {
-    return redirect("/dashboard/events");
+  if (event === undefined && !isEventFetching) {
+    router.replace("/dashboard/events");
+    return null;
   }
 
-  if (!ticketTypes?.length) {
+  if (ticketTypes.length === 0 && !isFetchingTicketTypes) {
     return (
       <div className="flex h-full w-full flex-col items-center gap-2">
         <p>Na zvolenú udalosť neexistujú typy lístkov</p>
@@ -351,7 +358,7 @@ export default function NewTicketsForm({
           <p className="ps-1 font-bold">Fakturčné údaje</p>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
             <CustomComboBox
-              options={(allContacts || []) as ContactsDocumentType[]}
+              options={allContacts as ContactsDocumentType[]}
               displayFun={(c) => c?.name || ""}
               searchKeys={["name"]}
               newValueBuilder={(input) => ({
@@ -512,15 +519,19 @@ export default function NewTicketsForm({
                     <CustomErrorMessage fieldMeta={getFieldMeta("tickets")} />
                   </div>
                   <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
-                    {ticketTypes.map((type) => (
-                      <AddTicketButton
-                        key={type.id}
-                        type={type}
-                        creatingTickets={values.tickets}
-                        eventId={eventId}
-                        onClick={ticketsProps.push}
-                      />
-                    ))}
+                    {isFetchingTicketTypes ? (
+                      <InlineLoading />
+                    ) : (
+                      ticketTypes.map((type) => (
+                        <AddTicketButton
+                          key={type.id}
+                          type={type}
+                          creatingTickets={values.tickets}
+                          eventId={eventId}
+                          onClick={ticketsProps.push}
+                        />
+                      ))
+                    )}
                     <button
                       type="button"
                       className="rounded-lg p-2 text-gray-600 transition-all hover:scale-110 hover:text-gray-700"

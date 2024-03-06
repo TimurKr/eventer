@@ -145,8 +145,8 @@ export function RxHookBuilder<
     return collection;
   }
 
-  type State<Result> = {
-    result: Result | undefined;
+  type State<Result, Initial extends Result | undefined> = {
+    result: Initial extends undefined ? Result | undefined : Result;
     isFetching: boolean;
   };
 
@@ -159,10 +159,10 @@ export function RxHookBuilder<
     | { type: ActionType.SET_RESULT; result: Result }
     | { type: ActionType.SET_FETCHING; isFetching: boolean };
 
-  function reducer<Result>(
-    state: State<Result>,
+  function reducer<Result, Initial extends Result | undefined>(
+    state: State<Result, Initial>,
     action: Action<Result>,
-  ): State<Result> {
+  ): State<Result, Initial> {
     switch (action.type) {
       case ActionType.SET_RESULT:
         return { ...state, result: action.result, isFetching: false };
@@ -173,17 +173,32 @@ export function RxHookBuilder<
     }
   }
 
+  type QueryOptions<Result> = {
+    /**
+     * If you set hold to true, the result will stay undefined and isFetching set to true
+     * until the hold changes to false. This is useful for preventing the component from
+     * fetching the data when the query is not ready yet.
+     */
+    hold?: boolean;
+
+    /**
+     * Initial result to result
+     */
+    initialResult?: Result;
+  };
+
   /**
    * Custom hook for executing an RxQuery and managing its state.
    *
    * @param query The RxQuery instance to execute.
    * @returns result - The query result, or undefined if the query is still fetching.
    */
-  function useRxQuery<DocType, Result>(
+  function useRxQuery<DocType, Result, Initial extends Result>(
     query: RxQuery<DocType, Result, {}, any> | undefined,
+    options?: QueryOptions<Initial>,
   ) {
-    const [state, dispatch] = useReducer(reducer<Result>, {
-      result: undefined,
+    const [state, dispatch] = useReducer(reducer<Result, Initial>, {
+      result: options?.initialResult as Result,
       isFetching: true,
     });
 
@@ -191,11 +206,23 @@ export function RxHookBuilder<
       if (!query) {
         return;
       }
+      if (options?.hold) {
+        console.log(
+          `Holding query ${query.collection.name} : ${query.toString()}`,
+        );
+        return;
+      }
+      console.log(
+        `Subscribing to query ${query.collection.name} : ${query.toString()}`,
+      );
       const subscription = query.$.subscribe((result) => {
         dispatch({ type: ActionType.SET_RESULT, result });
       });
-      return () => subscription.unsubscribe();
-    }, [query]);
+      return () => {
+        subscription.unsubscribe();
+        dispatch({ type: ActionType.SET_FETCHING, isFetching: true });
+      };
+    }, [options?.hold, query]);
 
     return state;
   }
@@ -219,6 +246,7 @@ export function RxHookBuilder<
       {},
       any
     >,
+    options?: QueryOptions<Result>,
   ) {
     const collection = useRxCollection(collectionKey);
 
@@ -227,7 +255,7 @@ export function RxHookBuilder<
       [collection, queryConstructor],
     );
 
-    return { collection, ...useRxQuery(_query) };
+    return { collection, ...useRxQuery(_query, options) };
   }
 
   return {

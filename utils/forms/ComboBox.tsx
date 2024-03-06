@@ -50,7 +50,8 @@ export default function CustomComboBox<T extends {}>({
   useEffect(() => {
     setValue(defaultValue || null);
     setQuery(defaultValue ? displayFun(defaultValue) : "");
-  }, [defaultValue, displayFun]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValue]);
 
   const filteredOptions =
     query !== ""
@@ -86,9 +87,9 @@ export default function CustomComboBox<T extends {}>({
               displayValue={() => query}
               autoComplete="off"
               placeholder={placeholder}
-              onBlur={(e) => {
-                setQuery(value ? displayFun(value) : "");
-              }}
+              // onBlur={(e) => {
+              //   setQuery(value ? displayFun(value) : "");
+              // }}
             />
             <div className="absolute inset-y-0 left-1 grid items-center p-1">
               {iconStart}
