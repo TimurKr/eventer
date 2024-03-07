@@ -21,8 +21,6 @@ export function RxHookBuilder<
 ) {
   const Context = createContext<RxDatabase<Collections> | null>(null);
 
-  console.log("\n\n\nCreated context!!!!!!!!!!!!!!!!!!\n\n\n");
-
   let dbPromise: ReturnType<typeof dbInitializator> | undefined;
 
   /**
@@ -46,22 +44,40 @@ export function RxHookBuilder<
       useState<{ [P in CollectionKeys]: RxReplicationState<any, any> }>();
 
     useEffect(() => {
+      // Handle online/offline events
+
+      // Timout to debounce offline events, since the user doesn't
+      // need to know thy are offline immediately
+      let offlineTimeout: NodeJS.Timeout | undefined;
+
       function _handleOnline() {
-        console.log("Online");
-        handleOnline && handleOnline();
+        console.debug("Online!");
         if (replications) {
           for (const key in replications) {
             replications[key].reSync();
           }
         }
+        if (offlineTimeout) {
+          clearTimeout(offlineTimeout);
+          offlineTimeout = undefined;
+          return;
+        }
+        handleOnline && handleOnline();
       }
 
       function _handleOffline() {
-        handleOffline && handleOffline();
+        console.debug("Offline!");
+        if (!handleOffline) return;
+        if (offlineTimeout) clearTimeout(offlineTimeout);
+        offlineTimeout = setTimeout(() => {
+          handleOffline();
+          offlineTimeout = undefined;
+        }, 3000);
       }
 
       handleOnline && window.addEventListener("online", _handleOnline);
       handleOffline && window.addEventListener("offline", _handleOffline);
+
       return () => {
         handleOnline && window.removeEventListener("online", _handleOnline);
         handleOffline && window.removeEventListener("offline", _handleOffline);
@@ -77,7 +93,6 @@ export function RxHookBuilder<
         });
         return () => {
           if (!dbPromise) return;
-          console.log("I am canceling my subscriptions!");
           dbPromise.then((r) => {
             for (const key in r.replications) {
               r.replications[key].cancel();
@@ -145,8 +160,8 @@ export function RxHookBuilder<
     return collection;
   }
 
-  type State<Result, Initial extends Result | undefined> = {
-    result: Initial extends undefined ? Result | undefined : Result;
+  type State<Result> = {
+    result: Result;
     isFetching: boolean;
   };
 
@@ -159,10 +174,10 @@ export function RxHookBuilder<
     | { type: ActionType.SET_RESULT; result: Result }
     | { type: ActionType.SET_FETCHING; isFetching: boolean };
 
-  function reducer<Result, Initial extends Result | undefined>(
-    state: State<Result, Initial>,
+  function reducer<Result>(
+    state: State<Result>,
     action: Action<Result>,
-  ): State<Result, Initial> {
+  ): State<Result> {
     switch (action.type) {
       case ActionType.SET_RESULT:
         return { ...state, result: action.result, isFetching: false };
@@ -193,12 +208,16 @@ export function RxHookBuilder<
    * @param query The RxQuery instance to execute.
    * @returns result - The query result, or undefined if the query is still fetching.
    */
-  function useRxQuery<DocType, Result, Initial extends Result>(
+  function useRxQuery<DocType, Result, Options extends QueryOptions<Result>>(
     query: RxQuery<DocType, Result, {}, any> | undefined,
-    options?: QueryOptions<Initial>,
+    options?: Options,
   ) {
-    const [state, dispatch] = useReducer(reducer<Result, Initial>, {
-      result: options?.initialResult as Result,
+    type Returning = Options extends { initialResult: Result }
+      ? Result
+      : Result | undefined;
+
+    const [state, dispatch] = useReducer(reducer<Returning>, {
+      result: options?.initialResult as Returning,
       isFetching: true,
     });
 
@@ -207,16 +226,13 @@ export function RxHookBuilder<
         return;
       }
       if (options?.hold) {
-        console.log(
-          `Holding query ${query.collection.name} : ${query.toString()}`,
-        );
         return;
       }
-      console.log(
-        `Subscribing to query ${query.collection.name} : ${query.toString()}`,
-      );
       const subscription = query.$.subscribe((result) => {
-        dispatch({ type: ActionType.SET_RESULT, result });
+        dispatch({
+          type: ActionType.SET_RESULT,
+          result: result as unknown as Returning,
+        });
       });
       return () => {
         subscription.unsubscribe();
@@ -234,7 +250,11 @@ export function RxHookBuilder<
    * @param query The query function that takes the collection and returns an RxQuery.
    * @returns The state object containing the query result and fetch status.
    */
-  function useRxData<CollectionKey extends CollectionKeys, Result>(
+  function useRxData<
+    CollectionKey extends CollectionKeys,
+    Result,
+    Options extends QueryOptions<Result>,
+  >(
     collectionKey: CollectionKey,
     queryConstructor: (
       collection: Collections[CollectionKey],
@@ -246,7 +266,7 @@ export function RxHookBuilder<
       {},
       any
     >,
-    options?: QueryOptions<Result>,
+    options?: Options,
   ) {
     const collection = useRxCollection(collectionKey);
 
@@ -267,3 +287,33 @@ export function RxHookBuilder<
     useRxData,
   };
 }
+
+// interface MyFunctionOptions<T> {
+//   defaultValue?: T;
+// }
+
+// // Function signature without default value
+// // function myFunction<T>(arg: T): T | undefined;
+
+// // Function signature with default value
+// function myFunction<T, O extends MyFunctionOptions<T>>(
+//   arg: T,
+//   options?: O,
+// ): O extends { defaultValue: T } ? T : T | undefined {
+//   // Your implementation here
+
+//   // Example: Assuming some condition for failure
+//   if (options?.defaultValue) {
+//     return options.defaultValue;
+//   }
+
+//   return Math.random() > 0.5 ? arg : undefined;
+// }
+
+// // Example usage:
+
+// // Without providing a default value
+// const result1 = myFunction("42"); // result1: string | undefined
+
+// // Providing a default value
+// const result2 = myFunction("42" as string); // result2: string
