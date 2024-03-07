@@ -18,17 +18,17 @@ const schemaLiteral = {
     "email": {
       "description": "Database type: text. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "phone": {
       "description": "Database type: text. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "address": {
       "description": "Database type: text. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "business_id": {
       "description": "Database type: uuid. Default value: auth.uid()",

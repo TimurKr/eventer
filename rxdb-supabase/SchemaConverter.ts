@@ -187,11 +187,27 @@ export class SchemaConverter {
           (description ? description + " - " : "") +
           `Database type: ${column.type.name}. Default value: ${column.default}`,
         ...(this.convertColumnType({ column }) as Record<string, unknown>),
-        default:
-          column.default && !column.default.toString().includes("(")
-            ? column.default
-            : undefined,
       };
+
+      if (column.default) {
+        if (
+          column.default.toString().includes("(") &&
+          column.default.toString().includes(")")
+        ) {
+          // It is a function, which is not supported
+        } else {
+          if (
+            column.default.toString().startsWith("'") &&
+            column.default.toString().endsWith("'")
+          ) {
+            jsonSchema.properties[column.name].default = column.default
+              .toString()
+              .slice(1, -1);
+          } else {
+            jsonSchema.properties[column.name].default = column.default;
+          }
+        }
+      }
 
       if (column.referencedColumns.length === 1) {
         jsonSchema.properties[column.name].ref =

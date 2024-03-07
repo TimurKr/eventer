@@ -24,7 +24,7 @@ const schemaLiteral = {
     "payment_status": {
       "description": "Database type: text. Default value: 'reserved'",
       "type": "string",
-      "default": "'reserved'"
+      "default": "reserved"
     },
     "note": {
       "description": "Database type: text. Default value: null",

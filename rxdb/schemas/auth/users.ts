@@ -124,13 +124,13 @@ const schemaLiteral = {
     "phone_change": {
       "description": "Database type: text. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "phone_change_token": {
       "maxLength": 255,
       "description": "Database type: character varying. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "phone_change_sent_at": {
       "description": "Database type: timestamp with time zone. Default value: null",
@@ -146,7 +146,7 @@ const schemaLiteral = {
       "maxLength": 255,
       "description": "Database type: character varying. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "email_change_confirm_status": {
       "description": "Database type: smallint. Default value: 0",
@@ -162,7 +162,7 @@ const schemaLiteral = {
       "maxLength": 255,
       "description": "Database type: character varying. Default value: ''",
       "type": "string",
-      "default": "''"
+      "default": ""
     },
     "reauthentication_sent_at": {
       "description": "Database type: timestamp with time zone. Default value: null",
