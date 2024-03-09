@@ -58,26 +58,23 @@ export function searchTickets(
     tickets,
     contacts,
   }: {
-    tickets?: TicketsDocument[];
-    contacts?: ContactsDocument[];
+    tickets: TicketsDocument[];
+    contacts: ContactsDocument[];
   },
-): TicketsDocument[] {
-  if (!tickets || !contacts) return [];
-
-  // Prepare data
-  let data = tickets.map((t) => ({
-    ...t,
-    billing: contacts.find((c) => c.id === t.billing_id),
-    guest: contacts.find((c) => c.id === t.guest_id),
-  }));
-
+) {
   if (term === "") {
-    return tickets;
+    return [];
   }
 
-  // First find all relevant events
+  // Prepare data
+  let data = tickets.map((ticket) => ({
+    ticket,
+    billing: contacts.find((c) => c.id === ticket.billing_id),
+    guest: contacts.find((c) => c.id === ticket.guest_id),
+  }));
+
   const keys = [
-    "id",
+    "ticket.id",
     "guest.name",
     "guest.email",
     "guest.phone",
@@ -87,11 +84,13 @@ export function searchTickets(
   ];
 
   // Then for each event find the matching tickets and add tem to highlighted
-  const fuse2 = new Fuse(data, {
+  const fuse = new Fuse(data, {
     keys: keys,
     shouldSort: false,
     useExtendedSearch: true,
   });
 
-  return fuse2.search(term).map((r) => r.item);
+  const result = fuse.search(term).map((r) => r.item.ticket);
+
+  return result;
 }

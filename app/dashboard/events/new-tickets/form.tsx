@@ -4,7 +4,10 @@ import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocumentType } from "@/rxdb/schemas/public/contacts";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { TicketTypesDocument } from "@/rxdb/schemas/public/ticket_types";
-import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
+import {
+  TicketsDocument,
+  TicketsDocumentType,
+} from "@/rxdb/schemas/public/tickets";
 import InlineLoading from "@/utils/components/InlineLoading";
 import CustomComboBox from "@/utils/forms/ComboBox";
 import {
@@ -41,7 +44,10 @@ function AddTicketButton({
   type: TicketTypesDocument;
   creatingTickets: Pick<TicketsDocument, "type_id">[];
   eventId: string;
-  onClick: (ticket: Pick<TicketsDocument, "type_id" | "price">) => void;
+  onClick: (
+    ticket: Pick<TicketsDocumentType, "type_id" | "price"> &
+      Pick<ContactsDocumentType, "name" | "email" | "phone" | "address">,
+  ) => void;
 }) {
   const creating = useMemo(
     () => creatingTickets.filter((t) => t.type_id == type.id).length,
@@ -77,6 +83,10 @@ function AddTicketButton({
       }`}
       onClick={() =>
         onClick({
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
           type_id: type.id,
           price: type.price,
         })
@@ -179,7 +189,8 @@ export default function NewTicketsForm({
 
   const { result: allContacts, collection: contactsCollection } = useRxData(
     "contacts",
-    useCallback((collection) => collection.find(), []),
+    useCallback((c) => c.find(), []),
+    { initialResult: [] },
   );
 
   const ticketsCollection = useRxCollection("tickets");
@@ -191,17 +202,17 @@ export default function NewTicketsForm({
         billingName: Yup.string()
           .min(2, "Zadajte aspoň 2 znaky")
           .required("Meno je povinné"),
-        billingEmail: Yup.string().email("Zadajte platný email").optional(),
-        billingPhone: Yup.string().optional(),
+        billingEmail: Yup.string().email("Zadajte platný email"),
+        billingPhone: Yup.string(),
         paymentStatus: Yup.mixed()
           .oneOf(["zaplatené", "rezervované", "zrušené"])
           .required("Musíte zadať stav platby"),
         tickets: Yup.array()
           .of(
             Yup.object({
-              name: Yup.string().min(2, "Zadajte aspoň 2 znaky").optional(),
-              email: Yup.string().email("Zadajte platný email").optional(),
-              phone: Yup.string().optional(),
+              name: Yup.string().min(2, "Zadajte aspoň 2 znaky"),
+              email: Yup.string().email("Zadajte platný email"),
+              phone: Yup.string(),
               type_id: Yup.string()
                 .oneOf(
                   ticketTypes?.map((t) => t.id) || [],
@@ -221,6 +232,8 @@ export default function NewTicketsForm({
 
   const initialValues: TicketOrderType = {
     billingName: "",
+    billingEmail: "",
+    billingPhone: "",
     tickets: [],
     paymentStatus: "rezervované",
   };
@@ -252,39 +265,46 @@ export default function NewTicketsForm({
       });
     }
 
+    const s = values.tickets.map((ticket) => ({
+      name: ticket.name || values.billingName,
+      email: ticket.email || values.billingEmail,
+      phone: ticket.phone || values.billingPhone,
+    }));
+
     let oldGuestContacts = await contactsCollection
       .find({
         selector: {
-          $or: values.tickets.map((ticket) => ({
-            name: ticket.name || values.billingName,
-            email: ticket.email || values.billingEmail,
-            phone: ticket.phone || values.billingPhone,
-          })),
+          $or: s,
         },
       })
       .exec();
 
-    const { success: guestContacts } = await contactsCollection.bulkUpsert(
-      values.tickets.map((ticket) => {
-        const contact = oldGuestContacts.find((c) =>
-          contactsEqual(c, {
-            name: ticket.name || values.billingName,
-            email: ticket.email || values.billingEmail,
-            phone: ticket.phone || values.billingPhone,
-            address: "",
-          }),
-        );
-        if (contact) {
-          return contact;
-        }
-        return {
+    let upsertData: Partial<ContactsDocumentType>[] = [];
+
+    values.tickets.forEach((ticket) => {
+      const contact = oldGuestContacts.find((c) =>
+        contactsEqual(c, {
+          name: ticket.name || values.billingName,
+          email: ticket.email || values.billingEmail,
+          phone: ticket.phone || values.billingPhone,
+          address: "",
+        }),
+      );
+      if (!contact) {
+        upsertData.push({
           id: crypto.randomUUID(),
           name: ticket.name || values.billingName,
           email: ticket.email || values.billingEmail,
           phone: ticket.phone || values.billingPhone,
-        };
-      }),
+        });
+      }
+    });
+
+    const { success: newGuestContacts } = await contactsCollection.bulkUpsert(
+      upsertData.filter((c) => !!c),
     );
+
+    const guestContacts = oldGuestContacts.concat(newGuestContacts);
 
     const { success: createdTickets } = await ticketsCollection.bulkInsert(
       values.tickets.map((ticket) => ({
@@ -293,8 +313,8 @@ export default function NewTicketsForm({
         guest_id: guestContacts.find((c) =>
           contactsEqual(c, {
             name: ticket.name || values.billingName,
-            email: ticket.email || values.billingEmail || "",
-            phone: ticket.phone || values.billingPhone || "",
+            email: ticket.email || values.billingEmail,
+            phone: ticket.phone || values.billingPhone,
             address: "",
           }),
         )!.id,
@@ -307,7 +327,7 @@ export default function NewTicketsForm({
     );
     if (coupon) {
       // ServerAction
-      const r = await coupon.patch({
+      const r = await coupon.incrementalPatch({
         amount:
           coupon.amount -
           Math.min(
@@ -358,7 +378,11 @@ export default function NewTicketsForm({
           <p className="ps-1 font-bold">Fakturčné údaje</p>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
             <CustomComboBox
-              options={allContacts as ContactsDocumentType[]}
+              options={allContacts.map((c) => {
+                const { _attachments, _deleted, _meta, _rev, ...data } =
+                  c._data;
+                return data;
+              })}
               displayFun={(c) => c?.name || ""}
               searchKeys={["name"]}
               newValueBuilder={(input) => ({

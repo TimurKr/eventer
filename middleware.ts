@@ -11,7 +11,7 @@ const protectedRoutes: ExhaustiveRoute[] = ["/dashboard/*"];
 const onlyPublicRoutes: ExhaustiveRoute[] = ["/login", "/signup"];
 const redirects: Record<string, Route> = {
   "/": "/dashboard",
-  "/dashboard": "/dashboard/services",
+  "/dashboard": "/dashboard/events",
 };
 
 function pathInExhaustiveRoutes(route: string, routes: ExhaustiveRoute[]) {

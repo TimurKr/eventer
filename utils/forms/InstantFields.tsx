@@ -205,7 +205,7 @@ export function InstantTextField({
     const err = validate && (await validate(newValue));
     if (err) {
       refocus();
-      setError(err);
+      setError(null);
       toast.error(err, {
         closeButton: true,
         autoClose: false,
@@ -232,7 +232,7 @@ export function InstantTextField({
         type={type}
         className={`m-0.5 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
           error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-        } ${inline ? "font-mono" : ""} ${className}`}
+        } ${inline ? "font-mono" : ""} ${className} ${!vertical && label ? "" : "grow"}`}
         value={value}
         placeholder={placeholder}
         autoFocus={autoFocus || !showAlways}
@@ -253,6 +253,7 @@ export function InstantTextField({
           if (e.key === "Escape") {
             (e.target as HTMLInputElement).value = defaultValue || "";
             setValue(defaultValue || "");
+            setError(null);
             (e.target as HTMLInputElement).blur();
           }
         }}

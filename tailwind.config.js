@@ -13,9 +13,17 @@ module.exports = {
           "0%": { opacity: 0, transform: "translateY(1rem)" },
           "100%": { opacity: 1, transform: "translateY(0)" },
         },
+        wiggle: {
+          "0%": { transform: "rotate(-3deg) translateX(2px)" },
+          "50%": {
+            transform: "rotate(0deg) translateX(0px) translateY(-2px)",
+          },
+          "100%": { transform: "rotate(3deg) translateX(-2px)" },
+        },
       },
       animation: {
         in: "animate-in 0.3s ease 0.15s both",
+        wiggle: "wiggle 2s ease-in-out infinite both",
       },
       colors: {
         background: "hsl(var(--background))",

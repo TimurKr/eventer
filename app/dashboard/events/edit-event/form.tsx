@@ -68,7 +68,7 @@ export default function EditEventForm(
 
   const update = async (values: Values) => {
     if (!event) return;
-    await event.patch({
+    await event.incrementalPatch({
       datetime: new Date(values.date + " " + values.time).toISOString(),
       is_public: values.isPublic,
       service_id: values.service_id,
@@ -91,6 +91,7 @@ export default function EditEventForm(
               showClearButton={false}
               showTodayButton={false}
               weekStart={1}
+              defaultDate={new Date(initialValues.date)}
               inline
               color="red"
               onSelectedDateChanged={(date) =>

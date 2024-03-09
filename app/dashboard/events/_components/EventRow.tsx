@@ -116,21 +116,25 @@ export default function EventRow({
                   </span>
                   {type.capacity && "/" + type.capacity}
                 </div>
-                <Progress
-                  className="mb-1"
-                  size="sm"
-                  progress={type.capacity ? (sold / type.capacity) * 100 : 0}
-                  color={
-                    type.capacity && sold > type.capacity
-                      ? "red"
-                      : type.is_vip
-                        ? "yellow"
-                        : "gray"
-                  }
-                  theme={{
-                    bar: "transition-all rounded-full",
-                  }}
-                />
+                {type.capacity ? (
+                  <Progress
+                    className="mb-1"
+                    size="sm"
+                    progress={(sold / type.capacity) * 100}
+                    color={
+                      sold > type.capacity
+                        ? "red"
+                        : type.is_vip
+                          ? "yellow"
+                          : "gray"
+                    }
+                    theme={{
+                      bar: "transition-all rounded-full",
+                    }}
+                  />
+                ) : (
+                  <hr className="h-1" />
+                )}
               </div>
             );
           })

@@ -38,7 +38,9 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
         <div>
           <TextField
             defaultValue={service.name}
-            updateValue={(name) => service.patch({ name: name || undefined })}
+            updateValue={(name) =>
+              service.incrementalPatch({ name: name || undefined })
+            }
             type="text"
             showAlways={false}
             autoFocus

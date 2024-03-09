@@ -12,6 +12,7 @@ import {
   InstantTextField,
 } from "@/utils/forms/InstantFields";
 import { useBrowserUser } from "@/utils/supabase/browser";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import {
   EllipsisHorizontalIcon,
   LockClosedIcon,
@@ -20,11 +21,11 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/solid";
 import { Checkbox, Dropdown, Table, Tooltip } from "flowbite-react";
+import moment from "moment";
 import { useSearchParams } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import { LiaUnlinkSolid } from "react-icons/lia";
-import { toast } from "react-toastify";
 import { number as yupNumber, string as yupString } from "yup";
 import Header from "../components/Header";
 import ServiceForm from "../services/edit/form";
@@ -76,6 +77,7 @@ function LinkUnlinkContact({
         }),
       [ticket, type],
     ),
+    { hold: !contact, initialResult: [] },
   );
 
   const usage_count = useMemo(() => {
@@ -89,71 +91,73 @@ function LinkUnlinkContact({
   }, [tickets, contact]);
 
   if (!contact || !contactsCollection || usage_count < 2) return null;
+  if (usage_count < 2) return null;
+  if (groupSize < 2 && type !== "guest_id") return null;
   return (
     <div className="inline-flex">
-      {usage_count > 1 && (groupSize > 1 || type === "guest_id") && (
-        <div
-          className={`inline-block p-1 ${
-            type === "guest_id" ? "invisible group-hover:visible" : ""
+      <div
+        className={`inline-block p-1 ${
+          type === "guest_id" ? "invisible group-hover:visible" : ""
+        }`}
+      >
+        <Tooltip
+          content={`Tento kontakt sa používa na ${
+            usage_count - 1
+          } iných miestach. Kliknutím sem ${
+            type === "guest_id"
+              ? "zrušíte tento link a umožníte zmeny iba na tomto mieste."
+              : "oddelíte jeden lístok z tejto skupiny."
           }`}
         >
-          <Tooltip
-            content={`Tento kontakt sa používa na ${
-              usage_count - 1
-            } iných miestach. Kliknutím sem ${
-              type === "guest_id"
-                ? "zrušíte tento link a umožníte zmeny iba na tomto mieste."
-                : "oddelíte jeden lístok z tejto skupiny."
-            }`}
-          >
-            <button
-              onClick={async () => {
-                const toastId = toast.loading("Vytváram kópiu kontaktu...");
-                const {
-                  _data: {
-                    id,
-                    created_at,
-                    _attachments,
-                    _meta,
-                    _deleted,
-                    _rev,
-                    ...contactData
-                  },
-                } = contact;
-                let name = contactData.name + ` (kópia ${1})`;
-                for (let i = 2; true; i++) {
-                  if (
-                    !(await contactsCollection
-                      .findOne({
-                        selector: { name: { $eq: name } },
-                      })
-                      .exec())
-                  )
-                    break;
-                  name = contactData.name + ` (kópia ${i})`;
-                }
-                const newContact = await contactsCollection.upsert({
-                  ...contactData,
-                  name,
-                  id: crypto.randomUUID(),
+          <button
+            onClick={async () => {
+              const {
+                _data: {
+                  id,
+                  created_at,
+                  _attachments,
+                  _meta,
+                  _deleted,
+                  _rev,
+                  ...contactData
+                },
+              } = contact;
+              let name = contactData.name + ` (kópia ${1})`;
+              for (let i = 2; true; i++) {
+                if (
+                  !(await contactsCollection
+                    .findOne({
+                      selector: { name: { $eq: name } },
+                    })
+                    .exec())
+                )
+                  break;
+                name = contactData.name + ` (kópia ${i})`;
+              }
+              const newContact = await contactsCollection.insert({
+                ...contactData,
+                name,
+                id: crypto.randomUUID(),
+              });
+              if (
+                ticket.guest_id === ticket.billing_id &&
+                type === "billing_id"
+              ) {
+                await ticket.incrementalPatch({
+                  guest_id: newContact.id,
+                  billing_id: newContact.id,
                 });
-                if (ticket.guest_id === ticket.billing_id) {
-                  await ticket.incrementalPatch({
-                    guest_id: newContact.id,
-                    billing_id: newContact.id,
-                  });
-                } else {
-                  await ticket.incrementalPatch({ [type]: newContact.id });
-                }
-              }}
-            >
-              <LiaUnlinkSolid
-                className={`inline h-4 w-4 hover:scale-105 hover:text-red-500 active:scale-110 active:text-red-700`}
-              />
-            </button>
-          </Tooltip>
-        </div>
-      )}
+              } else {
+                await ticket.incrementalPatch({ [type]: newContact.id });
+              }
+            }}
+          >
+            <LiaUnlinkSolid
+              className={`inline h-4 w-4 hover:scale-105 hover:text-red-500 active:scale-110 active:text-red-700`}
+            />
+          </button>
+        </Tooltip>
+      </div>
     </div>
   );
 }
@@ -191,18 +195,18 @@ function TicketRow({
   );
 
   const isSelected = useMemo(
-    () => selectedTickets.includes(ticket),
+    () => !!selectedTickets.find((st) => st.id === ticket.id),
     [selectedTickets, ticket],
   );
   const isHighlighted = useMemo(
-    () => highlightedTickets?.includes(ticket),
+    () => !!highlightedTickets?.find((ht) => ht.id === ticket.id),
     [highlightedTickets, ticket],
   );
 
   const ticketsCollection = useRxCollection("tickets");
   const couponsCollection = useRxCollection("coupons");
 
-  //TODO: Create a nice hook for finOne with populate
+  //TODO: Create a nice hook for findOne with populate
   const { result: billingContact, collection: contactsCollection } = useRxData(
     "contacts",
     useCallback(
@@ -267,7 +271,7 @@ function TicketRow({
         })
         .exec();
       if (!existingContact) {
-        return contact?.patch({ name: value || "" });
+        return contact?.incrementalPatch({ [field]: value || "" });
       }
       if (
         !confirm("Takýto kontakt už v databáze máte, táto operácia ich spojí.")
@@ -286,13 +290,13 @@ function TicketRow({
         .exec();
 
       const guestPromises = guestMentions.map((t) =>
-        t.patch({ guest_id: existingContact.id }),
+        t.incrementalPatch({ guest_id: existingContact.id }),
       );
       const billingPromises = billingMentions.map((t) =>
-        t.patch({ billing_id: existingContact.id }),
+        t.incrementalPatch({ billing_id: existingContact.id }),
       );
       const couponPromises = couponMentions.map((c) =>
-        c.patch({ contact_id: existingContact.id }),
+        c.incrementalPatch({ contact_id: existingContact.id }),
       );
       await Promise.all([
         ...guestPromises,
@@ -352,7 +356,10 @@ function TicketRow({
               )
             )
               return;
-            ticket.patch({ type_id: e.target.value, price: ticketType?.price });
+            ticket.incrementalPatch({
+              type_id: e.target.value,
+              price: ticketType?.price,
+            });
           }}
         >
           {ticketTypes?.map((type) => (
@@ -415,19 +422,21 @@ function TicketRow({
         <Table.Cell className="group border-x p-1" rowSpan={groupSize}>
           <div className="flex flex-col">
             <div className="flex">
-              <InstantTextField
-                defaultValue={billingContact?.name || ""}
-                type="text"
-                trim
-                placeholder="Meno"
-                className="grow"
-                validate={async (value) =>
-                  value == "" ? "Meno nesmie byť prázdne" : null
-                }
-                updateValue={(value) =>
-                  updateContactField(billingContact, "name", value || "")
-                }
-              />{" "}
+              <div className="grow">
+                <InstantTextField
+                  defaultValue={billingContact?.name || ""}
+                  type="text"
+                  trim
+                  placeholder="Meno"
+                  className="grow font-mono"
+                  validate={async (value) =>
+                    value == "" ? "Meno nesmie byť prázdne" : null
+                  }
+                  updateValue={(value) =>
+                    updateContactField(billingContact, "name", value || "")
+                  }
+                />
+              </div>
               <LinkUnlinkContact
                 groupSize={groupSize}
                 ticket={ticket}
@@ -442,9 +451,11 @@ function TicketRow({
               updateValue={(value) =>
                 updateContactField(billingContact, "phone", value || "")
               }
+              className="font-mono"
             />
             <InstantTextField
               defaultValue={billingContact?.email || ""}
+              className="font-mono"
               type="email"
               trim
               placeholder="Email"
@@ -467,7 +478,7 @@ function TicketRow({
           <InstantSwitchField
             disabled={lockedArrived}
             defaultValue={ticket.arrived!}
-            updateValue={(value) => ticket.patch({ arrived: value })}
+            updateValue={(value) => ticket.incrementalPatch({ arrived: value })}
           />
         )}
       </Table.Cell>
@@ -495,7 +506,7 @@ function TicketRow({
               ticketsToUpdate = [ticket];
 
             ticketsToUpdate.forEach((t) =>
-              t.patch({ payment_status: e.target.value }),
+              t.incrementalPatch({ payment_status: e.target.value }),
             );
           }}
           value={ticket.payment_status}
@@ -513,7 +524,9 @@ function TicketRow({
           className="absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
           defaultValue={ticket.note || ""}
           placeholder="Poznámka"
-          updateValue={(value) => ticket.patch({ note: value || undefined })}
+          updateValue={(value) =>
+            ticket.incrementalPatch({ note: value || undefined })
+          }
         />
       </Table.Cell>
       <Table.Cell className="whitespace-nowrap px-1 py-0 text-end">
@@ -529,15 +542,17 @@ function TicketRow({
           placeholder="Cena"
           inline={true}
           className="me-0"
-          validate={async (value) =>
-            yupNumber()
-              .min(0)
-              .validate(value)
+          validate={async (value) => {
+            return yupNumber()
+              .required("Zadajte cenu")
+              .validate(value || undefined)
               .then(() => null)
-              .catch((err) => err.message)
-          }
+              .catch((err) => err.message);
+          }}
           updateValue={(value) =>
-            ticket.patch({ price: value ? parseFloat(value) : undefined })
+            ticket.incrementalPatch({
+              price: value ? parseFloat(value) : undefined,
+            })
           }
         />{" "}
         €
@@ -634,14 +649,20 @@ function TicketRows({
           </React.Fragment>
         ))
       ) : (
-        <InlineLoading />
+        <Table.Row className="h-1">
+          <Table.Cell className="p-1" colSpan={10}>
+            <InlineLoading />
+          </Table.Cell>
+        </Table.Row>
       )}
       {!cancelled && (
         <Table.Row className="h-1">
           <Table.Cell className="p-1" colSpan={8} />
           <Table.Cell className="p-1 text-end font-bold tracking-wider text-black">
             <hr />
-            {allTickets?.reduce((acc, t) => acc + t.price, 0) || (
+            {allTickets ? (
+              allTickets.reduce((acc, t) => acc + t.price, 0)
+            ) : (
               <InlineLoading />
             )}{" "}
             €
@@ -662,15 +683,26 @@ function EventDetail({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<TicketsDocument[]>([]);
-  const [lockedArrived, setLockedArrived] = useState(false);
+  const [lockedArrived, setLockedArrived] = useState(true);
   const [showCancelledTickets, setShowCancelledTickets] = useState(false);
 
-  const toggleSelectedTicket = (ticket: TicketsDocument) => {
-    if (selectedTickets.includes(ticket)) {
-      setSelectedTickets(selectedTickets.filter((t) => t !== ticket));
-    } else {
-      setSelectedTickets([...selectedTickets, ticket]);
+  const toggleSelectedTicket = (
+    tickets: TicketsDocument | TicketsDocument[],
+  ) => {
+    let newSelectedTickets = selectedTickets;
+    if (!Array.isArray(tickets)) {
+      tickets = [tickets];
     }
+    tickets.forEach((ticket) => {
+      if (newSelectedTickets.find((st) => st === ticket)) {
+        newSelectedTickets = newSelectedTickets.filter(
+          (t) => t.id !== ticket.id,
+        );
+      } else {
+        newSelectedTickets = [...newSelectedTickets, ticket];
+      }
+    });
+    setSelectedTickets(newSelectedTickets);
   };
 
   const { result: allServices } = useRxData(
@@ -711,6 +743,11 @@ function EventDetail({
   );
 
   const { highlightedTickets, highlightedCancelledTickets } = useMemo(() => {
+    if (!searchTerm || !allTickets || !allContacts)
+      return {
+        highlightedTickets: undefined,
+        highlightedCancelledTickets: undefined,
+      };
     const all = searchTickets(searchTerm, {
       tickets: allTickets,
       contacts: allContacts,
@@ -723,19 +760,20 @@ function EventDetail({
     };
   }, [searchTerm, allTickets, allContacts]);
 
+  const isShown =
+    isExpanded ||
+    highlightedTickets?.length ||
+    highlightedCancelledTickets?.length;
+
   return (
     <li
       key={event.id}
       className={`flex flex-col rounded-lg transition-all first:mt-0 last:mb-0 ${
-        isExpanded || searchTerm
-          ? "my-6 !border-slate-300 bg-slate-100 shadow-lg"
-          : "my-2"
+        isShown ? "my-6 !border-slate-300 bg-slate-100 shadow-lg" : "my-2"
       }`}
     >
       <EventRow
-        className={`transition-all ${
-          isExpanded || searchTerm ? "!bg-slate-100" : ""
-        }`}
+        className={`transition-all ${isShown ? "!bg-slate-100" : ""}`}
         event={event}
         onClick={() => setIsExpanded(!isExpanded)}
         actionButton={(event) => (
@@ -744,7 +782,7 @@ function EventDetail({
       />
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          isExpanded || searchTerm
+          isShown
             ? "mb-2 grid-rows-[1fr] rounded-b-xl p-1 opacity-100"
             : "grid-rows-[0fr] opacity-0"
         }`}
@@ -791,7 +829,7 @@ function EventDetail({
       </div>
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          isExpanded || searchTerm
+          isShown
             ? "mb-2 grid-rows-[1fr] opacity-100"
             : "grid-rows-[0fr] opacity-0"
         }`}
@@ -806,17 +844,16 @@ function EventDetail({
           <div className="p-2">
             <div className="flex items-center gap-2 pb-1">
               <div className="flex flex-col text-xs text-gray-500">
-                {highlightedTickets.length > 0 ||
-                  (highlightedCancelledTickets.length > 0 && (
-                    <span>
-                      <span className="font-semibold">
-                        {highlightedTickets.length +
-                          highlightedCancelledTickets.length}{" "}
-                      </span>
-                      nájdených lítkov
+                {highlightedTickets !== undefined && (
+                  <span>
+                    <span className="font-semibold">
+                      {highlightedTickets.length +
+                        highlightedCancelledTickets.length}{" "}
                     </span>
-                  ))}
-                {highlightedCancelledTickets.length > 0 && (
+                    nájdených lítkov
+                  </span>
+                )}
+                {highlightedCancelledTickets && (
                   <span>
                     z toho{" "}
                     <span className="font-semibold">
@@ -862,18 +899,18 @@ function EventDetail({
                       <Checkbox
                         className="me-2"
                         checked={tickets.every((t) =>
-                          selectedTickets.includes(t),
+                          selectedTickets.find((st) => st.id === t.id),
                         )}
                         onChange={() => {
-                          const checked = !tickets.every((t) =>
-                            selectedTickets.includes(t),
+                          const checked = tickets.every((t) =>
+                            selectedTickets.find((st) => st.id === t.id),
                           );
                           const ticketsToToggle = tickets.filter((t) =>
-                            checked ? !selectedTickets.includes(t) : true,
+                            checked
+                              ? true
+                              : !selectedTickets.find((st) => st.id === t.id),
                           );
-                          ticketsToToggle.forEach((t) =>
-                            toggleSelectedTicket(t),
-                          );
+                          toggleSelectedTicket(ticketsToToggle);
                         }}
                       />
                       #
@@ -948,7 +985,7 @@ function EventDetail({
                           </Table.Cell>
                         </Table.Row>
                         {(showCancelledTickets ||
-                          highlightedCancelledTickets.length) && (
+                          highlightedCancelledTickets) && (
                           <TicketRows
                             event={event}
                             cancelled={true}
@@ -1049,21 +1086,38 @@ export default function Page() {
 
   const highlightedTickets = useMemo(
     () =>
-      searchTickets(searchTerm, {
-        tickets: allTickets,
-        contacts: allContacts,
-      }),
+      searchTerm && allContacts && allTickets
+        ? searchTickets(searchTerm, {
+            tickets: allTickets,
+            contacts: allContacts,
+          })
+        : undefined,
     [allContacts, allTickets, searchTerm],
   );
 
   const events = useMemo(
     () =>
-      highlightedTickets.length > 0
+      highlightedTickets
         ? allEvents.filter((e) =>
             highlightedTickets.some((t) => t.event_id === e.id),
           )
         : allEvents,
     [allEvents, highlightedTickets],
+  );
+
+  const { previousEvents, todayEvents, futureEvents } = useMemo(
+    () => ({
+      previousEvents: events.filter((e) =>
+        moment(e.datetime).endOf("D").isBefore(moment()),
+      ),
+      todayEvents: events.filter((e) =>
+        moment(e.datetime).isSame(moment(), "D"),
+      ),
+      futureEvents: events.filter((e) =>
+        moment(e.datetime).startOf("D").isAfter(moment()),
+      ),
+    }),
+    [events],
   );
 
   const isFetching =
@@ -1076,7 +1130,7 @@ export default function Page() {
         search={{
           search: (query) => setSearchTerm(query),
           searchTerm,
-          results: highlightedTickets.length,
+          results: highlightedTickets?.length || 0,
         }}
         actionButton={allServices.length > 0 && <EditEventButton />}
       />
@@ -1085,13 +1139,53 @@ export default function Page() {
           role="list"
           className={`w-auto divide-gray-400 rounded-xl border border-gray-200 p-2`}
         >
-          {events.map((event) => (
+          {futureEvents.map((event) => (
+            <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
+          ))}
+          {todayEvents.length > 0 && (
+            <li>
+              <div className="flex items-center m-6">
+                <p className="font-medium text-cyan-600">Dnes</p>
+                <div className="h-px bg-gray-200 mx-4 grow" />
+              </div>
+            </li>
+          )}
+          {todayEvents.map((event) => (
+            <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
+          ))}
+          {previousEvents.length > 0 && (
+            <li>
+              <div className="flex items-center m-6">
+                <p className="font-medium text-sm text-gray-600">História</p>
+                <div className="h-px bg-gray-200 mx-4 grow" />
+              </div>
+            </li>
+          )}
+          {previousEvents.map((event) => (
             <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
           ))}
         </ol>
       ) : isFetching ? (
         <Loading text="Načítavam udalosti..." />
-      ) : allServices.length ? (
+      ) : allServices.length === 0 ? (
+        <div className="flex flex-col items-center p-10">
+          <RocketLaunchIcon className="w-12 text-gray-400" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Vytvorte si svoje prvé predstavenie
+          </p>
+          <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+            <ServiceForm onSubmit={() => {}} />
+          </div>
+        </div>
+      ) : searchTerm ? (
+        <div className="flex flex-col items-center p-10">
+          <MagnifyingGlassIcon className="w-12 text-gray-400 animate-wiggle" />
+          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+            Nenašli sme žiadne lístky vyhovujúce vášmu hladaniu...
+          </p>
+          <EditEventButton />
+        </div>
+      ) : (
         <div className="flex flex-col items-center p-10">
           <RocketLaunchIcon className="w-12 text-gray-400" />
           <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
@@ -1100,16 +1194,6 @@ export default function Page() {
           </p>
           <div className="rounded-2xl border border-gray-200 p-4 shadow-lg">
             <EditEventForm onSubmit={() => {}} />
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center p-10">
-          <RocketLaunchIcon className="w-12 text-gray-400" />
-          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
-            Vytvorte si svoje prvé predstavenie
-          </p>
-          <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
-            <ServiceForm onSubmit={() => {}} />
           </div>
         </div>
       )}

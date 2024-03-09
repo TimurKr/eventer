@@ -4,10 +4,10 @@ import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/outline";
 import { Badge } from "flowbite-react";
 import Fuse from "fuse.js";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 export default function CustomComboBox<T extends {}>({
-  options,
+  options = [],
   defaultValue,
   displayFun,
   newValueBuilder,
@@ -42,10 +42,6 @@ export default function CustomComboBox<T extends {}>({
   const [query, setQuery] = useState(
     defaultValue ? displayFun(defaultValue) : "",
   );
-  const fuse = new Fuse<T>(options, {
-    keys: searchKeys,
-    shouldSort: true,
-  });
 
   useEffect(() => {
     setValue(defaultValue || null);
@@ -53,10 +49,22 @@ export default function CustomComboBox<T extends {}>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultValue]);
 
-  const filteredOptions =
-    query !== ""
-      ? fuse.search(query).map((result) => result.item)
-      : [...options].sort((a, b) => (displayFun(a) > displayFun(b) ? 1 : -1));
+  const fuse = useMemo(
+    () =>
+      new Fuse<T>(options, {
+        keys: searchKeys,
+        shouldSort: true,
+      }),
+    [options, searchKeys],
+  );
+
+  const filteredOptions = useMemo(
+    () =>
+      query !== ""
+        ? fuse.search(query).map((result) => result.item)
+        : [...options].sort((a, b) => (displayFun(a) > displayFun(b) ? 1 : -1)),
+    [displayFun, fuse, options, query],
+  );
 
   return (
     <>

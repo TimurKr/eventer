@@ -194,7 +194,6 @@ export class SupabaseReplication<
     this.options.conflictErrorMessage =
       options.conflictErrorMessage ||
       "Conflict with the server. Overwriting local changes.";
-    // this.constraintMap = options.constraintMap;
 
     if (this.autoStart) {
       this.start();
@@ -465,13 +464,15 @@ export class SupabaseReplication<
           });
         },
       );
-    this.realtimeChannel.subscribe((status) =>
-      console.log(
-        `Realtime at ${this.table}: `,
-        status,
-        new Date().toTimeString(),
-      ),
-    );
+    this.realtimeChannel
+      .subscribe
+      // (status) =>
+      // console.debug(
+      //   `Realtime at ${this.table}: `,
+      //   status,
+      //   new Date().toTimeString(),
+      // ),
+      ();
   }
 
   private async unsubscribeFromPostgresChanges() {

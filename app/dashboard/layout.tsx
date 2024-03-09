@@ -23,7 +23,7 @@ function BusinessTitle() {
       defaultValue={business?.name || ""}
       placeholder="Názov podniku"
       type="text"
-      updateValue={(name) => business?.patch({ name: name || "" })}
+      updateValue={(name) => business?.incrementalPatch({ name: name || "" })}
       inline
       showAlways={false}
       trim
