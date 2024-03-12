@@ -50,7 +50,10 @@ export default function EventRow({
     useCallback(
       (collection) =>
         collection.find({
-          selector: { event_id: { $eq: event.id } },
+          selector: {
+            event_id: { $eq: event.id },
+            payment_status: { $ne: "zrušené" },
+          },
         }),
       [event.id],
     ),

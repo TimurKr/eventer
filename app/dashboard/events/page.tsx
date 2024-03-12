@@ -271,7 +271,7 @@ function TicketRow({
         })
         .exec();
       if (!existingContact) {
-        return contact?.incrementalPatch({ [field]: value || "" });
+        return await contact?.incrementalPatch({ [field]: value || "" });
       }
       if (
         !confirm("Takýto kontakt už v databáze máte, táto operácia ich spojí.")
@@ -315,16 +315,16 @@ function TicketRow({
       id={"ticket-" + ticket.id}
       className={`${
         ticket.payment_status != "zrušené"
-          ? isHighlighted === undefined
-            ? "bg-white"
-            : isHighlighted
-              ? "bg-yellow-200"
-              : "bg-gray-100"
-          : isHighlighted !== undefined
-            ? "bg-red-100"
-            : isHighlighted
-              ? "bg-orange-300"
-              : "bg-red-50"
+          ? isHighlighted
+            ? "bg-yellow-200"
+            : highlightedTickets
+              ? "bg-gray-200"
+              : "bg-white"
+          : isHighlighted
+            ? "bg-orange-300"
+            : highlightedTickets
+              ? "bg-red-50"
+              : "bg-red-100"
       }`}
     >
       <Table.Cell
@@ -419,7 +419,18 @@ function TicketRow({
         </div>
       </Table.Cell>
       {indexInGroup == 0 && (
-        <Table.Cell className="group border-x p-1" rowSpan={groupSize}>
+        <Table.Cell
+          className={`group border-x p-1 ${
+            ticket.payment_status != "zrušené"
+              ? highlightedTickets
+                ? "bg-gray-200"
+                : "bg-white"
+              : highlightedTickets
+                ? "bg-red-50"
+                : "bg-red-100"
+          }`}
+          rowSpan={groupSize}
+        >
           <div className="flex flex-col">
             <div className="flex">
               <div className="grow">
@@ -427,8 +438,9 @@ function TicketRow({
                   defaultValue={billingContact?.name || ""}
                   type="text"
                   trim
+                  inline
                   placeholder="Meno"
-                  className="grow font-mono"
+                  className="grow"
                   validate={async (value) =>
                     value == "" ? "Meno nesmie byť prázdne" : null
                   }
@@ -447,6 +459,7 @@ function TicketRow({
               defaultValue={billingContact?.phone || ""}
               type="text"
               trim
+              inline
               placeholder="Telefón"
               updateValue={(value) =>
                 updateContactField(billingContact, "phone", value || "")
@@ -455,9 +468,9 @@ function TicketRow({
             />
             <InstantTextField
               defaultValue={billingContact?.email || ""}
-              className="font-mono"
               type="email"
               trim
+              inline
               placeholder="Email"
               validate={(value) =>
                 yupString()
@@ -590,7 +603,7 @@ function TicketRow({
   );
 }
 
-function TicketRows({
+function TicketGroup({
   event,
   cancelled,
   highlightedTickets,
@@ -624,21 +637,22 @@ function TicketRows({
     return allTickets
       .map((t) => t.billing_id)
       .filter((v, i, a) => a.indexOf(v) === i)
-      .map((billing_id) =>
-        allTickets.filter((t) => t.billing_id === billing_id),
-      );
+      .map((billing_id) => ({
+        billing_id,
+        tickets: allTickets.filter((t) => t.billing_id === billing_id),
+      }));
   }, [allTickets]);
 
   return (
     <React.Fragment key={event.id + (cancelled ? "-cancelled" : "")}>
       {allTickets ? (
-        groupedTickets.map((tickets) => (
-          <React.Fragment key={"spacing-" + tickets[0].billing_id}>
+        groupedTickets.map((group) => (
+          <React.Fragment key={"spacing-" + group.billing_id}>
             <Table.Row
-              key={"spacing-" + tickets[0].billing_id}
+              key={"spacing-" + group.billing_id}
               className="h-1"
             ></Table.Row>
-            {tickets.map((ticket) => (
+            {group.tickets.map((ticket) => (
               <TicketRow
                 key={"ticket-" + ticket.id}
                 ticket={ticket}
@@ -889,7 +903,7 @@ function EventDetail({
             {tickets?.length ? (
               <div className="w-full overflow-x-auto">
                 <Table className="w-full">
-                  <Table.Head>
+                  <Table.Head className="!bg-white">
                     <Table.HeadCell className="p-1 px-2">
                       <Checkbox
                         className="me-2"
@@ -950,7 +964,7 @@ function EventDetail({
                   </Table.Head>
                   <Table.Body>
                     {tickets.length > 0 && (
-                      <TicketRows
+                      <TicketGroup
                         event={event}
                         cancelled={false}
                         highlightedTickets={highlightedTickets}
@@ -982,7 +996,7 @@ function EventDetail({
                         </Table.Row>
                         {(showCancelledTickets ||
                           highlightedCancelledTickets) && (
-                          <TicketRows
+                          <TicketGroup
                             event={event}
                             cancelled={true}
                             highlightedTickets={highlightedCancelledTickets}

@@ -26,7 +26,7 @@ export default function CustomComboBox<T extends {}>({
   defaultValue?: T;
   displayFun: (obj: T) => string;
   newValueBuilder?: (value: string) => T;
-  onSelect?: (value: T) => void;
+  onSelect?: (value: T | null) => void;
   hideErrors?: boolean;
   searchKeys?: string[];
   label?: string;
@@ -73,7 +73,7 @@ export default function CustomComboBox<T extends {}>({
         onChange={(v) => {
           setValue(v);
           setQuery(v ? displayFun(v) : "");
-          v && onSelect && onSelect(v);
+          onSelect && onSelect(v);
         }}
       >
         <div
@@ -147,6 +147,18 @@ export default function CustomComboBox<T extends {}>({
                       `"${query}"`}
                   </Combobox.Option>
                 )}
+              {!query && optional && (
+                <Combobox.Option
+                  value={null}
+                  className={({ active }) =>
+                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                      active ? "bg-teal-600 text-white" : "text-gray-900"
+                    }`
+                  }
+                >
+                  Zrušiť výber
+                </Combobox.Option>
+              )}
               {filteredOptions.length === 0 ? (
                 query === "" ? (
                   <div className="relative cursor-default select-none px-4 py-2 text-gray-700">

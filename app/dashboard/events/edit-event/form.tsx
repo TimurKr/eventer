@@ -40,7 +40,7 @@ export default function EditEventForm(
         ? new Date(event.datetime).toDateString()
         : new Date().toDateString(),
       time: event
-        ? moment(event.datetime).startOf("hour").format("HH:mm")
+        ? moment(event.datetime).format("HH:mm")
         : moment().startOf("hour").format("HH:mm"),
       isPublic: event?.is_public || false,
       service_id: event?.service_id || allServices?.[0]?.id || "",

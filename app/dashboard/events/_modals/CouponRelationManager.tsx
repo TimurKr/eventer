@@ -94,7 +94,7 @@ export default function CouponRelationManager({
           (ticket.payment_status === "zrušené" || type === "redeemed") && (
             <div className="group relative">
               <div
-                className={`absolute left-0 z-20 hidden -translate-x-full rounded-xl bg-gray-900  p-1 group-hover:block has-[:focus]:block ${
+                className={`absolute left-0 z-20 hidden -translate-x-full rounded-xl bg-gray-900 p-1 group-hover:block shadow-xl shadow-gray-400 has-[:focus]:block ${
                   type === "created" ? "top-0" : "bottom-0"
                 }`}
               >

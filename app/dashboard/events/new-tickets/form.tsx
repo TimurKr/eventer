@@ -395,10 +395,18 @@ export default function NewTicketsForm({
                 id: crypto.randomUUID(),
               })}
               onSelect={async (contact) => {
-                await setFieldValue("billingName", contact.name, true);
-                if (contact.id) {
-                  await setFieldValue("billingEmail", contact.email, true);
-                  await setFieldValue("billingPhone", contact.phone, true);
+                await setFieldValue("billingName", contact?.name || "", true);
+                if (contact?.id) {
+                  await setFieldValue(
+                    "billingEmail",
+                    contact?.email || "",
+                    true,
+                  );
+                  await setFieldValue(
+                    "billingPhone",
+                    contact?.phone || "",
+                    true,
+                  );
                 }
                 console.log(values);
               }}
@@ -415,14 +423,14 @@ export default function NewTicketsForm({
               // type="email"
               name="billingEmail"
               label="Email"
-              placeHolder="adam.kovac@gmail.com"
+              placeHolder="-"
               optional
               vertical
             />
             <FormikTextField
               name="billingPhone"
               label="Telefón"
-              placeHolder="0900 123 456"
+              placeHolder="-"
               optional
               vertical
             />
@@ -463,11 +471,56 @@ export default function NewTicketsForm({
                         {values.tickets.map((ticket, index) => (
                           <tr key={index}>
                             <td className="px-1">
-                              <FormikTextField
-                                name={`tickets[${index}].name`}
-                                placeHolder={values.billingName || "Adam Kováč"}
+                              <CustomComboBox
+                                options={allContacts.map((c) => {
+                                  const {
+                                    _attachments,
+                                    _deleted,
+                                    _meta,
+                                    _rev,
+                                    ...data
+                                  } = c._data;
+                                  return data;
+                                })}
                                 optional
+                                displayFun={(c) => c?.name || ""}
+                                searchKeys={["name"]}
+                                newValueBuilder={(input) => ({
+                                  name: input,
+                                  email: "",
+                                  phone: "",
+                                  id: crypto.randomUUID(),
+                                })}
+                                onSelect={async (contact) => {
+                                  await setFieldValue(
+                                    `tickets[${index}].name`,
+                                    contact?.name || "",
+                                    true,
+                                  );
+                                  if (contact?.id) {
+                                    await setFieldValue(
+                                      `tickets[${index}].email`,
+                                      contact?.email || "",
+                                      true,
+                                    );
+                                    await setFieldValue(
+                                      `tickets[${index}].phone`,
+                                      contact?.phone || "",
+                                      true,
+                                    );
+                                  }
+                                  console.log(values);
+                                }}
+                                placeholder={values.billingName || "-"}
                                 vertical
+                                iconStart={
+                                  <UserCircleIcon className="h-4 w-4 text-gray-500" />
+                                }
+                                error={
+                                  <CustomErrorMessage
+                                    fieldMeta={getFieldMeta("billingName")}
+                                  />
+                                }
                               />
                             </td>
                             <td className="px-1">

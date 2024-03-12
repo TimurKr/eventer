@@ -55,7 +55,10 @@ export default function MoveTicketsToDifferentEventModal({
     startSubmition(async () => {
       if (!ticketsCollection) return;
       await ticketsCollection.bulkUpsert(
-        selectedTickets.map((t) => ({ ...t, event_id: selectedEvent.id })),
+        selectedTickets.map((t) => ({
+          ...t._data,
+          event_id: selectedEvent.id,
+        })),
       );
       toast.success("Lístky boli presunuté na inú udalosť", {
         autoClose: 1500,
@@ -97,25 +100,29 @@ export default function MoveTicketsToDifferentEventModal({
             {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
-          {allEvents?.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              onClick={() =>
-                !selectedTickets.some((t) => t.event_id == event.id) &&
-                submit(event)
-              }
-              onMouseEnter={() => setHoveringEvent(event)}
-              onMouseLeave={() => setHoveringEvent(null)}
-              className={
-                hoveringEvent?.id == event.id &&
-                selectedTickets.some((t) => t.event_id == event.id)
-                  ? "cursor-not-allowed hover:!bg-red-100"
-                  : ""
-              }
-              additionalTickets={selectedTickets}
-            />
-          )) || <InlineLoading />}
+          <div className="flex flex-col gap-2">
+            {allEvents?.map((event) => (
+              <EventRow
+                key={event.id}
+                event={event}
+                onClick={() =>
+                  !selectedTickets.some((t) => t.event_id == event.id) &&
+                  submit(event)
+                }
+                onMouseEnter={() => setHoveringEvent(event)}
+                onMouseLeave={() => setHoveringEvent(null)}
+                className={`${selectedTickets.some((t) => t.event_id == event.id) && "cursor-not-allowed !bg-red-50"}`}
+                additionalTickets={
+                  !selectedTickets.some((t) => t.event_id == event.id) &&
+                  hoveringEvent?.id === event.id
+                    ? selectedTickets.filter(
+                        (t) => t.payment_status !== "zrušené",
+                      )
+                    : []
+                }
+              />
+            )) || <InlineLoading />}
+          </div>
         </Modal.Body>
       </Modal>
     </>
