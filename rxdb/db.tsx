@@ -8,6 +8,7 @@ import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";
 import { toast } from "react-toastify";
 import { addRxPlugin } from "rxdb";
+import { RxDBCleanupPlugin } from "rxdb/plugins/cleanup";
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
 import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
@@ -25,6 +26,7 @@ import { TicketsReplication, ticketsSchema } from "./schemas/public/tickets";
 addRxPlugin(RxDBDevModePlugin);
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBMigrationPlugin);
+addRxPlugin(RxDBCleanupPlugin);
 
 const collections = {
   services: {
@@ -61,13 +63,14 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-  // Remove database if there is one already, TODO: Not working, hot reloads still creates a new one
   await removeRxDatabase("mydatabase", storage);
 
   // Create your database
   const db = await createRxDatabase<Collections>({
     name: "mydatabase",
     storage: storage,
+    cleanupPolicy: {},
+    eventReduce: true,
   });
 
   const myCollections = await db.addCollections(collections);

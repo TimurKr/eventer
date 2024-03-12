@@ -1,10 +1,11 @@
 "use client";
 
+import { useRxData } from "@/rxdb/db";
+import InlineLoading from "@/utils/components/InlineLoading";
 import { Modal } from "flowbite-react";
 import { useState } from "react";
-import EventRows from "../../events/_components/EventRow";
+import EventRow from "../../events/_components/EventRow";
 import NewTicketsButton from "../../events/new-tickets/button";
-import { useStoreContext } from "../../store_dep";
 
 export default function UseCouponSelectEvent({
   couponCode,
@@ -13,10 +14,11 @@ export default function UseCouponSelectEvent({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const {
-    events: { allEvents },
-    services: { allServices },
-  } = useStoreContext((state) => state);
+  const { result: allEvents, isFetching } = useRxData(
+    "events",
+    (collection) => collection.find(),
+    { initialResult: [] },
+  );
 
   return (
     <>
@@ -37,16 +39,22 @@ export default function UseCouponSelectEvent({
           poukazom
         </Modal.Header>
         <Modal.Body>
-          <EventRows
-            events={allEvents}
-            services={allServices}
-            actionButton={(event) => (
-              <NewTicketsButton
-                eventId={event.id.toString()}
-                couponCode={couponCode}
+          {isFetching ? (
+            <InlineLoading />
+          ) : (
+            allEvents.map((event) => (
+              <EventRow
+                key={event.id}
+                event={event}
+                actionButton={
+                  <NewTicketsButton
+                    eventId={event.id.toString()}
+                    couponCode={couponCode}
+                  />
+                }
               />
-            )}
-          />
+            ))
+          )}
         </Modal.Body>
       </Modal>
     </>

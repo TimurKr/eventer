@@ -35,9 +35,8 @@ import CouponRelationManager from "./_modals/CouponRelationManager";
 import MoveTicketsToDifferentEventModal from "./_modals/MoveTicketsToDifferentEventModal";
 import EditEventButton from "./edit-event/button";
 import EditEventForm from "./edit-event/form";
-import { searchTickets } from "./helpers";
 import NewTicketsButton from "./new-tickets/button";
-import { TicketsSorting } from "./utils";
+import { TicketsSorting, searchTickets } from "./utils";
 
 const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
 
