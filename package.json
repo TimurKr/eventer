@@ -6,7 +6,7 @@
     "start": "next start",
     "lint": "next lint",
     "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public | sed 's/type Database =/interface Database/g' > utils/supabase/database.types.ts && npx better-supabase-types -i utils/supabase/database.types.ts -f",
-    "generate:schemas": "ts-node rxdb-supabase/cli.ts -c ./rxdb/config.json"
+    "generate:schemas": "bun rxdb-supabase/cli.ts -c ./rxdb/config.json"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^12.0.1",
@@ -41,6 +41,7 @@
     "@types/prompts": "^2.4.9",
     "@types/react": "^18.2.58",
     "@types/react-dom": "18.2.5",
+    "@types/stringify-object": "^4.0.5",
     "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.17",
     "better-supabase-types": "^2.7.1",
@@ -57,6 +58,7 @@
     "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "stringify-object": "^5.0.0",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2"
   }

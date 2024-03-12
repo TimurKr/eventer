@@ -2,45 +2,46 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
-  "title": "events",
-  "description": "",
-  "version": 0,
-  "properties": {
-    "created_at": {
-      "description": "Database type: timestamp with time zone. Default value: now()",
-      "type": "string",
-      "format": "date-time"
+  title: "events",
+  description: "",
+  version: 0,
+  properties: {
+    created_at: {
+      description: "Database type: timestamp with time zone. Default value: now()",
+      type: "string",
+      format: "date-time"
     },
-    "datetime": {
-      "description": "Database type: timestamp with time zone. Default value: null",
-      "type": "string",
-      "format": "date-time"
+    datetime: {
+      description: "Database type: timestamp with time zone. Default value: null",
+      type: "string",
+      format: "date-time"
     },
-    "is_public": {
-      "description": "Database type: boolean. Default value: false",
-      "type": "boolean",
-      "default": "false"
+    is_public: {
+      description: "Database type: boolean. Default value: false",
+      type: "boolean",
+      default: false
     },
-    "service_id": {
-      "description": "Database type: uuid. Default value: null",
-      "type": "string",
-      "format": "uuid",
-      "ref": "services"
+    service_id: {
+      description: "Database type: uuid. Default value: null",
+      type: "string",
+      format: "uuid",
+      maxLength: 64,
+      ref: "services"
     },
-    "id": {
-      "maxLength": 64,
-      "description": "Database type: uuid. Default value: gen_random_uuid()",
-      "type": "string",
-      "format": "uuid"
+    id: {
+      description: "Database type: uuid. Default value: gen_random_uuid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64
     }
   },
-  "required": [
+  required: [
     "datetime",
     "service_id",
     "id"
   ],
-  "type": "object",
-  "primaryKey": "id"
+  type: "object",
+  primaryKey: "id"
 } as const;
 
 export const eventsSchema = toTypedRxJsonSchema(schemaLiteral);

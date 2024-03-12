@@ -46,7 +46,7 @@ function AddTicketButton({
   eventId: string;
   onClick: (
     ticket: Pick<TicketsDocumentType, "type_id" | "price"> &
-      Pick<ContactsDocumentType, "name" | "email" | "phone" | "address">,
+      Pick<ContactsDocumentType, "name" | "email" | "phone">,
   ) => void;
 }) {
   const creating = useMemo(
@@ -86,7 +86,6 @@ function AddTicketButton({
           name: "",
           email: "",
           phone: "",
-          address: "",
           type_id: type.id,
           price: type.price,
         })
@@ -202,8 +201,8 @@ export default function NewTicketsForm({
         billingName: Yup.string()
           .min(2, "Zadajte aspoň 2 znaky")
           .required("Meno je povinné"),
-        billingEmail: Yup.string().email("Zadajte platný email"),
-        billingPhone: Yup.string(),
+        billingEmail: Yup.string().email("Zadajte platný email").default(""),
+        billingPhone: Yup.string().default(""),
         paymentStatus: Yup.mixed()
           .oneOf(["zaplatené", "rezervované", "zrušené"])
           .required("Musíte zadať stav platby"),
@@ -279,54 +278,58 @@ export default function NewTicketsForm({
       })
       .exec();
 
-    let upsertData: Partial<ContactsDocumentType>[] = [];
+    let insertData: Pick<
+      ContactsDocumentType,
+      "id" | "name" | "email" | "phone"
+    >[] = [];
 
-    values.tickets.forEach((ticket) => {
-      const contact = oldGuestContacts.find((c) =>
+    values.tickets
+      .map((t) => ({
+        name: t.name || values.billingName,
+        email: t.email || values.billingEmail,
+        phone: t.phone || values.billingPhone,
+      }))
+      .forEach((ticketContact) => {
+        if (
+          oldGuestContacts.find((contact) =>
+            contactsEqual(contact, ticketContact),
+          )
+        )
+          return;
+        if (insertData.find((contact) => contactsEqual(contact, ticketContact)))
+          return;
+
+        insertData.push({
+          ...ticketContact,
+          id: crypto.randomUUID(),
+        });
+      });
+
+    const { success: newGuestContacts } =
+      await contactsCollection.bulkInsert(insertData);
+
+    const guestContacts = [...oldGuestContacts, ...newGuestContacts];
+
+    const ticketToCreate = values.tickets.map((ticket) => ({
+      id: crypto.randomUUID(),
+      billing_id: billingContact!.id,
+      guest_id: guestContacts.find((c) =>
         contactsEqual(c, {
           name: ticket.name || values.billingName,
-          email: ticket.email || values.billingEmail,
+          email: ticket.email || values.billingEmail || "",
           phone: ticket.phone || values.billingPhone,
-          address: "",
         }),
-      );
-      if (!contact) {
-        upsertData.push({
-          id: crypto.randomUUID(),
-          name: ticket.name || values.billingName,
-          email: ticket.email || values.billingEmail,
-          phone: ticket.phone || values.billingPhone,
-        });
-      }
-    });
+      )!.id,
+      event_id: event!.id,
+      type_id: ticket.type_id,
+      price: ticket.price,
+      payment_status: values.paymentStatus as string,
+      coupon_redeemed_id: coupon?.id,
+    }));
 
-    const { success: newGuestContacts } = await contactsCollection.bulkUpsert(
-      upsertData.filter((c) => !!c),
-    );
-
-    const guestContacts = oldGuestContacts.concat(newGuestContacts);
-
-    const { success: createdTickets } = await ticketsCollection.bulkInsert(
-      values.tickets.map((ticket) => ({
-        id: crypto.randomUUID(),
-        billing_id: billingContact!.id,
-        guest_id: guestContacts.find((c) =>
-          contactsEqual(c, {
-            name: ticket.name || values.billingName,
-            email: ticket.email || values.billingEmail,
-            phone: ticket.phone || values.billingPhone,
-            address: "",
-          }),
-        )!.id,
-        event_id: event!.id,
-        type_id: ticket.type_id,
-        price: ticket.price,
-        payment_status: values.paymentStatus as string,
-        coupon_redeemed_id: coupon?.id,
-      })),
-    );
+    const { success: createdTickets } =
+      await ticketsCollection.bulkInsert(ticketToCreate);
     if (coupon) {
-      // ServerAction
       const r = await coupon.incrementalPatch({
         amount:
           coupon.amount -
@@ -387,6 +390,8 @@ export default function NewTicketsForm({
               searchKeys={["name"]}
               newValueBuilder={(input) => ({
                 name: input,
+                email: "",
+                phone: "",
                 id: crypto.randomUUID(),
               })}
               onSelect={async (contact) => {

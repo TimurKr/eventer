@@ -75,6 +75,7 @@ export function searchTickets(
 
   const keys = [
     "ticket.id",
+    "ticket.note",
     "guest.name",
     "guest.email",
     "guest.phone",

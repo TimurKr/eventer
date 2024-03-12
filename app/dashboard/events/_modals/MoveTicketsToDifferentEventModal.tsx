@@ -11,8 +11,10 @@ import EventRow from "../_components/EventRow";
 
 export default function MoveTicketsToDifferentEventModal({
   selectedTickets,
+  originalEvent,
 }: {
   selectedTickets: TicketsDocument[];
+  originalEvent: EventsDocument;
 }) {
   const [isSubmitting, startSubmition] = useTransition();
   const [hoveringEvent, setHoveringEvent] = useState<EventsDocument | null>(
@@ -23,7 +25,15 @@ export default function MoveTicketsToDifferentEventModal({
 
   const { result: allEvents } = useRxData(
     "events",
-    useCallback((collection) => collection.find().sort("datetime"), []),
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: { service_id: { $eq: originalEvent.service_id } },
+          sort: [{ datetime: "desc" }],
+        }),
+      [originalEvent.service_id],
+    ),
+    { initialResult: [] },
   );
 
   const { result: ticketTypes } = useRxData(
@@ -91,14 +101,19 @@ export default function MoveTicketsToDifferentEventModal({
             <EventRow
               key={event.id}
               event={event}
-              onClick={(e) => event.id != e.id && submit(event)}
-              onMouseEnter={(e) => setHoveringEvent(event)}
-              onMouseLeave={(e) => setHoveringEvent(null)}
+              onClick={() =>
+                !selectedTickets.some((t) => t.event_id == event.id) &&
+                submit(event)
+              }
+              onMouseEnter={() => setHoveringEvent(event)}
+              onMouseLeave={() => setHoveringEvent(null)}
               className={
-                hoveringEvent?.id == event.id
+                hoveringEvent?.id == event.id &&
+                selectedTickets.some((t) => t.event_id == event.id)
                   ? "cursor-not-allowed hover:!bg-red-100"
                   : ""
               }
+              additionalTickets={selectedTickets}
             />
           )) || <InlineLoading />}
         </Modal.Body>

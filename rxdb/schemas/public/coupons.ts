@@ -2,63 +2,65 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
-  "title": "coupons",
-  "description": "",
-  "version": 0,
-  "properties": {
-    "created_at": {
-      "description": "Database type: timestamp with time zone. Default value: now()",
-      "type": "string",
-      "format": "date-time"
+  title: "coupons",
+  description: "",
+  version: 0,
+  properties: {
+    created_at: {
+      description: "Database type: timestamp with time zone. Default value: now()",
+      type: "string",
+      format: "date-time"
     },
-    "amount": {
-      "description": "Database type: real. Default value: null",
-      "type": "number"
+    amount: {
+      description: "Database type: real. Default value: null",
+      type: "number"
     },
-    "code": {
-      "description": "Database type: text. Default value: null",
-      "type": "string"
+    code: {
+      description: "Database type: text. Default value: null",
+      type: "string"
     },
-    "valid_until": {
-      "description": "Database type: date. Default value: null",
-      "type": "string",
-      "format": "date"
+    valid_until: {
+      description: "Database type: date. Default value: null",
+      type: "string",
+      format: "date"
     },
-    "original_amount": {
-      "description": "Database type: real. Default value: null",
-      "type": "number"
+    original_amount: {
+      description: "Database type: real. Default value: null",
+      type: "number"
     },
-    "note": {
-      "description": "Database type: text. Default value: null",
-      "type": "string"
+    note: {
+      description: "Database type: text. Default value: null",
+      type: "string"
     },
-    "business_id": {
-      "description": "Database type: uuid. Default value: auth.uid()",
-      "type": "string",
-      "format": "uuid",
-      "ref": "businesses"
+    business_id: {
+      description: "Database type: uuid. Default value: auth.uid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64,
+      ref: "businesses"
     },
-    "contact_id": {
-      "description": "Database type: uuid. Default value: null",
-      "type": "string",
-      "format": "uuid",
-      "ref": "contacts"
+    contact_id: {
+      description: "Database type: uuid. Default value: null",
+      type: "string",
+      format: "uuid",
+      maxLength: 64,
+      ref: "contacts"
     },
-    "id": {
-      "maxLength": 64,
-      "description": "Database type: uuid. Default value: gen_random_uuid()",
-      "type": "string",
-      "format": "uuid"
+    id: {
+      description: "Database type: uuid. Default value: gen_random_uuid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64
     }
   },
-  "required": [
+  required: [
     "amount",
     "code",
     "original_amount",
     "id"
   ],
-  "type": "object",
-  "primaryKey": "id"
+  type: "object",
+  primaryKey: "id"
 } as const;
 
 export const couponsSchema = toTypedRxJsonSchema(schemaLiteral);

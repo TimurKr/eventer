@@ -2,38 +2,39 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
-  "title": "services",
-  "description": "Services that businesses offer and then create events from",
-  "version": 0,
-  "properties": {
-    "created_at": {
-      "description": "Database type: timestamp with time zone. Default value: now()",
-      "type": "string",
-      "format": "date-time"
+  title: "services",
+  description: "Services that businesses offer and then create events from",
+  version: 0,
+  properties: {
+    created_at: {
+      description: "Database type: timestamp with time zone. Default value: now()",
+      type: "string",
+      format: "date-time"
     },
-    "business_id": {
-      "description": "Database type: uuid. Default value: auth.uid()",
-      "type": "string",
-      "format": "uuid",
-      "ref": "businesses"
+    business_id: {
+      description: "Database type: uuid. Default value: auth.uid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64,
+      ref: "businesses"
     },
-    "name": {
-      "description": "Database type: text. Default value: null",
-      "type": "string"
+    name: {
+      description: "Database type: text. Default value: null",
+      type: "string"
     },
-    "id": {
-      "maxLength": 64,
-      "description": "Database type: uuid. Default value: gen_random_uuid()",
-      "type": "string",
-      "format": "uuid"
+    id: {
+      description: "Database type: uuid. Default value: gen_random_uuid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64
     }
   },
-  "required": [
+  required: [
     "name",
     "id"
   ],
-  "type": "object",
-  "primaryKey": "id"
+  type: "object",
+  primaryKey: "id"
 } as const;
 
 export const servicesSchema = toTypedRxJsonSchema(schemaLiteral);

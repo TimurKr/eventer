@@ -2,53 +2,54 @@ import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJ
 import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
 
 const schemaLiteral = {
-  "title": "ticket_types",
-  "description": "",
-  "version": 0,
-  "properties": {
-    "created_at": {
-      "description": "Database type: timestamp with time zone. Default value: now()",
-      "type": "string",
-      "format": "date-time"
+  title: "ticket_types",
+  description: "",
+  version: 0,
+  properties: {
+    created_at: {
+      description: "Database type: timestamp with time zone. Default value: now()",
+      type: "string",
+      format: "date-time"
     },
-    "label": {
-      "description": "Database type: text. Default value: null",
-      "type": "string"
+    label: {
+      description: "Database type: text. Default value: null",
+      type: "string"
     },
-    "capacity": {
-      "description": "Database type: smallint. Default value: null",
-      "type": "integer"
+    capacity: {
+      description: "Database type: smallint. Default value: null",
+      type: "integer"
     },
-    "price": {
-      "description": "Database type: real. Default value: null",
-      "type": "number"
+    price: {
+      description: "Database type: real. Default value: null",
+      type: "number"
     },
-    "is_vip": {
-      "description": "Database type: boolean. Default value: false",
-      "type": "boolean",
-      "default": "false"
+    is_vip: {
+      description: "Database type: boolean. Default value: false",
+      type: "boolean",
+      default: false
     },
-    "id": {
-      "maxLength": 64,
-      "description": "Database type: uuid. Default value: gen_random_uuid()",
-      "type": "string",
-      "format": "uuid"
+    id: {
+      description: "Database type: uuid. Default value: gen_random_uuid()",
+      type: "string",
+      format: "uuid",
+      maxLength: 64
     },
-    "service_id": {
-      "description": "Database type: uuid. Default value: null",
-      "type": "string",
-      "format": "uuid",
-      "ref": "services"
+    service_id: {
+      description: "Database type: uuid. Default value: null",
+      type: "string",
+      format: "uuid",
+      maxLength: 64,
+      ref: "services"
     }
   },
-  "required": [
+  required: [
     "label",
     "price",
     "id",
     "service_id"
   ],
-  "type": "object",
-  "primaryKey": "id"
+  type: "object",
+  primaryKey: "id"
 } as const;
 
 export const ticketTypesSchema = toTypedRxJsonSchema(schemaLiteral);

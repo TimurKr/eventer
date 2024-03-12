@@ -593,12 +593,14 @@ function TicketRow({
 function TicketRows({
   event,
   cancelled,
+  highlightedTickets,
   selectedTickets,
   toggleSelectedTicket,
   lockedArrived,
 }: {
   event: EventsDocument;
   cancelled: boolean;
+  highlightedTickets?: TicketsDocument[];
   selectedTickets: TicketsDocument[];
   toggleSelectedTicket: (ticket: TicketsDocument) => void;
   lockedArrived: boolean;
@@ -644,6 +646,7 @@ function TicketRows({
                 selectedTickets={selectedTickets}
                 toggleSelectedTicket={toggleSelectedTicket}
                 lockedArrived={lockedArrived}
+                highlightedTickets={highlightedTickets}
               />
             ))}
           </React.Fragment>
@@ -676,10 +679,10 @@ function TicketRows({
 
 function EventDetail({
   event,
-  searchTerm,
+  allHighlightedTickets,
 }: {
   event: EventsDocument;
-  searchTerm: string;
+  allHighlightedTickets?: TicketsDocument[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<TicketsDocument[]>([]);
@@ -743,22 +746,15 @@ function EventDetail({
   );
 
   const { highlightedTickets, highlightedCancelledTickets } = useMemo(() => {
-    if (!searchTerm || !allTickets || !allContacts)
-      return {
-        highlightedTickets: undefined,
-        highlightedCancelledTickets: undefined,
-      };
-    const all = searchTickets(searchTerm, {
-      tickets: allTickets,
-      contacts: allContacts,
-    });
     return {
-      highlightedTickets: all.filter((t) => t.payment_status != "zrušené"),
-      highlightedCancelledTickets: all.filter(
+      highlightedTickets: allHighlightedTickets?.filter(
+        (t) => t.payment_status != "zrušené",
+      ),
+      highlightedCancelledTickets: allHighlightedTickets?.filter(
         (t) => t.payment_status == "zrušené",
       ),
     };
-  }, [searchTerm, allTickets, allContacts]);
+  }, [allHighlightedTickets]);
 
   const isShown =
     isExpanded ||
@@ -776,9 +772,7 @@ function EventDetail({
         className={`transition-all ${isShown ? "!bg-slate-100" : ""}`}
         event={event}
         onClick={() => setIsExpanded(!isExpanded)}
-        actionButton={(event) => (
-          <NewTicketsButton eventId={event.id.toString()} />
-        )}
+        actionButton={<NewTicketsButton eventId={event.id.toString()} />}
       />
       <div
         className={`grid transition-all duration-300 ease-in-out ${
@@ -844,7 +838,7 @@ function EventDetail({
           <div className="p-2">
             <div className="flex items-center gap-2 pb-1">
               <div className="flex flex-col text-xs text-gray-500">
-                {highlightedTickets !== undefined && (
+                {highlightedTickets && highlightedCancelledTickets && (
                   <span>
                     <span className="font-semibold">
                       {highlightedTickets.length +
@@ -867,6 +861,7 @@ function EventDetail({
                 (Označených: {selectedTickets.length})
               </p>
               <MoveTicketsToDifferentEventModal
+                originalEvent={event}
                 selectedTickets={selectedTickets}
               />
               <ConvertToCouponModal selectedTickets={selectedTickets} />
@@ -958,6 +953,7 @@ function EventDetail({
                       <TicketRows
                         event={event}
                         cancelled={false}
+                        highlightedTickets={highlightedTickets}
                         selectedTickets={selectedTickets}
                         toggleSelectedTicket={toggleSelectedTicket}
                         lockedArrived={lockedArrived}
@@ -989,6 +985,7 @@ function EventDetail({
                           <TicketRows
                             event={event}
                             cancelled={true}
+                            highlightedTickets={highlightedCancelledTickets}
                             selectedTickets={selectedTickets}
                             toggleSelectedTicket={toggleSelectedTicket}
                             lockedArrived={lockedArrived}
@@ -1140,7 +1137,11 @@ export default function Page() {
           className={`w-auto divide-gray-400 rounded-xl border border-gray-200 p-2`}
         >
           {futureEvents.map((event) => (
-            <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
+            <EventDetail
+              key={event.id}
+              event={event}
+              allHighlightedTickets={highlightedTickets}
+            />
           ))}
           {todayEvents.length > 0 && (
             <li>
@@ -1151,7 +1152,11 @@ export default function Page() {
             </li>
           )}
           {todayEvents.map((event) => (
-            <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
+            <EventDetail
+              key={event.id}
+              event={event}
+              allHighlightedTickets={highlightedTickets}
+            />
           ))}
           {previousEvents.length > 0 && (
             <li>
@@ -1162,7 +1167,11 @@ export default function Page() {
             </li>
           )}
           {previousEvents.map((event) => (
-            <EventDetail key={event.id} event={event} searchTerm={searchTerm} />
+            <EventDetail
+              key={event.id}
+              event={event}
+              allHighlightedTickets={highlightedTickets}
+            />
           ))}
         </ol>
       ) : isFetching ? (

@@ -1,9 +1,10 @@
 import { useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
+import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import InlineLoading from "@/utils/components/InlineLoading";
 import { Badge, Progress } from "flowbite-react";
 import moment from "moment";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 export default function EventRow({
   event,
@@ -12,13 +13,15 @@ export default function EventRow({
   className,
   onMouseEnter,
   onMouseLeave,
+  additionalTickets,
 }: {
   event: EventsDocument;
-  actionButton?: (id: EventsDocument) => JSX.Element;
-  onClick?: (event: EventsDocument) => void;
+  actionButton?: JSX.Element;
+  onClick?: () => void;
   className?: string;
-  onMouseEnter?: (event: EventsDocument) => void;
-  onMouseLeave?: (event: EventsDocument) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  additionalTickets?: TicketsDocument[];
 }) {
   const { result: services } = useRxData(
     "services",
@@ -31,7 +34,7 @@ export default function EventRow({
     ),
   );
 
-  const { result: ticket_types } = useRxData(
+  const { result: rawTicketTypes } = useRxData(
     "ticket_types",
     useCallback(
       (collection) =>
@@ -53,15 +56,27 @@ export default function EventRow({
     ),
   );
 
+  const ticketTypes = useMemo(
+    () =>
+      rawTicketTypes?.map((type) => ({
+        ...type._data,
+        sold:
+          tickets
+            ?.concat(additionalTickets || [])
+            .filter((t) => t.type_id == type.id).length || 0,
+      })),
+    [additionalTickets, rawTicketTypes, tickets],
+  );
+
   return (
     <button
       key={event.id}
       type="button"
       className={`flex w-full items-center justify-between gap-x-6 rounded-lg p-2 hover:bg-slate-100 ${className}`}
       disabled={onClick ? false : true}
-      onClick={() => onClick?.(event)}
-      onMouseEnter={() => onMouseEnter?.(event)}
-      onMouseLeave={() => onMouseLeave?.(event)}
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <div className="flex min-w-0 flex-none flex-col gap-1 self-center py-0.5">
         <p className="flex items-center gap-4 font-semibold leading-6 text-gray-900">
@@ -91,10 +106,8 @@ export default function EventRow({
         </div>
       </div>
       <div className="ms-auto flex flex-col flex-wrap items-center justify-end gap-x-2 lg:flex-row">
-        {ticket_types ? (
-          ticket_types.map((type) => {
-            const sold =
-              tickets?.filter((t) => t.type_id == type.id).length || 0;
+        {ticketTypes ? (
+          ticketTypes.map((type) => {
             return (
               <div key={type.label} className="w-28">
                 <div
@@ -105,24 +118,24 @@ export default function EventRow({
                   <span className="font-medium">{type.label}</span>
                   <span
                     className={`ms-auto text-base font-bold ${
-                      type.capacity && sold > type.capacity
+                      type.capacity && type.sold > type.capacity
                         ? "text-red-600"
-                        : sold == 0
+                        : type.sold == 0
                           ? "text-gray-400"
                           : ""
                     }`}
                   >
-                    {sold}
+                    {type.sold}
                   </span>
                   {type.capacity && "/" + type.capacity}
                 </div>
-                {type.capacity ? (
+                {type.capacity || type.capacity == 0 ? (
                   <Progress
                     className="mb-1"
                     size="sm"
-                    progress={(sold / type.capacity) * 100}
+                    progress={(type.sold / type.capacity) * 100}
                     color={
-                      sold > type.capacity
+                      type.sold > type.capacity
                         ? "red"
                         : type.is_vip
                           ? "yellow"
@@ -142,7 +155,7 @@ export default function EventRow({
           <InlineLoading />
         )}
       </div>
-      <div className="flex-shrink-0">{actionButton?.(event)}</div>
+      <div className="flex-shrink-0">{actionButton}</div>
     </button>
   );
 }

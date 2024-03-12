@@ -3,6 +3,7 @@ import { mkdirp } from "mkdirp";
 import { join } from "path";
 import pgStructure, { Column, Schema, Table } from "pg-structure";
 import { RxJsonSchema } from "rxdb";
+import stringifyObject from "stringify-object";
 import { IConfiguration } from "./config";
 
 export class SchemaConverter {
@@ -54,8 +55,6 @@ export class SchemaConverter {
    * If an `outDir` is configured we will write to file instead.
    * This would be preferred for memory intensive conversion with many or very
    * large schemas
-   *
-   * @returns {(Promise<RxJsonSchema<any>[]>)}
    */
   public async convert(): Promise<RxJsonSchema<any>[]> {
     // Ensure configuration is sane first
@@ -182,7 +181,6 @@ export class SchemaConverter {
         column.comment || this.config.output.defaultDescription;
 
       jsonSchema.properties[column.name] = {
-        maxLength: column.name === "id" ? 64 : column.length,
         description:
           (description ? description + " - " : "") +
           `Database type: ${column.type.name}. Default value: ${column.default}`,
@@ -195,16 +193,28 @@ export class SchemaConverter {
           column.default.toString().includes(")")
         ) {
           // It is a function, which is not supported
+        } else if (column.default === "true") {
+          jsonSchema.properties[column.name].default = true;
+        } else if (column.default === "false") {
+          jsonSchema.properties[column.name].default = false;
+        } else if (column.type.name === "number") {
+          jsonSchema.properties[column.name].default = parseFloat(
+            column.default.toString(),
+          );
+        } else if (column.default.toString() === "''") {
+          jsonSchema.properties[column.name].default = "";
         } else {
+          let def = column.default.toString();
           if (
             column.default.toString().startsWith("'") &&
             column.default.toString().endsWith("'")
           ) {
-            jsonSchema.properties[column.name].default = column.default
-              .toString()
-              .slice(1, -1);
+            def = def.slice(1, -1);
+          }
+          if (Number.isNaN(parseFloat(def))) {
+            jsonSchema.properties[column.name].default = def;
           } else {
-            jsonSchema.properties[column.name].default = column.default;
+            jsonSchema.properties[column.name].default = parseFloat(def);
           }
         }
       }
@@ -258,7 +268,11 @@ export class SchemaConverter {
 
       let tsContent = `import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";\n`;
       tsContent += `import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"\n\n`; //TODO: IMPORTANT - replace with correct path
-      tsContent += `const schemaLiteral = ${JSON.stringify(jsonSchema, undefined, 2)} as const;`;
+      // tsContent += `const schemaLiteral = ${JSON.stringify(jsonSchema, undefined, 2)} as const;`;
+      tsContent += `const schemaLiteral = ${stringifyObject(jsonSchema, {
+        indent: "  ",
+        singleQuotes: false,
+      })} as const;`;
       tsContent += "\n\n";
       tsContent += `export const ${title}Schema = toTypedRxJsonSchema(schemaLiteral);`;
       tsContent += "\n\n";
@@ -309,10 +323,10 @@ export class SchemaConverter {
       case "character":
       case "character varying":
       case "text": {
-        const typeDef = {
+        let typeDef: { type: string; maxLength?: number } = {
           type: "string",
-          maxLength: column.length,
         };
+        if (column.length != undefined) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }
@@ -323,6 +337,7 @@ export class SchemaConverter {
         const typeDef = {
           type: "string",
           format: "uuid",
+          maxLength: 64,
         };
         if (isArray) {
           return { type: "array", items: typeDef };
@@ -331,11 +346,11 @@ export class SchemaConverter {
       }
 
       case "date": {
-        const typeDef = {
+        const typeDef: { type: string; format: string; maxLength?: number } = {
           type: "string",
           format: "date",
-          maxLength: column.length,
         };
+        if (column.length) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }
@@ -344,11 +359,11 @@ export class SchemaConverter {
 
       case "time with time zone":
       case "time without time zone": {
-        const typeDef = {
+        const typeDef: { type: string; format: string; maxLength?: number } = {
           type: "string",
           format: "time",
-          maxLength: column.length,
         };
+        if (column.length) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }
@@ -358,11 +373,11 @@ export class SchemaConverter {
       case "timestamp with time zone":
       case "timestamp without time zone":
       case "timestamp": {
-        const typeDef = {
+        const typeDef: { type: string; format: string; maxLength?: number } = {
           type: "string",
           format: "date-time",
-          maxLength: column.length,
         };
+        if (column.length) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }
@@ -380,10 +395,10 @@ export class SchemaConverter {
       case "int":
       case "integer":
       case "smallint": {
-        const typeDef = {
+        const typeDef: { type: string; maxLength?: number } = {
           type: "integer",
-          maxLength: column.length,
         };
+        if (column.length) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }
@@ -396,10 +411,10 @@ export class SchemaConverter {
       case "float8":
       case "numeric":
       case "real": {
-        const typeDef = {
+        const typeDef: { type: string; maxLength?: number } = {
           type: "number",
-          maxLength: column.length,
         };
+        if (column.length) typeDef.maxLength = column.length;
         if (isArray) {
           return { type: "array", items: typeDef };
         }

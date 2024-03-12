@@ -45,7 +45,6 @@ export interface Database {
         Row: {
           _deleted: boolean;
           _modified: string;
-          address: string;
           business_id: string;
           created_at: string;
           email: string;
@@ -56,7 +55,6 @@ export interface Database {
         Insert: {
           _deleted?: boolean;
           _modified?: string;
-          address?: string;
           business_id?: string;
           created_at?: string;
           email?: string;
@@ -67,7 +65,6 @@ export interface Database {
         Update: {
           _deleted?: boolean;
           _modified?: string;
-          address?: string;
           business_id?: string;
           created_at?: string;
           email?: string;

@@ -1,15 +1,10 @@
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 
 export function contactsEqual(
-  a: Pick<ContactsDocument, "name" | "email" | "phone" | "address">,
-  b: Pick<ContactsDocument, "name" | "email" | "phone" | "address">,
+  a: Pick<ContactsDocument, "name" | "email" | "phone">,
+  b: Pick<ContactsDocument, "name" | "email" | "phone">,
 ) {
-  return (
-    a.name == b.name &&
-    a.email == b.email &&
-    a.phone == b.phone &&
-    a.address == b.address
-  );
+  return a.name == b.name && a.email == b.email && a.phone == b.phone;
 }
 
 export const TicketsSorting = [
