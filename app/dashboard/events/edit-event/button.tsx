@@ -12,7 +12,7 @@ export default function EditEventButton(params: EditEventFormProps) {
       }}
       className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm ${
         params.eventId
-          ? "border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          ? "border border-stone-300 bg-stone-50 text-stone-700 hover:bg-stone-100"
           : "bg-green-500 text-white hover:bg-green-600"
       }
       }`}

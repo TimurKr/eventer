@@ -15,18 +15,23 @@ export function searchCoupons(
     coupons,
     contacts,
   }: {
-    coupons: CouponsDocument[];
-    contacts: ContactsDocument[];
+    coupons?: CouponsDocument[];
+    contacts?: ContactsDocument[];
   },
-) {
+): { coupon: CouponsDocument; contact?: ContactsDocument }[] {
+  if (!coupons) return [];
+
   if (term === "") {
-    return [];
+    return coupons.map((coupon) => ({
+      coupon,
+      contact: contacts?.find((contact) => contact.id === coupon.contact_id),
+    }));
   }
 
   // Prepare data
   let data = coupons.map((coupon) => ({
     coupon,
-    contact: contacts.find((contact) => contact.id === coupon.contact_id),
+    contact: contacts?.find((contact) => contact.id === coupon.contact_id),
   }));
 
   const fuse = new Fuse(data, {

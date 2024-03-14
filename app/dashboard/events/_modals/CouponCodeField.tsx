@@ -1,12 +1,17 @@
-import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
+import {
+  CouponsCollection,
+  CouponsDocument,
+} from "@/rxdb/schemas/public/coupons";
 import { Spinner } from "flowbite-react";
 import {
   Dispatch,
   SetStateAction,
+  useCallback,
   useEffect,
   useState,
   useTransition,
 } from "react";
+import { validateCoupon } from "../../coupons/utils";
 
 /**
  * Renders a coupon code input field.
@@ -14,8 +19,9 @@ import {
 export default function CouponCodeField({
   coupon,
   setCoupon,
-  validate,
+  // validate,
   defaultCode,
+  couponsCollection,
 }: {
   /**
    * The coupon document. Null if invalid, undefined if not validated yet.
@@ -30,11 +36,29 @@ export default function CouponCodeField({
    * The function to validate the coupon code. Shuold return the coupon if valid,
    * null if invalid, undefined if not validated yet.
    */
-  validate: (code: string) => Promise<CouponsDocument | null | undefined>;
+  // validate: (code: string) => Promise<CouponsDocument | null | undefined>;
   defaultCode?: string;
+  couponsCollection: CouponsCollection | null;
 }) {
   const [code, setCode] = useState("");
   const [isValidating, startValidatingCoupon] = useTransition();
+
+  const validate = useCallback(
+    async (code: string) => {
+      if (!couponsCollection) {
+        console.log("No collection...");
+        return undefined;
+      }
+      const coupon = await couponsCollection
+        .findOne({ selector: { code } })
+        .exec();
+      if (coupon && validateCoupon(coupon)) {
+        return coupon;
+      }
+      return null;
+    },
+    [couponsCollection],
+  );
 
   useEffect(() => {
     if (defaultCode) {

@@ -11,7 +11,6 @@ import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
 import { Tooltip } from "flowbite-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { validateCoupon } from "../../coupons/utils";
 import CouponCodeField from "./CouponCodeField";
 
 const idKey = {
@@ -101,19 +100,7 @@ export default function CouponRelationManager({
                 <CouponCodeField
                   coupon={selectedCoupon}
                   setCoupon={setSelectedCoupon}
-                  validate={async (code) => {
-                    if (!couponsCollection) {
-                      console.log("No collection");
-                      return undefined;
-                    }
-                    const coupon = await couponsCollection
-                      .findOne({ selector: { code } })
-                      .exec();
-                    if (coupon && validateCoupon(coupon)) {
-                      return coupon;
-                    }
-                    return null;
-                  }}
+                  couponsCollection={couponsCollection}
                 />
               </div>
               <TicketIconOutline

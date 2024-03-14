@@ -47,8 +47,8 @@ function PageLink({
       key={title}
       className={`grid w-auto place-content-center rounded-lg p-2 md:block md:px-3 md:py-0.5 ${
         path.startsWith(`${href}`)
-          ? "bg-white font-bold tracking-widest text-black hover:bg-gray-50"
-          : "hover:bg-gray-50"
+          ? "bg-stone-200 font-bold tracking-widest text-black cursor-default"
+          : "hover:bg-stone-200"
       } transition-all duration-200 ease-in-out`}
       href={href}
     >

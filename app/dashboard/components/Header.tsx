@@ -26,7 +26,7 @@ export default function Header({
 }) {
   return (
     <>
-      <div className="sticky bg-white -top-2 z-20 flex flex-wrap items-start gap-4 gap-y-2 bg-inherit py-2 pt-4">
+      <div className="sticky top-0 z-20 flex flex-wrap items-start gap-4 gap-y-2 bg-inherit p-4 ">
         <span className="text-2xl font-bold tracking-wider">{title}</span>
         <div className="ms-auto flex grow items-start justify-end gap-4">
           {search && (
@@ -83,7 +83,6 @@ export default function Header({
         </div>
         {actionButton}
       </div>
-      <hr className="my-4" />
     </>
   );
 }

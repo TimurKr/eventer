@@ -1,17 +1,11 @@
 "use client";
 
 import { createBrowserSupabase } from "@/utils/supabase/browser";
-import { RxCollectionCreator, createRxDatabase, removeRxDatabase } from "rxdb";
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 
 import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";
-import { toast } from "react-toastify";
-import { addRxPlugin } from "rxdb";
-import { RxDBCleanupPlugin } from "rxdb/plugins/cleanup";
-import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
-import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
-import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
+import { RxCollectionCreator, createRxDatabase } from "rxdb";
+
 import { businessesSchema } from "./schemas/public/businesses";
 import { ContactsReplication, contactsSchema } from "./schemas/public/contacts";
 import { CouponsReplication, couponsSchema } from "./schemas/public/coupons";
@@ -23,10 +17,24 @@ import {
 } from "./schemas/public/ticket_types";
 import { TicketsReplication, ticketsSchema } from "./schemas/public/tickets";
 
-addRxPlugin(RxDBDevModePlugin);
+import { toast } from "react-toastify";
+
+import { addRxPlugin } from "rxdb";
+import { RxDBCleanupPlugin } from "rxdb/plugins/cleanup";
+import { RxDBLeaderElectionPlugin } from "rxdb/plugins/leader-election";
+import { RxDBMigrationPlugin } from "rxdb/plugins/migration-schema";
+import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
+import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
+
+addRxPlugin(RxDBLeaderElectionPlugin);
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBMigrationPlugin);
 addRxPlugin(RxDBCleanupPlugin);
+
+// DEV
+import { RxDBDevModePlugin, disableWarnings } from "rxdb/plugins/dev-mode";
+disableWarnings();
+addRxPlugin(RxDBDevModePlugin);
 
 const collections = {
   services: {
@@ -63,7 +71,7 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-  await removeRxDatabase("mydatabase", storage);
+  // await removeRxDatabase("mydatabase", storage);
 
   // Create your database
   const db = await createRxDatabase<Collections>({
@@ -71,6 +79,7 @@ export const {
     storage: storage,
     cleanupPolicy: {},
     eventReduce: true,
+    ignoreDuplicate: true, // DEV
   });
 
   const myCollections = await db.addCollections(collections);

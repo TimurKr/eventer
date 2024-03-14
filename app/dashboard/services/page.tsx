@@ -10,7 +10,7 @@ import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import Fuse from "fuse.js";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import Header from "../components/Header";
 import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
@@ -112,27 +112,32 @@ export default function Page() {
         search={{ search, searchTerm, results: services.length }}
         actionButton={<NewServiceButton />}
       />
-      {services.length > 0 ? (
-        <ul>
-          {services.map((service) => (
-            <ServiceRow key={service.id} service={service} />
-          ))}
-        </ul>
-      ) : isFetching ? (
-        <Loading text="Načítavam predstavenia..." />
-      ) : (
-        <div className="flex flex-col items-center p-10">
-          <RocketLaunchIcon className="w-12 text-gray-400" />
-          <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
-            {!allServices || allServices.length === 0
-              ? "Vytvorte si svoje prvé predstavenie"
-              : "Takéto predstavenie neexistuje, chcete si také vyrobiť?"}
-          </p>
-          <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
-            <ServiceForm onSubmit={() => {}} initialTitle={searchTerm} />
+      <div className="p-4 pt-0">
+        {services.length > 0 ? (
+          <ol className="">
+            {services.map((service, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && <hr className="my-2" />}
+                <ServiceRow key={service.id} service={service} />
+              </React.Fragment>
+            ))}
+          </ol>
+        ) : isFetching ? (
+          <Loading text="Načítavam predstavenia..." />
+        ) : (
+          <div className="flex flex-col items-center p-10">
+            <RocketLaunchIcon className="w-12 text-gray-400" />
+            <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
+              {!allServices || allServices.length === 0
+                ? "Vytvorte si svoje prvé predstavenie"
+                : "Takéto predstavenie neexistuje, chcete si také vyrobiť?"}
+            </p>
+            <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
+              <ServiceForm onSubmit={() => {}} initialTitle={searchTerm} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }

@@ -26,12 +26,11 @@ import { CheckBadgeIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Alert, Tooltip } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-import { validateCoupon } from "../../coupons/utils";
 import CouponCodeField from "../_modals/CouponCodeField";
 import { contactsEqual } from "../utils";
 
@@ -153,14 +152,12 @@ function TooManySoldAlert({
   }
 }
 
-export default function NewTicketsForm({
-  eventId,
-  couponCode,
-}: {
-  eventId: string;
-  couponCode?: string;
-}) {
+export default function NewTicketsForm({}: {}) {
   const router = useRouter();
+
+  const params = useSearchParams();
+  const eventId = params.get("eventId") || "";
+  const couponCode = params.get("couponCode") || undefined;
 
   const [coupon, setCoupon] = useState<CouponsDocument | undefined | null>(
     undefined,
@@ -344,8 +341,8 @@ export default function NewTicketsForm({
     router.back();
   };
 
-  if (event === undefined && !isEventFetching) {
-    router.replace("/dashboard/events");
+  if (!eventId || (!event && !isEventFetching)) {
+    router.back();
     return null;
   }
 
@@ -666,19 +663,7 @@ export default function NewTicketsForm({
                     defaultCode={couponCode}
                     coupon={coupon}
                     setCoupon={setCoupon}
-                    validate={async (code) => {
-                      if (!couponsCollection) {
-                        console.log("No collection");
-                        return undefined;
-                      }
-                      const coupon = await couponsCollection
-                        .findOne({ selector: { code } })
-                        .exec();
-                      if (coupon && validateCoupon(coupon)) {
-                        return coupon;
-                      }
-                      return null;
-                    }}
+                    couponsCollection={couponsCollection}
                   />
                 </td>
                 <td className="px-2 text-end">

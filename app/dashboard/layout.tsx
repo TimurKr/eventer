@@ -57,18 +57,16 @@ export default function DashboardLayout({
 
   return (
     <DbProvider handleOffline={handleOffline} handleOnline={handleOnline}>
-      <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
-        <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
+      <section className="flex h-screen w-full flex-col justify-start bg-stone-300 p-2 gap-2">
+        <nav className="top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 bg-stone-50 rounded-lg shadow-md">
           <div className="hidden px-4 text-lg font-bold tracking-wider md:inline">
             <BusinessTitle />
           </div>
           <Navbar />
         </nav>
-        <div className="grow overflow-y-scroll p-2">
-          <div className="rounded-xl bg-white p-4 pt-0">
-            {children}
-            {modals}
-          </div>
+        <div className="grow shadow-md rounded-lg  h-full bg-stone-50 pt-0 overflow-scroll">
+          {children}
+          {modals}
         </div>
       </section>
     </DbProvider>

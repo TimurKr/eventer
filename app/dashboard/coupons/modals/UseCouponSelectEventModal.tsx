@@ -1,24 +1,27 @@
 "use client";
 
 import { useRxData } from "@/rxdb/db";
+import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import InlineLoading from "@/utils/components/InlineLoading";
 import { Modal } from "flowbite-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EventRow from "../../events/_components/EventRow";
-import NewTicketsButton from "../../events/new-tickets/button";
 
 export default function UseCouponSelectEvent({
-  couponCode,
+  coupon,
 }: {
-  couponCode: string;
+  coupon: CouponsDocument;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const { result: allEvents, isFetching } = useRxData(
     "events",
-    (collection) => collection.find(),
+    (collection) => collection.find().sort({ datetime: "desc" }),
     { initialResult: [] },
   );
+
+  const router = useRouter();
 
   return (
     <>
@@ -46,11 +49,10 @@ export default function UseCouponSelectEvent({
               <EventRow
                 key={event.id}
                 event={event}
-                actionButton={
-                  <NewTicketsButton
-                    eventId={event.id.toString()}
-                    couponCode={couponCode}
-                  />
+                onClick={() =>
+                  router.push(
+                    `/dashboard/events/new-tickets?eventId=${event.id.toString()}&couponCode=${coupon.code}&contactId=${coupon.contact_id}`,
+                  )
                 }
               />
             ))

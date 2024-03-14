@@ -75,7 +75,7 @@ export default function EventRow({
     <button
       key={event.id}
       type="button"
-      className={`flex w-full items-center justify-between gap-x-6 rounded-lg p-2 hover:bg-slate-100 ${className}`}
+      className={`flex flex-wrap w-full items-center justify-between gap-x-6 rounded-lg p-2 hover:bg-stone-200 ${className}`}
       disabled={onClick ? false : true}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
@@ -93,9 +93,9 @@ export default function EventRow({
         </p>
         <div className="flex items-center gap-2">
           <span
-            className={`text-sm font-bold ${
+            className={`text-sm font-medium ${
               moment(event.datetime).isSame(moment(), "day")
-                ? "text-cyan-700"
+                ? "text-cyan-600"
                 : ""
             }`}
           >
@@ -145,7 +145,8 @@ export default function EventRow({
                           : "gray"
                     }
                     theme={{
-                      bar: "transition-all rounded-full",
+                      bar: "transition-all rounded-full bg-white",
+                      base: "bg-gray-200 rounded-full",
                     }}
                   />
                 ) : (
