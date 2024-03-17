@@ -1,9 +1,9 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
+import SubmitButton from "@/components/forms/SubmitButton";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import InlineLoading from "@/utils/components/InlineLoading";
-import SubmitButton from "@/utils/forms/SubmitButton";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Alert, Modal, Spinner } from "flowbite-react";
 import { useCallback, useState, useTransition } from "react";

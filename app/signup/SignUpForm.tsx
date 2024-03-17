@@ -1,6 +1,6 @@
 "use client";
 
-import SubmitButton from "@/utils/forms/SubmitButton";
+import SubmitButton from "@/components/forms/SubmitButton";
 import { Alert } from "flowbite-react";
 import { useState, useTransition } from "react";
 import { HiExclamationCircle } from "react-icons/hi2";

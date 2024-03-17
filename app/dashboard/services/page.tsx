@@ -1,17 +1,17 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
+import Loading from "@/components/Loading";
+import { TextField } from "@/components/forms/Fields";
 import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
-import InlineLoading from "@/utils/components/InlineLoading";
-import Loading from "@/utils/components/loading";
-import { TextField } from "@/utils/forms/Fields";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import Fuse from "fuse.js";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { useCallback, useMemo, useState } from "react";
-import Header from "../components/Header";
+import Header from "../../../components/Header";
 import NewServiceButton from "./edit/button";
 import ServiceForm from "./edit/form";
 

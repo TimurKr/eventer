@@ -1,14 +1,14 @@
 "use client";
 
-import { useRxData } from "@/rxdb/db";
-import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
-import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
-import InlineLoading from "@/utils/components/InlineLoading";
-import Loading from "@/utils/components/loading";
+import InlineLoading from "@/components/InlineLoading";
+import Loading from "@/components/Loading";
 import {
   InstantTextAreaField,
   InstantTextField,
-} from "@/utils/forms/InstantFields";
+} from "@/components/forms/InstantFields";
+import { useRxData } from "@/rxdb/db";
+import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
+import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import {
   ArrowTopRightOnSquareIcon,
   MagnifyingGlassIcon,
@@ -23,7 +23,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { number as yupNumber } from "yup";
-import Header from "../components/Header";
+import Header from "../../../components/Header";
 import UseCouponSelectEvent from "./modals/UseCouponSelectEventModal";
 import NewCouponButton from "./new/button";
 import NewCouponForm from "./new/form";

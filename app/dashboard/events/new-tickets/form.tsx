@@ -1,5 +1,13 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
+import CustomComboBox from "@/components/forms/ComboBox";
+import {
+  CustomErrorMessage,
+  FormikSelectField,
+  FormikTextField,
+} from "@/components/forms/FormikElements";
+import SubmitButton from "@/components/forms/SubmitButton";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocumentType } from "@/rxdb/schemas/public/contacts";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
@@ -8,16 +16,10 @@ import {
   TicketsDocument,
   TicketsDocumentType,
 } from "@/rxdb/schemas/public/tickets";
-import InlineLoading from "@/utils/components/InlineLoading";
-import CustomComboBox from "@/utils/forms/ComboBox";
 import {
-  CustomErrorMessage,
-  FormikSelectField,
-  FormikTextField,
-} from "@/utils/forms/FormikElements";
-import SubmitButton from "@/utils/forms/SubmitButton";
-import {
+  ArrowDownLeftIcon,
   CurrencyEuroIcon,
+  InformationCircleIcon,
   PlusCircleIcon,
   SquaresPlusIcon,
   UserCircleIcon,
@@ -158,6 +160,7 @@ export default function NewTicketsForm({}: {}) {
   const params = useSearchParams();
   const eventId = params.get("eventId") || "";
   const couponCode = params.get("couponCode") || undefined;
+  const contactId = params.get("contactId") || undefined;
 
   const [coupon, setCoupon] = useState<CouponsDocument | undefined | null>(
     undefined,
@@ -166,6 +169,11 @@ export default function NewTicketsForm({}: {}) {
   const { result: event, isFetching: isEventFetching } = useRxData(
     "events",
     useCallback((collection) => collection.findOne(eventId), [eventId]),
+  );
+
+  const { result: contact } = useRxData(
+    "contacts",
+    useCallback((c) => c.findOne(contactId || "NOT ID"), [contactId]),
   );
 
   const { result: ticketTypes, isFetching: isFetchingTicketTypes } = useRxData(
@@ -227,9 +235,9 @@ export default function NewTicketsForm({}: {}) {
   type TicketOrderType = Yup.InferType<typeof validationSchema>;
 
   const initialValues: TicketOrderType = {
-    billingName: "",
-    billingEmail: "",
-    billingPhone: "",
+    billingName: contact?.name || "",
+    billingEmail: contact?.email || "",
+    billingPhone: contact?.phone || "",
     tickets: [],
     paymentStatus: "rezervované",
   };
@@ -362,6 +370,7 @@ export default function NewTicketsForm({}: {}) {
 
   return (
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={onSubmit}
@@ -375,36 +384,64 @@ export default function NewTicketsForm({}: {}) {
         setFieldValue,
       }: FormikProps<TicketOrderType>) => (
         <Form>
-          <p className="ps-1 font-bold">Fakturčné údaje</p>
+          <div className="ps-1 font-bold flex items-center gap-1">
+            <span className="font-bold me-auto">Fakturčné údaje</span>
+            {contact &&
+              (contactsEqual(contact, {
+                name: values.billingName,
+                email: values.billingEmail,
+                phone: values.billingPhone,
+              }) ? (
+                <>
+                  <InformationCircleIcon className="h-4 w-4 " />
+                  <span className="text-sm font-light text-gray-600">
+                    Automaticky zvolené podľa kontaktu pri poukaze
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-normal text-gray-600">
+                    <button
+                      type="button"
+                      className="text-gray-500 flex gap-1 hover:text-gray-700 active:text-gray-800"
+                      onClick={() => {
+                        setFieldValue("billingName", contact.name, true);
+                        setFieldValue("billingEmail", contact.email, true);
+                        setFieldValue("billingPhone", contact.phone, true);
+                      }}
+                    >
+                      <ArrowDownLeftIcon className="h-4 w-4" />
+                      <UserCircleIcon className="h-4 w-4" />
+                      Vyplniť podľa kontaktu pri kupóne
+                    </button>
+                  </span>
+                </>
+              ))}
+          </div>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
             <CustomComboBox
               options={allContacts.map((c) => {
-                const { _attachments, _deleted, _meta, _rev, ...data } =
+                const { _attachments, _deleted, _meta, _rev, id, ...data } =
                   c._data;
                 return data;
               })}
+              defaultValue={{
+                name: values.billingName,
+                email: values.billingEmail,
+                phone: values.billingPhone,
+              }}
               displayFun={(c) => c?.name || ""}
               searchKeys={["name"]}
               newValueBuilder={(input) => ({
                 name: input,
-                email: "",
-                phone: "",
+                email: values.billingEmail || "",
+                phone: values.billingPhone || "",
                 id: crypto.randomUUID(),
               })}
               onSelect={async (contact) => {
                 await setFieldValue("billingName", contact?.name || "", true);
-                if (contact?.id) {
-                  await setFieldValue(
-                    "billingEmail",
-                    contact?.email || "",
-                    true,
-                  );
-                  await setFieldValue(
-                    "billingPhone",
-                    contact?.phone || "",
-                    true,
-                  );
-                }
+                await setFieldValue("billingEmail", contact?.email || "", true);
+                await setFieldValue("billingPhone", contact?.phone || "", true);
                 console.log(values);
               }}
               label="Meno"
@@ -415,9 +452,7 @@ export default function NewTicketsForm({}: {}) {
                 <CustomErrorMessage fieldMeta={getFieldMeta("billingName")} />
               }
             />
-
             <FormikTextField
-              // type="email"
               name="billingEmail"
               label="Email"
               placeHolder="-"
@@ -437,6 +472,7 @@ export default function NewTicketsForm({}: {}) {
               <option value="zrušené">Zrušené</option>
             </FormikSelectField>
           </div>
+
           <p className="ps-1 pt-4 font-bold">Lístky</p>
           <div className="rounded-xl border border-gray-400 p-2">
             <FieldArray name="tickets">
@@ -484,8 +520,8 @@ export default function NewTicketsForm({}: {}) {
                                 searchKeys={["name"]}
                                 newValueBuilder={(input) => ({
                                   name: input,
-                                  email: "",
-                                  phone: "",
+                                  email: values.tickets[index].email || "",
+                                  phone: values.tickets[index].phone || "",
                                   id: crypto.randomUUID(),
                                 })}
                                 onSelect={async (contact) => {

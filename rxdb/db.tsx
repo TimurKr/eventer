@@ -1,6 +1,6 @@
 "use client";
 
-import { createBrowserSupabase } from "@/utils/supabase/browser";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";

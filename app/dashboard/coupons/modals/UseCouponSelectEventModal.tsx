@@ -1,8 +1,8 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
 import { useRxData } from "@/rxdb/db";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
-import InlineLoading from "@/utils/components/InlineLoading";
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

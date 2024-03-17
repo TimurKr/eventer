@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Database } from "@/utils/supabase/database.types";
+import { Database } from "@/lib/supabase/database.types";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

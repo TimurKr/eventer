@@ -1,14 +1,14 @@
 "use client";
 
-import { useRxCollection, useRxData } from "@/rxdb/db";
-import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
-import CustomComboBox from "@/utils/forms/ComboBox";
-import CustomDatePicker from "@/utils/forms/DatePicker";
+import CustomComboBox from "@/components/forms/ComboBox";
+import CustomDatePicker from "@/components/forms/DatePicker";
 import {
   CustomErrorMessage,
   FormikTextField,
-} from "@/utils/forms/FormikElements";
-import SubmitButton from "@/utils/forms/SubmitButton";
+} from "@/components/forms/FormikElements";
+import SubmitButton from "@/components/forms/SubmitButton";
+import { useRxCollection, useRxData } from "@/rxdb/db";
+import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import {
   ArrowPathIcon,
   CurrencyEuroIcon,
@@ -171,8 +171,8 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
                   searchKeys={["name"]}
                   newValueBuilder={(input) => ({
                     name: input,
-                    email: "",
-                    phone: "",
+                    email: values.contact.email,
+                    phone: values.contact.phone,
                     id: crypto.randomUUID(),
                   })}
                   onSelect={async (contact) => {

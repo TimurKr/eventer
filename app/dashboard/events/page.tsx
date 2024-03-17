@@ -1,17 +1,17 @@
 "use client";
 
-import { useRxCollection, useRxData } from "@/rxdb/db";
-import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
-import { EventsDocument } from "@/rxdb/schemas/public/events";
-import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import InlineLoading from "@/utils/components/InlineLoading";
-import Loading from "@/utils/components/loading";
+import InlineLoading from "@/components/InlineLoading";
+import Loading from "@/components/Loading";
 import {
   InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
-} from "@/utils/forms/InstantFields";
-import { useBrowserUser } from "@/utils/supabase/browser";
+} from "@/components/forms/InstantFields";
+import { useBrowserUser } from "@/lib/supabase/browser";
+import { useRxCollection, useRxData } from "@/rxdb/db";
+import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
+import { EventsDocument } from "@/rxdb/schemas/public/events";
+import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import {
   EllipsisHorizontalIcon,
@@ -27,7 +27,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { HiChevronDown, HiTrash } from "react-icons/hi2";
 import { LiaUnlinkSolid } from "react-icons/lia";
 import { number as yupNumber, string as yupString } from "yup";
-import Header from "../components/Header";
+import Header from "../../../components/Header";
 import ServiceForm from "../services/edit/form";
 import EventRow from "./_components/EventRow";
 import ConvertToCouponModal from "./_modals/ConvertToCouponModal";

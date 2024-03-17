@@ -1,9 +1,9 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import InlineLoading from "@/utils/components/InlineLoading";
 import { Modal, Spinner } from "flowbite-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "react-toastify";

@@ -1,7 +1,7 @@
+import InlineLoading from "@/components/InlineLoading";
 import { useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import InlineLoading from "@/utils/components/InlineLoading";
 import { Badge, Progress } from "flowbite-react";
 import moment from "moment";
 import { useCallback, useMemo } from "react";

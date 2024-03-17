@@ -1,4 +1,4 @@
-import type { Database } from "@/utils/supabase/database.types";
+import type { Database } from "@/lib/supabase/database.types";
 import { createBrowserClient } from "@supabase/ssr";
 import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";

@@ -1,12 +1,12 @@
 "use client";
 
-import { useRxData } from "@/rxdb/db";
 import {
   CustomErrorMessage,
   FormikCheckboxField,
   FormikTextField,
-} from "@/utils/forms/FormikElements";
-import SubmitButton from "@/utils/forms/SubmitButton";
+} from "@/components/forms/FormikElements";
+import SubmitButton from "@/components/forms/SubmitButton";
+import { useRxData } from "@/rxdb/db";
 import {
   CurrencyEuroIcon,
   InformationCircleIcon,
@@ -193,7 +193,6 @@ export default function ServiceForm({
               vertical
               type="text"
             />
-            {/* <FormikFieldSyncer name="name" value={initialTitle} /> */}
             <div className="flex items-center gap-6 pt-4">
               <p className="text-sm text-gray-600">Typy lístkov</p>
               <div className="h-px flex-grow bg-gray-400" />
@@ -218,7 +217,7 @@ export default function ServiceForm({
                         <th className="px-2 text-sm font-normal text-gray-500">
                           <div className="flex items-center gap-1">
                             Cena
-                            <Tooltip content="Cena je nezáväzná a pri každom lístku je viete zmeniť.">
+                            <Tooltip content="Cena je nezáväzná a pri každom lístku ju viete zmeniť.">
                               <InformationCircleIcon className="h-4 w-4" />
                             </Tooltip>
                           </div>
@@ -226,7 +225,7 @@ export default function ServiceForm({
                         <th className="px-1 text-start text-sm font-normal text-gray-500">
                           <div className="flex items-center gap-1">
                             VIP
-                            <Tooltip content="Iba pre vašu referenciu, aby sa vám lahšie rozlyšovalo medzi lístkami.">
+                            <Tooltip content="Iba pre vašu referenciu, aby sa vám ľahšie rozlišovalo medzi lístkami.">
                               <InformationCircleIcon className="h-4 w-4" />
                             </Tooltip>
                           </div>

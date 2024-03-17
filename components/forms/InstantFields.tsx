@@ -180,11 +180,13 @@ export function InstantTextField({
   autoFocus,
   trim = false,
   showAlways = true,
+  baseClassName,
 }: InstantFieldProps<string | null> & {
   type: "text" | "number" | "email" | "tel";
   inline?: boolean;
   trim?: boolean;
   showAlways?: boolean;
+  baseClassName?: string;
 }) {
   const [isEditing, setIsEditing] = useState(showAlways ? true : false);
   const [value, setValue] = useState<string>(defaultValue || "");
@@ -221,60 +223,64 @@ export function InstantTextField({
     !showAlways && setIsEditing(false);
   };
 
-  return isEditing ? (
+  return (
     <div
       className={`${
         inline ? "inline-flex" : vertical ? "flex flex-col" : "flex"
-      } `}
+      } ${baseClassName}`}
     >
-      {label && <label className="p-1 text-sm text-gray-600">{label}</label>}
-      <input
-        type={type}
-        className={`m-0.5 rounded-md border-gray-200 bg-gray-50 p-0 px-1 text-sm font-normal text-black placeholder:text-xs ${
-          error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-        } ${inline ? "font-mono" : ""} ${className} ${!vertical && label ? "" : "grow"}`}
-        value={value}
-        placeholder={placeholder}
-        autoFocus={autoFocus || !showAlways}
-        size={inline ? value?.length || placeholder?.length || 3 : undefined}
-        onChange={async (e) => {
-          setValue(e.target.value);
-          if (validate) {
-            const err = await validate(e.target.value);
-            if (err) setError(err);
-            else setError(null);
-          }
-          if (inline) e.target.size = e.target.value.length || 4;
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            (e.target as HTMLInputElement).blur();
-          }
-          if (e.key === "Escape") {
-            (e.target as HTMLInputElement).value = defaultValue || "";
-            setValue(defaultValue || "");
-            setError(null);
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        onBlur={(e) => {
-          submit(e.target.value, () => e.target.focus());
-        }}
-      />
+      {label && (
+        <label className="pb-0 px-2 text-sm text-gray-600">{label}</label>
+      )}
+      {isEditing ? (
+        <input
+          type={type}
+          className={`m-0.5 rounded-md border-gray-200 bg-gray-50 text-sm font-normal text-black placeholder:text-xs ${
+            error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
+          } ${inline ? "font-mono p-0 px-1" : "px-3 py-1"} ${className} ${!vertical && label ? "" : "grow"}`}
+          value={value}
+          placeholder={placeholder}
+          autoFocus={autoFocus || !showAlways}
+          size={inline ? value?.length || placeholder?.length || 3 : undefined}
+          onChange={async (e) => {
+            setValue(e.target.value);
+            if (validate) {
+              const err = await validate(e.target.value);
+              if (err) setError(err);
+              else setError(null);
+            }
+            if (inline) e.target.size = e.target.value.length || 4;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              (e.target as HTMLInputElement).blur();
+            }
+            if (e.key === "Escape") {
+              (e.target as HTMLInputElement).value = defaultValue || "";
+              setValue(defaultValue || "");
+              setError(null);
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          onBlur={(e) => {
+            submit(e.target.value, () => e.target.focus());
+          }}
+        />
+      ) : (
+        <button
+          className="group flex items-center gap-2"
+          onClick={() => setIsEditing(true)}
+        >
+          <p
+            className={`text-start font-medium tracking-wider ${
+              value ? "" : "text-gray-500"
+            }`}
+          >
+            {value || placeholder}
+          </p>
+          <PencilIcon className="h-4 w-4 shrink-0 text-gray-500 opacity-0 transition-all group-hover:opacity-100" />
+        </button>
+      )}
     </div>
-  ) : (
-    <button
-      className="group flex items-center gap-2"
-      onClick={() => setIsEditing(true)}
-    >
-      <p
-        className={`text-start font-medium tracking-wider ${
-          value ? "" : "text-gray-500"
-        }`}
-      >
-        {value || placeholder}
-      </p>
-      <PencilIcon className="h-4 w-4 shrink-0 text-gray-500 opacity-0 transition-all group-hover:opacity-100" />
-    </button>
   );
 }

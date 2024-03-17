@@ -1,8 +1,8 @@
 "use client";
 
+import { InstantTextField } from "@/components/forms/InstantFields";
+import { useBrowserUser } from "@/lib/supabase/browser";
 import { DbProvider, useRxData } from "@/rxdb/db";
-import { InstantTextField } from "@/utils/forms/InstantFields";
-import { useBrowserUser } from "@/utils/supabase/browser";
 import React, { useCallback } from "react";
 import { Id, toast } from "react-toastify";
 import Navbar from "./Navbar";
