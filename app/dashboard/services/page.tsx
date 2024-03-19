@@ -86,7 +86,7 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
 
 export default function Page() {
   const q = useSearchParams().get("query");
-  const [searchTerm, search] = useState(q || "");
+  const [query, search] = useState(q || "");
 
   const { result: allServices, isFetching } = useRxData(
     "services",
@@ -96,20 +96,20 @@ export default function Page() {
   const services = useMemo(() => {
     if (!allServices || allServices.length === 0) return [];
 
-    if (!searchTerm) return allServices;
+    if (!query) return allServices;
 
     const fuse = new Fuse(allServices, {
       keys: ["name"],
     });
-    return fuse.search(searchTerm).map((result) => result.item);
-  }, [allServices, searchTerm]);
+    return fuse.search(query).map((result) => result.item);
+  }, [allServices, query]);
 
   return (
     <>
       <Header
         title="Predstavenia"
         refresh={{ isRefreshing: isFetching }}
-        search={{ search, searchTerm, results: services.length }}
+        search={{ search, query, resultsCount: services.length }}
         actionButton={<NewServiceButton />}
       />
       <div className="p-4 pt-0">
@@ -133,7 +133,7 @@ export default function Page() {
                 : "Takéto predstavenie neexistuje, chcete si také vyrobiť?"}
             </p>
             <div className="rounded-2xl border border-gray-200 p-4 shadow-md">
-              <ServiceForm onSubmit={() => {}} initialTitle={searchTerm} />
+              <ServiceForm onSubmit={() => {}} initialTitle={query} />
             </div>
           </div>
         )}

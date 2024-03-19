@@ -1,8 +1,10 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
+import NoResults from "@/components/NoResults";
+import { SelectContactDialog } from "@/components/SelectContact";
 import { InstantTextField } from "@/components/forms/InstantFields";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -30,17 +33,134 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRxData } from "@/rxdb/db";
+import { cn } from "@/lib/utils";
+import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  PencilIcon,
+  UserGroupIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
 import { LockClosedIcon, LockOpenIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import { string as yupString } from "yup";
+
+function DropdownSelector<
+  T extends Record<
+    string,
+    { display?: string; variant: BadgeProps["variant"] }
+  >,
+>({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value?: string;
+  onChange: (newStatus: string) => void;
+  options: T;
+  label: string;
+}) {
+  if (!value) return <InlineLoading />;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Badge variant={options[value]?.variant || "outline"}>
+          {options[value]?.display || value}
+        </Badge>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56">
+        <DropdownMenuLabel>{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={(v) => onChange(v)}
+        >
+          {Object.entries(options).map(([key, value]) => (
+            <DropdownMenuRadioItem key={key} value={key}>
+              <Badge
+                variant={
+                  (value as { variant: BadgeProps["variant"] })["variant"]
+                }
+              >
+                {(value as { display?: string }).display || key}
+              </Badge>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ContactInTicket({
+  className,
+  contact,
+  replaceOnlyHere,
+  replaceWholeGroup,
+}: {
+  className?: string;
+  contact: ContactsDocument;
+  replaceOnlyHere: (newContact: ContactsDocument) => void;
+  replaceWholeGroup: (newContact: ContactsDocument) => void;
+}) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const { id: currentContactId } = useParams<{ id?: string }>();
+
+  return (
+    <DropdownMenu
+      modal={false}
+      open={dropdownOpen}
+      onOpenChange={setDropdownOpen}
+    >
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={"link"}
+          className={cn(
+            currentContactId === contact.id && "text-orange-400 font-medium",
+            className,
+          )}
+        >
+          {contact.name}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem asChild disabled={!contact.id}>
+          <Link href={`/dashboard/contacts/${contact?.id}`}>
+            <PencilIcon className="h-4 w-4 me-2" />
+            Upraviť kontakt
+          </Link>
+        </DropdownMenuItem>
+        <SelectContactDialog
+          onSelected={(c) => replaceOnlyHere(c)}
+          onClosed={() => setDropdownOpen(false)}
+        >
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <UserIcon className="h-4 w-4 me-2" />
+            Vybrať iný kontakt pre 1 lístok
+          </DropdownMenuItem>
+        </SelectContactDialog>
+        <SelectContactDialog
+          onSelected={(c) => replaceWholeGroup(c)}
+          onClosed={() => setDropdownOpen(false)}
+        >
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <UserGroupIcon className="h-4 w-4 me-2" />
+            Vybrať iný kontakt pre celú skupin
+          </DropdownMenuItem>
+        </SelectContactDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function TicketRow({
   ticket,
@@ -60,7 +180,21 @@ function TicketRow({
     useCallback((c) => c.findOne(ticket.billing_id), [ticket.billing_id]),
   );
 
-  const { id: currentContactId } = useParams<{ id: string }>();
+  const { result: event } = useRxData(
+    "events",
+    useCallback((c) => c.findOne(ticket.event_id), [ticket.event_id]),
+  );
+
+  const { result: ticketTypes } = useRxData(
+    "ticket_types",
+    useCallback(
+      (c) => c.find({ selector: { service_id: event?.service_id } }),
+      [event],
+    ),
+    { initialResult: [], hold: !event },
+  );
+
+  const ticketsCollection = useRxCollection("tickets");
 
   return (
     <TableRow>
@@ -75,72 +209,102 @@ function TicketRow({
           />
         </TableCell>
       )}
-      <TableCell
-        className={`${currentContactId === ticket.guest_id && "text-orange-400 font-medium"}`}
-      >
-        <div>
-          {currentContactId === ticket.guest_id ? (
-            guest?.name || <InlineLoading />
-          ) : (
-            <Link
-              href={`/dashboard/contacts/${ticket.guest_id}`}
-              className="hover:underline underline-offset-4"
-            >
-              {guest?.name || <InlineLoading />}
-            </Link>
+      <TableCell>
+        <DropdownSelector
+          label="Zmeniť typ"
+          onChange={(v) => ticket.incrementalPatch({ type_id: v })}
+          value={ticket?.type_id}
+          options={ticketTypes.reduce<
+            Record<string, { display?: string; variant: BadgeProps["variant"] }>
+          >(
+            (optionsObject, ticketType) => ({
+              ...optionsObject,
+              [ticketType.id]: {
+                variant: ticketType.is_vip ? "default" : "outline",
+                display: ticketType.label,
+              },
+            }),
+            {},
           )}
-        </div>
+        />
       </TableCell>
-      <TableCell
-        className={`${currentContactId === ticket.billing_id && "text-orange-400 font-medium"}`}
-      >
-        {currentContactId === ticket.billing_id ? (
-          billing?.name || <InlineLoading />
+      <TableCell className="text-center">
+        {!guest ? (
+          <InlineLoading />
         ) : (
-          <Button asChild variant={"link"}>
-            <Link href={`/dashboard/contacts/${ticket.billing_id}`}>
-              {billing?.name || <InlineLoading />}
-            </Link>
-          </Button>
+          <ContactInTicket
+            contact={guest}
+            replaceOnlyHere={(newContact) =>
+              ticket.incrementalPatch({ guest_id: newContact.id })
+            }
+            replaceWholeGroup={async (newContact) => {
+              if (!ticketsCollection) {
+                console.error("No tickets collection");
+                return;
+              }
+              const tickets = await ticketsCollection
+                .find({
+                  selector: {
+                    event_id: ticket.event_id,
+                    guest_id: ticket.guest_id,
+                  },
+                })
+                .exec();
+              const r = await ticketsCollection.bulkUpsert(
+                tickets.map((t) => ({ ...t._data, guest_id: newContact.id })),
+              );
+              r.error.forEach((e) =>
+                toast.error("Chyba pri zmene kontaktu. Kód: " + e.status),
+              );
+            }}
+          />
+        )}
+      </TableCell>
+      <TableCell className="text-center">
+        {!billing ? (
+          <InlineLoading />
+        ) : (
+          <ContactInTicket
+            contact={billing}
+            replaceOnlyHere={(newContact) =>
+              ticket.incrementalPatch({ billing_id: newContact.id })
+            }
+            replaceWholeGroup={async (newContact) => {
+              if (!ticketsCollection) {
+                console.error("No tickets collection");
+                return;
+              }
+              const tickets = await ticketsCollection
+                .find({
+                  selector: {
+                    event_id: ticket.event_id,
+                    billing_id: ticket.billing_id,
+                  },
+                })
+                .exec();
+              const r = await ticketsCollection.bulkUpsert(
+                tickets.map((t) => ({ ...t._data, billing_id: newContact.id })),
+              );
+              r.error.forEach((e) =>
+                toast.error("Chyba pri zmene kontaktu. Kód: " + e.status),
+              );
+            }}
+          />
         )}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Badge
-              variant={
-                ticket.payment_status === "zaplatené"
-                  ? "default"
-                  : ticket.payment_status === "zrušené"
-                    ? "destructive"
-                    : "outline"
-              }
-            >
-              {ticket.payment_status?.toLowerCase()}
-            </Badge>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Status Lístka</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup
-              value={ticket.payment_status}
-              onValueChange={(v) =>
-                ticket.incrementalPatch({ payment_status: v })
-              }
-            >
-              <DropdownMenuRadioItem value="rezervované">
-                Rezervované
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="zaplatené">
-                Zaplatené
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="zrušené">
-                Zrušené
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DropdownSelector
+          label="Zmeniť status"
+          onChange={(v) => ticket.incrementalPatch({ payment_status: v })}
+          value={ticket?.payment_status}
+          options={{
+            zaplatené: { variant: "default" },
+            zrušené: { variant: "destructive" },
+            rezervované: { variant: "outline" },
+          }}
+        />
       </TableCell>
+
       <TableCell className="text-end">{ticket.note || "-"}</TableCell>
       <TableCell className="text-end">{ticket.price} €</TableCell>
       <TableCell className="text-end">
@@ -198,8 +362,9 @@ function Event({
                   </button>
                 </TableHead>
               )}
-              <TableHead>Hosť</TableHead>
-              <TableHead>Platca</TableHead>
+              <TableHead>Typ lístka</TableHead>
+              <TableHead className="text-center">Hosť</TableHead>
+              <TableHead className="text-center">Platca</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-end">Poznámka</TableHead>
               <TableHead className="text-end">Cena</TableHead>
@@ -327,11 +492,15 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           <TabsTrigger value="coupons">Kupóny</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets">
-          <div className="flex flex-col gap-4">
-            {groupedTickets.map((event, i) => (
-              <Event key={i} {...event} />
-            ))}
-          </div>
+          {groupedTickets.length === 0 ? (
+            <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" /> //TODO: Pridať možnosť pridania lístku s autofill
+          ) : (
+            <div className="flex flex-col gap-4">
+              {groupedTickets.map((event, i) => (
+                <Event key={i} {...event} />
+              ))}
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="coupons">
           <p>Coming soon</p>

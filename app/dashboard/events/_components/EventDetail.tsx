@@ -19,8 +19,6 @@ import { TicketsSorting } from "../utils";
 import EventRow from "./EventRow";
 import TicketGroup from "./TicketGroup";
 
-const ticketStatuses = ["rezervované", "zaplatené", "zrušené"];
-
 export default function EventDetail({
   event,
   allHighlightedTickets,

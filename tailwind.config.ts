@@ -85,8 +85,8 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        in: "animate-in 0.3s ease 0.15s both",
-        wiggle: "wiggle 2s ease-in-out infinite both",
+        in: "animate-in 0.3s ease 0.15s alternate",
+        wiggle: "wiggle 2s ease-in-out infinite alternate",
       },
     },
   },

@@ -264,7 +264,7 @@ function CouponRow({
 
 export default function Coupons() {
   const q = useSearchParams().get("query");
-  const [searchTerm, setSearchTerm] = useState(q || "");
+  const [query, setQuery] = useState(q || "");
 
   const { result: allCoupons, isFetching: isFetchingCoupons } = useRxData(
     "coupons",
@@ -286,11 +286,11 @@ export default function Coupons() {
 
   const coupons = useMemo(
     () =>
-      searchCoupons(searchTerm, {
+      searchCoupons(query, {
         coupons: allCoupons,
         contacts: allContacts,
       }),
-    [searchTerm, allContacts, allCoupons],
+    [query, allContacts, allCoupons],
   );
 
   return (
@@ -299,9 +299,9 @@ export default function Coupons() {
         title="Poukazy"
         actionButton={<NewCouponButton />}
         search={{
-          search: (query) => setSearchTerm(query),
-          searchTerm,
-          results: coupons.length || 0,
+          search: (query) => setQuery(query),
+          query,
+          resultsCount: coupons.length || 0,
         }}
       />
       <div className="p-4 pt-0">
@@ -341,7 +341,7 @@ export default function Coupons() {
           </table>
         ) : isFetchingContacts ? (
           <Loading text="Načítavam poukazy..." />
-        ) : searchTerm ? (
+        ) : query ? (
           <div className="flex flex-col items-center p-10">
             <MagnifyingGlassIcon className="w-12 text-gray-400 animate-wiggle" />
             <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">

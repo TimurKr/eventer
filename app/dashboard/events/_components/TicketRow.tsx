@@ -1,15 +1,20 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
+import { SelectContactDialog } from "@/components/SelectContact";
 import {
   InstantSwitchField,
   InstantTextAreaField,
   InstantTextField,
 } from "@/components/forms/InstantFields";
+import { Button } from "@/components/ui/button";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
+import { ArrowsRightLeftIcon } from "@heroicons/react/24/outline";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/solid";
 import { Checkbox, Dropdown, Table } from "flowbite-react";
+import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { HiTrash } from "react-icons/hi2";
 import { number as yupNumber, string as yupString } from "yup";
@@ -229,9 +234,9 @@ export default function TicketRow({
           ))}
         </select>
       </Table.Cell>
-      <Table.Cell className="group text-pretty border-l p-0">
-        <InstantTextField
-          defaultValue={guestContact?.name || ""}
+      <Table.Cell className="flex items-center border-l p-0">
+        {/* <InstantTextField
+          defaultValue={guestCxwontact?.name || ""}xw
           type="text"
           inline
           trim
@@ -276,7 +281,20 @@ export default function TicketRow({
             ticket={ticket}
             type="guest_id"
           />
-        </div>
+        </div> */}
+        <Button asChild variant={"link"}>
+          <Link href={`/dashboard/contacts/${ticket.billing_id}`}>
+            {guestContact?.name || <InlineLoading />}
+          </Link>
+        </Button>
+        <SelectContactDialog
+          onSelected={() => console.log("selected")}
+          description={`Vyberte si kontakt ktorým nahradíte ${guestContact?.name}`}
+        >
+          <button type="button">
+            <ArrowsRightLeftIcon className="h-4 w-4" />
+          </button>
+        </SelectContactDialog>
       </Table.Cell>
       {indexInGroup == 0 && (
         <Table.Cell
