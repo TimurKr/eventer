@@ -302,7 +302,7 @@ export default function ServiceForm({
                     </tbody>
                   </table>
                   {values.ticket_types.length === 0 && (
-                    <div className="p-2 flex items-center justify-center gap-2 text-yellow-500">
+                    <div className="flex items-center justify-center gap-2 p-2 text-yellow-500">
                       <InformationCircleIcon className="h-4 w-4" />
                       <p className="text-sm">
                         Nevytvorili ste žiadne typy lístkov. Vytvorte aspoň 1

@@ -1,13 +1,14 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
+import { Button } from "@/components/ui/button";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { Modal, Spinner } from "flowbite-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "react-toastify";
-import EventRow from "../_components/EventRow";
+import EventRow from "../../../../components/EventRow";
 
 export default function MoveTicketsToDifferentEventModal({
   selectedTickets,
@@ -69,8 +70,9 @@ export default function MoveTicketsToDifferentEventModal({
 
   return (
     <>
-      <button
-        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800"
+      <Button
+        variant={"outline"}
+        size={"xs"}
         onClick={() =>
           selectedTickets.length == 0
             ? alert("Zvolte aspoň jeden lístok")
@@ -78,7 +80,7 @@ export default function MoveTicketsToDifferentEventModal({
         }
       >
         Posunúť na inú udalosť
-      </button>
+      </Button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
         <Modal.Header>
           Vyberte si udalosť, na ktorú by ste chceli presunúť lístky

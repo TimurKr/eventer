@@ -62,7 +62,7 @@ function CouponRow({
           {contact && (
             <Link
               href={`/dashboard/contacts/${contact.id.toString()}`}
-              className="p-1 flex items-center gap-2 group transition-all duration-100 hover:underline hover:text-blue-600 active:text-blue-700"
+              className="group flex items-center gap-2 p-1 transition-all duration-100 hover:text-blue-600 hover:underline active:text-blue-700"
             >
               {contact ? contact.name : "-"}
               <ArrowTopRightOnSquareIcon className="w-4 group-hover:scale-105 " />
@@ -343,7 +343,7 @@ export default function Coupons() {
           <Loading text="Načítavam poukazy..." />
         ) : query ? (
           <div className="flex flex-col items-center p-10">
-            <MagnifyingGlassIcon className="w-12 text-gray-400 animate-wiggle" />
+            <MagnifyingGlassIcon className="w-12 animate-wiggle text-gray-400" />
             <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
               Nenašli sme žiadne poukazy vyhovujúce vášmu hladaniu...
             </p>

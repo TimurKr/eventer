@@ -230,14 +230,14 @@ export function InstantTextField({
       } ${baseClassName}`}
     >
       {label && (
-        <label className="pb-0 px-2 text-sm text-gray-600">{label}</label>
+        <label className="px-2 pb-0 text-sm text-gray-600">{label}</label>
       )}
       {isEditing ? (
         <input
           type={type}
           className={`m-0.5 rounded-md border-gray-200 bg-gray-50 text-sm font-normal text-black placeholder:text-xs ${
             error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-          } ${inline ? "font-mono p-0 px-1" : "px-3 py-1"} ${className} ${!vertical && label ? "" : "grow"}`}
+          } ${inline ? "p-0 px-1 font-mono" : "px-3 py-1"} ${className} ${!vertical && label ? "" : "grow"}`}
           value={value}
           placeholder={placeholder}
           autoFocus={autoFocus || !showAlways}

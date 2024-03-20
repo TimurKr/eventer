@@ -1,10 +1,7 @@
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -65,12 +62,12 @@ export function SelectContactDialog({
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="!pb-0 sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Vyberte si kontakt</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="grid px-1 place-content-center">
+        <div className="grid place-content-center px-1">
           <SearchBar
             query={query}
             search={setQuery}
@@ -89,13 +86,13 @@ export function SelectContactDialog({
         </div>
         <ScrollArea>
           <div
-            className="flex max-h-80 flex-col gap-2 pe-4"
+            className="flex max-h-80 flex-col gap-2 pb-12 pe-4"
             id="list-of-contacts"
           >
             {/* TODO: Add a create contact option */}
             {contacts.map((contact) => (
               <button
-                className="w-full rounded-md border shadow-sm flex flex-col py-1 px-2"
+                className="flex w-full flex-col rounded-md border px-2 py-1 shadow-sm"
                 key={contact.id}
                 onClick={() => {
                   onSelected(contact);
@@ -103,20 +100,13 @@ export function SelectContactDialog({
                 }}
               >
                 <p className="font-medium">{contact.name}</p>
-                <p className="font-light text-gray-500 text-xs">
+                <p className="text-xs font-light text-gray-500">
                   {[contact.email, contact.phone].filter(Boolean).join(" - ")}
                 </p>
               </button>
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
-            </Button>
-          </DialogClose>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

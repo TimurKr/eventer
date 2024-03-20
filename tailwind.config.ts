@@ -12,6 +12,11 @@ const config = {
     "./node_modules/flowbite-react/lib/**/*.js",
   ],
   prefix: "",
+  plugins: [
+    require("tailwindcss-animate"),
+    require("flowbite/plugin"),
+    require("@tailwindcss/forms"),
+  ],
   theme: {
     container: {
       center: true,
@@ -90,11 +95,6 @@ const config = {
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    require("flowbite/plugin"),
-    require("@tailwindcss/forms"),
-  ],
   safelist: [
     {
       pattern: /(bg|text)-(yellow|gray|blue)-(200|600)/,

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export default function InlineLoading({ className }: { className?: string }) {
-  const [dots, setDots] = useState(1);
+  const [dots, setDots] = useState(3);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -17,7 +17,7 @@ export default function InlineLoading({ className }: { className?: string }) {
 
   return (
     <p
-      className={`text-xs text-gray-500 font-mono whitespace-pre ${className}`}
+      className={`whitespace-pre font-mono text-xs text-gray-500 ${className}`}
     >
       Loading
       {".".repeat(dots)}

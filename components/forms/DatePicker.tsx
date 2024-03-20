@@ -24,7 +24,7 @@ export default function CustomDatePicker({
       {label && <label className="p-1 text-sm text-gray-600">{label}</label>}
       <div className="flex w-full items-center justify-end">
         {value ? (
-          <div className="py-0.5 w-full">
+          <div className="w-full py-0.5">
             <Datepicker
               language="sk-SK"
               autoHide
@@ -55,7 +55,7 @@ export default function CustomDatePicker({
         )}
         <button
           type="button"
-          className={`p-2 transition-all text-gray-600 duration-100 hover:scale-105 ${
+          className={`p-2 text-gray-600 transition-all duration-100 hover:scale-105 ${
             value
               ? "hover:text-red-500 active:text-red-700"
               : "hover:text-green-500 active:text-green-700"

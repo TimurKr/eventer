@@ -2,6 +2,7 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Button } from "@/components/ui/button";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
@@ -66,8 +67,9 @@ export default function ConvertToCouponModal({
 
   return (
     <>
-      <button
-        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800"
+      <Button
+        variant={"outline"}
+        size={"xs"}
         onClick={() =>
           selectedTickets.length == 0
             ? alert("Zvolte aspoň jeden lístok")
@@ -75,7 +77,7 @@ export default function ConvertToCouponModal({
         }
       >
         Premeniť na poukaz
-      </button>
+      </Button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
         <Modal.Header>
           Naozaj chcete premeniť zvolené lístky na poukaz?

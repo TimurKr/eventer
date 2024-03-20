@@ -121,8 +121,8 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
       >
         {({ values, isSubmitting, setFieldValue, getFieldMeta }) => (
           <Form className="flex flex-col items-center">
-            <div className="flex divide-x w-full">
-              <div className="flex flex-col gap-2 p-2 grow">
+            <div className="flex w-full divide-x">
+              <div className="flex grow flex-col gap-2 p-2">
                 <FormikTextField
                   name="amount"
                   label="Suma"
@@ -159,7 +159,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
                   }
                 />
               </div>
-              <div className="flex flex-col gap-2 p-2 grow">
+              <div className="flex grow flex-col gap-2 p-2">
                 <CustomComboBox
                   options={contacts.map((c) => {
                     const { _attachments, _deleted, _meta, _rev, ...data } =

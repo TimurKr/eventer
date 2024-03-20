@@ -6,7 +6,7 @@ import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import EventRow from "../../events/_components/EventRow";
+import EventRow from "../../../../components/EventRow";
 
 export default function UseCouponSelectEvent({
   coupon,

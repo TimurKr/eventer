@@ -47,7 +47,7 @@ function PageLink({
       key={title}
       className={`grid w-auto place-content-center rounded-lg p-2 md:block md:px-3 md:py-0.5 ${
         path.startsWith(`${href}`)
-          ? "bg-stone-200 font-bold tracking-widest text-black cursor-default"
+          ? "cursor-default bg-stone-200 font-bold tracking-widest text-black"
           : "hover:bg-stone-200"
       } transition-all duration-200 ease-in-out`}
       href={href}
@@ -67,7 +67,7 @@ export default function Navbar() {
         <PageLink key={item.title + item.href} {...item} />
       ))}
       <button
-        className="w-auto ms-auto rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
+        className="ms-auto w-auto rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
         type="button"
         onClick={() => logOutClient()} //TODO: clear local rxdb sotrage onlogout
       >

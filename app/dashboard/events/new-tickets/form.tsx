@@ -384,8 +384,8 @@ export default function NewTicketsForm({}: {}) {
         setFieldValue,
       }: FormikProps<TicketOrderType>) => (
         <Form>
-          <div className="ps-1 font-bold flex items-center gap-1">
-            <span className="font-bold me-auto">Fakturčné údaje</span>
+          <div className="flex items-center gap-1 ps-1 font-bold">
+            <span className="me-auto font-bold">Fakturčné údaje</span>
             {contact &&
               (contactsEqual(contact, {
                 name: values.billingName,
@@ -403,7 +403,7 @@ export default function NewTicketsForm({}: {}) {
                   <span className="text-sm font-normal text-gray-600">
                     <button
                       type="button"
-                      className="text-gray-500 flex gap-1 hover:text-gray-700 active:text-gray-800"
+                      className="flex gap-1 text-gray-500 hover:text-gray-700 active:text-gray-800"
                       onClick={() => {
                         setFieldValue("billingName", contact.name, true);
                         setFieldValue("billingEmail", contact.email, true);

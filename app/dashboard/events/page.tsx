@@ -1,5 +1,6 @@
 "use client";
 
+import EventDetail from "@/components/Event";
 import Loading from "@/components/Loading";
 import { useBrowserUser } from "@/lib/supabase/browser";
 import { useRxData } from "@/rxdb/db";
@@ -10,7 +11,6 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import Header from "../../../components/Header";
 import ServiceForm from "../services/edit/form";
-import EventDetail from "./_components/EventDetail";
 import EditEventButton from "./edit-event/button";
 import EditEventForm from "./edit-event/form";
 import { searchTickets } from "./utils";
@@ -98,24 +98,28 @@ export default function Page() {
 
   const events = useMemo(
     () =>
-      highlightedTickets
+      (highlightedTickets
         ? allEvents.filter((e) =>
             highlightedTickets.some((t) => t.event_id === e.id),
           )
-        : allEvents,
-    [allEvents, highlightedTickets],
+        : allEvents
+      ).map((e) => ({
+        data: e,
+        tickets: allTickets.filter((t) => t.event_id === e.id),
+      })),
+    [allEvents, allTickets, highlightedTickets],
   );
 
   const { previousEvents, todayEvents, futureEvents } = useMemo(
     () => ({
       previousEvents: events.filter((e) =>
-        moment(e.datetime).endOf("D").isBefore(moment()),
+        moment(e.data.datetime).endOf("D").isBefore(moment()),
       ),
       todayEvents: events.filter((e) =>
-        moment(e.datetime).isSame(moment(), "D"),
+        moment(e.data.datetime).isSame(moment(), "D"),
       ),
       futureEvents: events.filter((e) =>
-        moment(e.datetime).startOf("D").isAfter(moment()),
+        moment(e.data.datetime).startOf("D").isAfter(moment()),
       ),
     }),
     [events],
@@ -136,45 +140,44 @@ export default function Page() {
         actionButton={allServices.length > 0 && <EditEventButton />}
       />
       {events.length > 0 ? (
-        <ol role="list" className={`w-auto p-4 pt-0`}>
+        <div className={`flex w-auto flex-col gap-4 p-4 pt-0`}>
           {futureEvents.map((event) => (
             <EventDetail
-              key={event.id}
-              event={event}
+              key={event.data.id}
+              event={event.data}
+              tickets={event.tickets}
               allHighlightedTickets={highlightedTickets}
             />
           ))}
           {todayEvents.length > 0 && (
-            <li>
-              <div className="flex items-center m-6">
-                <p className="font-medium text-cyan-600">Dnes</p>
-                <div className="h-px bg-gray-200 mx-4 grow" />
-              </div>
-            </li>
+            <div className="m-3 flex items-center">
+              <p className="font-medium text-orange-400">Dnes</p>
+              <div className="mx-4 h-px grow bg-gray-200" />
+            </div>
           )}
           {todayEvents.map((event) => (
             <EventDetail
-              key={event.id}
-              event={event}
+              key={event.data.id}
+              event={event.data}
+              tickets={event.tickets}
               allHighlightedTickets={highlightedTickets}
             />
           ))}
           {previousEvents.length > 0 && (
-            <li>
-              <div className="flex items-center m-6">
-                <p className="font-medium text-sm text-gray-600">História</p>
-                <div className="h-px bg-gray-200 mx-4 grow" />
-              </div>
-            </li>
+            <div className="m-3 flex items-center">
+              <p className="text-sm font-medium text-gray-600">História</p>
+              <div className="mx-4 h-px grow bg-gray-200" />
+            </div>
           )}
           {previousEvents.map((event) => (
             <EventDetail
-              key={event.id}
-              event={event}
+              key={event.data.id}
+              event={event.data}
+              tickets={event.tickets}
               allHighlightedTickets={highlightedTickets}
             />
           ))}
-        </ol>
+        </div>
       ) : isFetching ? (
         <Loading text="Načítavam udalosti..." />
       ) : allServices.length === 0 ? (
@@ -189,7 +192,7 @@ export default function Page() {
         </div>
       ) : query ? (
         <div className="flex flex-col items-center p-10">
-          <MagnifyingGlassIcon className="w-12 text-gray-400 animate-wiggle" />
+          <MagnifyingGlassIcon className="w-12 animate-wiggle text-gray-400" />
           <p className="mb-12 mt-6 text-center text-xl font-medium tracking-wide text-gray-600">
             Nenašli sme žiadne lístky vyhovujúce vášmu hladaniu...
           </p>

@@ -1,5 +1,10 @@
-import { ExtractDocumentTypeFromTypedRxJsonSchema, RxCollection, RxDocument, RxJsonSchema, toTypedRxJsonSchema } from "rxdb";
-import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication"
+import { SupabaseReplication } from "@/rxdb-supabase/supabase-replication";
+import {
+  ExtractDocumentTypeFromTypedRxJsonSchema,
+  RxCollection,
+  RxDocument,
+  toTypedRxJsonSchema,
+} from "rxdb";
 
 const schemaLiteral = {
   title: "tickets",
@@ -10,89 +15,85 @@ const schemaLiteral = {
       description: "Database type: uuid. Default value: gen_random_uuid()",
       type: "string",
       format: "uuid",
-      maxLength: 64
+      maxLength: 64,
     },
     created_at: {
-      description: "Database type: timestamp with time zone. Default value: now()",
+      description:
+        "Database type: timestamp with time zone. Default value: now()",
       type: "string",
-      format: "date-time"
+      format: "date-time",
     },
     price: {
       description: "Database type: real. Default value: null",
-      type: "number"
+      type: "number",
     },
     payment_status: {
       description: "Database type: text. Default value: 'reserved'",
       type: "string",
-      default: "reserved"
+      default: "reserved",
     },
     note: {
       description: "Database type: text. Default value: null",
-      type: "string"
+      type: "string",
     },
     arrived: {
       description: "Database type: boolean. Default value: false",
       type: "boolean",
-      default: false
+      default: false,
     },
     guest_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "contacts"
+      ref: "contacts",
     },
     billing_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "contacts"
+      ref: "contacts",
     },
     coupon_created_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "coupons"
+      ref: "coupons",
     },
     coupon_redeemed_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "coupons"
+      ref: "coupons",
     },
     type_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "ticket_types"
+      ref: "ticket_types",
     },
     event_id: {
       description: "Database type: uuid. Default value: null",
       type: "string",
       format: "uuid",
       maxLength: 64,
-      ref: "events"
-    }
+      ref: "events",
+    },
   },
-  required: [
-    "id",
-    "price",
-    "guest_id",
-    "billing_id",
-    "type_id",
-    "event_id"
-  ],
+  required: ["id", "price", "guest_id", "billing_id", "type_id", "event_id"],
   type: "object",
-  primaryKey: "id"
+  primaryKey: "id",
 } as const;
 
 export const ticketsSchema = toTypedRxJsonSchema(schemaLiteral);
 
-export type TicketsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof ticketsSchema>;
+export type TicketsDocumentType = ExtractDocumentTypeFromTypedRxJsonSchema<
+  typeof ticketsSchema
+>;
 export type TicketsDocument = RxDocument<TicketsDocumentType>;
 export type TicketsCollection = RxCollection<TicketsDocumentType>;
 
@@ -106,6 +107,6 @@ export type TicketsConstraints =
   | "tickets_pkey";
 
 export class TicketsReplication extends SupabaseReplication<
-TicketsDocumentType,
-TicketsConstraints
+  TicketsDocumentType,
+  TicketsConstraints
 > {}
