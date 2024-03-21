@@ -84,7 +84,9 @@ function CouponRow({
               .catch((err) => err.message)
           }
           updateValue={async (value) =>
-            coupon.patch({ amount: parseFloat(value!) })
+            (
+              await coupon.patch({ amount: parseFloat(value!) })
+            ).amount.toString()
           }
         />{" "}
         /{" "}
@@ -101,7 +103,9 @@ function CouponRow({
               .catch((err) => err.message)
           }
           updateValue={async (value) =>
-            coupon.patch({ original_amount: parseFloat(value!) })
+            (
+              await coupon.patch({ original_amount: parseFloat(value!) })
+            ).original_amount.toString()
           }
         />{" "}
         €
@@ -193,7 +197,8 @@ function CouponRow({
           defaultValue={coupon.note || ""}
           placeholder="Poznámka"
           updateValue={async (value) =>
-            coupon.incrementalPatch({ note: value || undefined })
+            (await coupon.incrementalPatch({ note: value || undefined }))
+              .note || ""
           }
         />
       </td>

@@ -1,5 +1,6 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
 import { InstantTextField } from "@/components/forms/InstantFields";
 import { useBrowserUser } from "@/lib/supabase/browser";
 import { DbProvider, useRxData } from "@/rxdb/db";
@@ -8,22 +9,32 @@ import { Id, toast } from "react-toastify";
 import Navbar from "./Navbar";
 
 function BusinessTitle() {
-  const user = useBrowserUser();
+  const { user } = useBrowserUser();
 
-  const { result: business } = useRxData(
+  const { result: business, isFetching } = useRxData(
     "businesses",
     useCallback(
       (collection) => collection.findOne(user?.id || "Not an ID"),
       [user],
     ),
+    { hold: !user },
   );
+
+  if (isFetching) return <InlineLoading />;
+
+  if (!business) {
+    console.error("No business found... Probably hasn't been fetched yet.");
+    return null;
+  }
 
   return (
     <InstantTextField
-      defaultValue={business?.name || ""}
+      defaultValue={business.name || ""}
       placeholder="Názov podniku"
       type="text"
-      updateValue={(name) => business?.incrementalPatch({ name: name || "" })}
+      updateValue={async (name) =>
+        (await business.incrementalPatch({ name: name || "" })).name || ""
+      }
       inline
       showAlways={false}
       trim

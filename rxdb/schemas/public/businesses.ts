@@ -25,8 +25,9 @@ const schemaLiteral = {
       format: "date-time",
     },
     name: {
-      description: "Database type: text. Default value: null",
+      description: "Database type: text. Default value: ''",
       type: "string",
+      default: "",
     },
   },
   required: ["id"],

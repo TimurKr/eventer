@@ -6,7 +6,7 @@ export default async function Page({
 }: {
   params: { contactId: string };
 }) {
-  if (!params.contactId) redirect("/dashboard");
+  if (!params.contactId) redirect("/dashboard/contacts");
 
   return (
     <div className="m-6">

@@ -4,7 +4,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 import { RxHookBuilder } from "@/rxdb-hooks/hooks";
 import { CollectionsBuilder } from "@/rxdb-hooks/types";
-import { RxCollectionCreator, createRxDatabase } from "rxdb";
+import { RxCollectionCreator, createRxDatabase, removeRxDatabase } from "rxdb";
 
 import { businessesSchema } from "./schemas/public/businesses";
 import { ContactsReplication, contactsSchema } from "./schemas/public/contacts";
@@ -71,7 +71,7 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-  // await removeRxDatabase("mydatabase", storage);
+  await removeRxDatabase("mydatabase", storage);
 
   // Create your database
   const db = await createRxDatabase<Collections>({

@@ -193,7 +193,6 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
                         true,
                       );
                     }
-                    console.log(values);
                   }}
                   label="Meno"
                   placeholder="Adam Kováč"

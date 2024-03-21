@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       businesses: {
@@ -15,21 +15,21 @@ export interface Database {
           _modified: string;
           created_at: string;
           id: string;
-          name: string | null;
+          name: string;
         };
         Insert: {
           _deleted?: boolean;
           _modified?: string;
           created_at?: string;
           id: string;
-          name?: string | null;
+          name?: string;
         };
         Update: {
           _deleted?: boolean;
           _modified?: string;
           created_at?: string;
           id?: string;
-          name?: string | null;
+          name?: string;
         };
         Relationships: [
           {
@@ -364,11 +364,13 @@ export interface Database {
       [_ in never]: never;
     };
   };
-}
+};
+
+type PublicSchema = Database[Extract<keyof Database, "public">];
 
 export type Tables<
   PublicTableNameOrOptions extends
-    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
@@ -381,10 +383,10 @@ export type Tables<
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
-        Database["public"]["Views"])
-    ? (Database["public"]["Tables"] &
-        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R;
       }
       ? R
@@ -393,7 +395,7 @@ export type Tables<
 
 export type TablesInsert<
   PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
@@ -404,8 +406,8 @@ export type TablesInsert<
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I;
       }
       ? I
@@ -414,7 +416,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
@@ -425,8 +427,8 @@ export type TablesUpdate<
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U;
       }
       ? U
@@ -435,47 +437,13 @@ export type TablesUpdate<
 
 export type Enums<
   PublicEnumNameOrOptions extends
-    | keyof Database["public"]["Enums"]
+    | keyof PublicSchema["Enums"]
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
-    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never;
-
-// Schema: public
-// Tables
-export type Businesses = Database["public"]["Tables"]["businesses"]["Row"];
-export type InsertBusinesses =
-  Database["public"]["Tables"]["businesses"]["Insert"];
-export type UpdateBusinesses =
-  Database["public"]["Tables"]["businesses"]["Update"];
-
-export type Contacts = Database["public"]["Tables"]["contacts"]["Row"];
-export type InsertContacts = Database["public"]["Tables"]["contacts"]["Insert"];
-export type UpdateContacts = Database["public"]["Tables"]["contacts"]["Update"];
-
-export type Coupons = Database["public"]["Tables"]["coupons"]["Row"];
-export type InsertCoupons = Database["public"]["Tables"]["coupons"]["Insert"];
-export type UpdateCoupons = Database["public"]["Tables"]["coupons"]["Update"];
-
-export type Events = Database["public"]["Tables"]["events"]["Row"];
-export type InsertEvents = Database["public"]["Tables"]["events"]["Insert"];
-export type UpdateEvents = Database["public"]["Tables"]["events"]["Update"];
-
-export type Services = Database["public"]["Tables"]["services"]["Row"];
-export type InsertServices = Database["public"]["Tables"]["services"]["Insert"];
-export type UpdateServices = Database["public"]["Tables"]["services"]["Update"];
-
-export type TicketTypes = Database["public"]["Tables"]["ticket_types"]["Row"];
-export type InsertTicketTypes =
-  Database["public"]["Tables"]["ticket_types"]["Insert"];
-export type UpdateTicketTypes =
-  Database["public"]["Tables"]["ticket_types"]["Update"];
-
-export type Tickets = Database["public"]["Tables"]["tickets"]["Row"];
-export type InsertTickets = Database["public"]["Tables"]["tickets"]["Insert"];
-export type UpdateTickets = Database["public"]["Tables"]["tickets"]["Update"];

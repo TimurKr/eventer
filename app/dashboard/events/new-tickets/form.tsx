@@ -442,7 +442,6 @@ export default function NewTicketsForm({}: {}) {
                 await setFieldValue("billingName", contact?.name || "", true);
                 await setFieldValue("billingEmail", contact?.email || "", true);
                 await setFieldValue("billingPhone", contact?.phone || "", true);
-                console.log(values);
               }}
               label="Meno"
               placeholder="Adam Kováč"
@@ -542,7 +541,6 @@ export default function NewTicketsForm({}: {}) {
                                       true,
                                     );
                                   }
-                                  console.log(values);
                                 }}
                                 placeholder={values.billingName || "-"}
                                 vertical

@@ -1,6 +1,8 @@
 "use client";
 
-import { Button } from "flowbite-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 export default function SubmitButton({
   isSubmitting,
@@ -15,12 +17,19 @@ export default function SubmitButton({
 }) {
   return (
     <Button
-      size={"sm"}
       type="submit"
-      className={`mt-4 px-2 py-1 hover:shadow-none ${className}`}
-      isProcessing={isSubmitting}
+      variant={"default"}
+      disabled={isSubmitting}
+      className={cn("mt-4", className)}
     >
-      {isSubmitting ? submittingLabel : label}
+      {isSubmitting ? (
+        <>
+          <ArrowPathIcon className="mr-2 h-4 w-4 animate-spin" />
+          {submittingLabel}
+        </>
+      ) : (
+        label
+      )}
     </Button>
   );
 }

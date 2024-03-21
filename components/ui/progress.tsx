@@ -11,7 +11,7 @@ const progressRootVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary/20",
+        default: "bg-muted",
         destructive: "bg-destructive/20",
         color: "bg-orange-400/20",
       },

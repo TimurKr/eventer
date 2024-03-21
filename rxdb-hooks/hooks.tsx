@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useReducer,
   useState,
 } from "react";
 import { RxCollection, RxDatabase, RxQuery } from "rxdb";
@@ -160,34 +159,6 @@ export function RxHookBuilder<
     return collection;
   }
 
-  type State<Result> = {
-    result: Result;
-    isFetching: boolean;
-  };
-
-  enum ActionType {
-    SET_RESULT = "SET_RESULT",
-    SET_FETCHING = "SET_FETCHING",
-  }
-
-  type Action<Result> =
-    | { type: ActionType.SET_RESULT; result: Result }
-    | { type: ActionType.SET_FETCHING; isFetching: boolean };
-
-  function reducer<Result>(
-    state: State<Result>,
-    action: Action<Result>,
-  ): State<Result> {
-    switch (action.type) {
-      case ActionType.SET_RESULT:
-        return { ...state, result: action.result, isFetching: false };
-      case ActionType.SET_FETCHING:
-        return { ...state, isFetching: action.isFetching };
-      default:
-        return state;
-    }
-  }
-
   type QueryOptions<Result> = {
     /**
      * If you set hold to true, the result will stay undefined and isFetching set to true
@@ -216,7 +187,15 @@ export function RxHookBuilder<
       ? Result
       : Result | undefined;
 
-    const [state, dispatch] = useReducer(reducer<Returning>, {
+    type State<Result> = {
+      result: Result;
+      isFetching: boolean;
+    };
+
+    const [state, setState] = useState<{
+      result: Returning;
+      isFetching: boolean;
+    }>({
       result: options?.initialResult as Returning,
       isFetching: true,
     });
@@ -229,14 +208,11 @@ export function RxHookBuilder<
         return;
       }
       const subscription = query.$.subscribe((result) => {
-        dispatch({
-          type: ActionType.SET_RESULT,
-          result: result as unknown as Returning,
-        });
+        setState({ result: result as unknown as Returning, isFetching: false });
       });
       return () => {
         subscription.unsubscribe();
-        dispatch({ type: ActionType.SET_FETCHING, isFetching: true });
+        setState((s) => ({ ...s, isFetching: true }));
       };
     }, [options?.hold, query]);
 

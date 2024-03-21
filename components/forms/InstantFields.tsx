@@ -7,7 +7,14 @@ import { toast } from "react-toastify";
 
 type InstantFieldProps<T> = {
   defaultValue: T;
-  updateValue: (v: T) => Promise<any> | undefined;
+  /**
+   * Function that will change the value in the backed.
+   * Returns the new value, throws an error on error.
+   *
+   * @param v New value
+   * @returns
+   */
+  updateValue: (v: T) => Promise<T>;
   placeholder?: string;
   label?: string;
   vertical?: boolean;
@@ -76,7 +83,17 @@ export function InstantCheckboxField({
         const err = validate && (await validate(e.target.value == "on"));
         if (err) setError(err);
         else setError(null);
+        await updateValue(e.target.checked)
+          .then((r) => {
+            setValue(r);
+            onBlur && onBlur();
+          })
+          .catch((error) => {
+            setError(error.message);
+            e.target.focus();
+          });
         await updateValue(e.target.checked);
+
         onBlur && onBlur();
       }}
     />
@@ -91,7 +108,7 @@ export function InstantTextAreaField({
   validate,
   updateValue,
   onBlur,
-}: InstantFieldProps<string | null> & { autoexpand?: boolean }) {
+}: InstantFieldProps<string> & { autoexpand?: boolean }) {
   const [value, setValue] = useState<string>(defaultValue || "");
   const [error, setError] = useState<string | null>(null);
 
@@ -143,8 +160,15 @@ export function InstantTextAreaField({
           return;
         }
         setError(null);
-        await updateValue(value);
-        onBlur && onBlur();
+        await updateValue(value)
+          .then((r) => {
+            setValue(r);
+            onBlur && onBlur();
+          })
+          .catch((error) => {
+            setError(error.message);
+            e.target.focus();
+          });
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -181,8 +205,8 @@ export function InstantTextField({
   trim = false,
   showAlways = true,
   baseClassName,
-}: InstantFieldProps<string | null> & {
-  type: "text" | "number" | "email" | "tel";
+}: InstantFieldProps<string> & {
+  type?: "text" | "number" | "email" | "tel";
   inline?: boolean;
   trim?: boolean;
   showAlways?: boolean;
@@ -217,12 +241,17 @@ export function InstantTextField({
     }
     setError(null);
 
-    await updateValue(newValue);
-
-    onBlur && onBlur();
-    !showAlways && setIsEditing(false);
+    await updateValue(newValue)
+      .then((r) => {
+        setValue(r);
+        onBlur && onBlur();
+        !showAlways && setIsEditing(false);
+      })
+      .catch((e) => {
+        setError(e.message);
+        refocus();
+      });
   };
-
   return (
     <div
       className={`${

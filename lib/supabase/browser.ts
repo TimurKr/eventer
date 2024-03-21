@@ -11,14 +11,21 @@ export const createBrowserSupabase = () => {
   );
 };
 
-export function useBrowserUser() {
-  const [user, setUser] = useState<User | null>(null);
+type UserHookState =
+  | { user: User; isFetching: false }
+  | { user: null; isFetching: boolean };
+
+export function useBrowserUser(): UserHookState {
+  const [state, setState] = useState<UserHookState>({
+    user: null,
+    isFetching: true,
+  });
   useEffect(() => {
     const supabase = createBrowserSupabase()
       .auth.getUser()
       .then((user) => {
-        setUser(user?.data?.user || null);
+        setState({ user: user?.data?.user || null, isFetching: false });
       });
   }, []);
-  return user;
+  return state;
 }

@@ -19,7 +19,7 @@ export default function InlineLoading({ className }: { className?: string }) {
     <p
       className={`whitespace-pre font-mono text-xs text-gray-500 ${className}`}
     >
-      Loading
+      Načítavam
       {".".repeat(dots)}
       {" ".repeat(3 - dots)}
     </p>

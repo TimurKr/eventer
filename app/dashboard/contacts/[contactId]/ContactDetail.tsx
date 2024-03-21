@@ -1,22 +1,32 @@
 "use client";
 
-import EventDetail from "@/components/Event";
+import EventDetail from "@/components/EventDetail";
 import InlineLoading from "@/components/InlineLoading";
+import Loading from "@/components/Loading";
 import NoResults from "@/components/NoResults";
 import { InstantTextField } from "@/components/forms/InstantFields";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { string as yupString } from "yup";
 
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
-  const { result: contact } = useRxData(
+  const {
+    result: contact,
+    collection: contactsCollection,
+    isFetching: isFetchingContact,
+  } = useRxData(
     "contacts",
     useCallback((c) => c.findOne(id), [id]),
   );
 
-  const { result: tickets, isFetching: fetchingTickets } = useRxData(
+  const {
+    result: tickets,
+    isFetching: fetchingTickets,
+    collection: ticketsCollection,
+  } = useRxData(
     "tickets",
     useCallback(
       (c) =>
@@ -26,7 +36,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     { initialResult: [] },
   );
 
-  const { result: events, isFetching: fetchingEvents } = useRxData(
+  const { result: events, isFetching } = useRxData(
     "events",
     useCallback(
       (c) =>
@@ -39,16 +49,20 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     { hold: fetchingTickets, initialResult: [] },
   );
 
-  const { result: services } = useRxData(
-    "services",
+  const {
+    result: coupons,
+    isFetching: fetchingCoupons,
+    collection: couponsCollection,
+  } = useRxData(
+    "coupons",
     useCallback(
       (c) =>
         c.find({
-          selector: { id: { $in: events.map((e) => e.service_id) } },
+          selector: { contact_id: id },
         }),
-      [events],
+      [id],
     ),
-    { initialResult: [], hold: fetchingEvents },
+    { hold: fetchingTickets, initialResult: [] },
   );
 
   const groupedTickets = useMemo(
@@ -62,16 +76,78 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     [events, tickets],
   );
 
+  const router = useRouter();
+
+  const updateContactField = async <
+    K extends keyof Pick<ContactsDocument, "name" | "email" | "phone">,
+  >(
+    field: K,
+    value: ContactsDocument[K],
+  ): Promise<string> => {
+    if (!contact) {
+      console.error("Contact not found");
+      return "";
+    }
+    const origValue = contact[field] || "";
+    const { _attachments, _deleted, _meta, _rev, id, created_at, ...newData } =
+      {
+        ...contact?._data,
+        [field]: value,
+      };
+    const duplicate = await contactsCollection
+      ?.findOne({ selector: newData })
+      .exec();
+    if (duplicate) {
+      if (!confirm("Kontakt s týmito údajmi už existuje. Chcete ich spojiť?"))
+        return origValue;
+      if (!ticketsCollection || !couponsCollection) {
+        console.error("Tickets collection not found");
+        return origValue;
+      }
+      const guestMentions = await ticketsCollection
+        .find({ selector: { guest_id: contact?.id || "NOT ID" } })
+        .exec();
+      const billingMentions = await ticketsCollection
+        .find({ selector: { billing_id: contact?.id || "NOT ID" } })
+        .exec();
+      const couponMentions = await couponsCollection
+        .find({ selector: { contact_id: contact?.id || "NOT ID" } })
+        .exec();
+
+      const guestPromises = guestMentions.map((t) =>
+        t.incrementalPatch({ guest_id: duplicate.id }),
+      );
+      const billingPromises = billingMentions.map((t) =>
+        t.incrementalPatch({ billing_id: duplicate.id }),
+      );
+      const couponPromises = couponMentions.map((c) =>
+        c.incrementalPatch({ contact_id: duplicate.id }),
+      );
+      await Promise.all([
+        ...guestPromises,
+        ...billingPromises,
+        ...couponPromises,
+      ]);
+      // remove the old contact
+      await contact?.remove();
+      router.push(`/dashboard/contacts/${duplicate.id}`);
+    }
+    return (await contact.incrementalPatch({ [field]: value }))[field] || "";
+  };
+
+  if (!isFetchingContact && !contact) {
+    return <NoResults text="Kontakt neexistuje" />;
+  }
+
   return (
     <div>
       <h1 className="p-2 text-2xl font-bold tracking-wider">
         {contact?.name || <InlineLoading />}
       </h1>
-
-      <div className="gep-2 flex">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <InstantTextField
           defaultValue={contact?.name || ""}
-          updateValue={(v) => contact?.incrementalPatch({ name: v! })}
+          updateValue={(v) => updateContactField("name", v)}
           type="text"
           label="Meno"
           trim
@@ -81,7 +157,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
         />
         <InstantTextField
           defaultValue={contact?.email || ""}
-          updateValue={(v) => contact?.incrementalPatch({ email: v || "" })}
+          updateValue={(v) => updateContactField("email", v)}
           baseClassName="grow"
           type="email"
           label="Email"
@@ -98,7 +174,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
         />
         <InstantTextField
           defaultValue={contact?.phone || ""}
-          updateValue={(v) => contact?.incrementalPatch({ phone: v || "" })}
+          updateValue={(v) => updateContactField("phone", v)}
           baseClassName="grow"
           type="text"
           label="Telefón"
@@ -113,7 +189,9 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           <TabsTrigger value="coupons">Kupóny</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets">
-          {groupedTickets.length === 0 ? (
+          {isFetching ? (
+            <Loading text="Načítavam lístky..." />
+          ) : groupedTickets.length === 0 ? (
             <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" /> //TODO: Pridať možnosť pridania lístku s autofill
           ) : (
             <div className="flex flex-col gap-4">

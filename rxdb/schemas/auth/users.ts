@@ -201,6 +201,11 @@ const schemaLiteral = {
       type: "string",
       format: "date-time",
     },
+    is_anonymous: {
+      description: "Database type: boolean. Default value: false",
+      type: "boolean",
+      default: false,
+    },
   },
   required: ["id"],
   type: "object",

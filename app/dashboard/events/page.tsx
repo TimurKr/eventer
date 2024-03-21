@@ -1,6 +1,6 @@
 "use client";
 
-import EventDetail from "@/components/Event";
+import EventDetail from "@/components/EventDetail";
 import Loading from "@/components/Loading";
 import { useBrowserUser } from "@/lib/supabase/browser";
 import { useRxData } from "@/rxdb/db";
@@ -19,7 +19,7 @@ export default function Page() {
   const q = useSearchParams().get("query");
   const [query, setQuery] = useState(q || "");
 
-  const user = useBrowserUser();
+  const { user } = useBrowserUser();
 
   const { result: allServices, isFetching: servicesFetching } = useRxData(
     "services",

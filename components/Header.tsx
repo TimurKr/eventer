@@ -23,9 +23,11 @@ export default function Header({
 }) {
   return (
     <>
-      <div className="sticky top-0 z-20 flex flex-wrap items-start gap-4 gap-y-2 bg-inherit p-4 ">
-        <span className="text-2xl font-bold tracking-wider">{title}</span>
-        <div className="ms-auto flex grow items-start justify-end gap-4">
+      <div className="sticky top-0 z-20 flex flex-wrap items-start justify-end gap-4 gap-y-2 bg-inherit p-4">
+        <span className="order-1 me-auto text-2xl font-bold tracking-wider">
+          {title}
+        </span>
+        <div className="order-3 flex h-full items-start justify-end gap-4 sm:order-2">
           {search && <SearchBar {...search} />}
           {refresh && (!!refresh.refresh || refresh.isRefreshing) && (
             <button
@@ -39,7 +41,7 @@ export default function Header({
             </button>
           )}
         </div>
-        {actionButton}
+        <div className="order-2 sm:order-3">{actionButton}</div>
       </div>
     </>
   );

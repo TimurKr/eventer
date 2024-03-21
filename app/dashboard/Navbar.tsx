@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon } from "@heroicons/react/24/solid";
 import { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,6 +30,11 @@ const routes: route[] = [
     title: "Poukazy",
     href: "/dashboard/coupons",
     icon: <FaTicketAlt className="h-5 w-5" />,
+  },
+  {
+    title: "Kontakty",
+    href: "/dashboard/contacts",
+    icon: <UserGroupIcon className="h-5 w-5" />,
   },
 ];
 

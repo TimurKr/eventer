@@ -46,7 +46,7 @@ export default function CouponCodeField({
   const validate = useCallback(
     async (code: string) => {
       if (!couponsCollection) {
-        console.log("No collection...");
+        console.error("No collection...");
         return undefined;
       }
       const coupon = await couponsCollection

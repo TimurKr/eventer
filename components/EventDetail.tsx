@@ -98,7 +98,7 @@ export default function EventDetail({
   );
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="overflow-clip p-0">
         <EventRow
           event={event}
