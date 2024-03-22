@@ -45,11 +45,7 @@ function ContactInTicket({
   const { contactId: currentContactId } = useParams<{ contactId?: string }>();
 
   return (
-    <DropdownMenu
-      modal={false}
-      open={dropdownOpen}
-      onOpenChange={setDropdownOpen}
-    >
+    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant={"link"}
@@ -262,14 +258,19 @@ export default function TicketRow({
       <TableCell className="text-end">
         <TextAreaInputDialog
           title="Poznámka ku lístku"
-          defaultValue={ticket.note}
+          value={ticket.note}
           onSave={(note) => ticket.incrementalPatch({ note })}
+          onReset={() => ticket.incrementalPatch({ note: "" })}
         >
-          <button className="max-w-40 truncate text-end underline-offset-4 hover:underline">
-            {ticket.note || (
-              <PlusCircleIcon className="h-4 transition-all hover:scale-110" />
-            )}
-          </button>
+          {ticket.note ? (
+            <button className="max-w-40 truncate text-end underline-offset-4 hover:underline">
+              {ticket.note}
+            </button>
+          ) : (
+            <Button variant={"ghost"} size={"icon"}>
+              <PlusCircleIcon className="h-4" />
+            </Button>
+          )}
         </TextAreaInputDialog>
       </TableCell>
       <TableCell className="whitespace-nowrap text-end">

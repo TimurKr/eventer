@@ -1,7 +1,12 @@
 "use client";
 
 import NewContactForm from "@/app/dashboard/contacts/new-contact/form";
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 export default function NewContact() {
@@ -10,8 +15,9 @@ export default function NewContact() {
   return (
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>
-        <DialogHeader>Vytvorte nové lístky</DialogHeader>
+        <DialogTrigger />
         <DialogContent>
+          <DialogHeader>Vytvorte nový kontakt</DialogHeader>
           <NewContactForm />
         </DialogContent>
       </Dialog>

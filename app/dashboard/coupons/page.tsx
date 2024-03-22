@@ -2,18 +2,35 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
+import { SelectContactDialog } from "@/components/SelectContact";
+import TextAreaInputDialog from "@/components/TextAreaInputDialog";
+import { InstantTextField } from "@/components/forms/InstantFields";
+import { Button } from "@/components/ui/button";
 import {
-  InstantTextAreaField,
-  InstantTextField,
-} from "@/components/forms/InstantFields";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import {
   ArrowTopRightOnSquareIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
   PlusCircleIcon,
   TrashIcon,
+  UserIcon,
+  UserPlusIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
@@ -36,6 +53,8 @@ function CouponRow({
   coupon: CouponsDocument;
   contact?: ContactsDocument;
 }) {
+  const [contactDropdownOpen, setContactDropdownOpen] = useState(false);
+
   const { result: redeemedAt, isFetching: isFetchingRedemptions } = useRxData(
     "tickets",
     useCallback(
@@ -55,62 +74,93 @@ function CouponRow({
   );
 
   return (
-    <tr key={coupon.id} className="border-t first:border-none">
-      <td className="p-1 px-2">{coupon.code}</td>
-      <td>
-        <div className="flex flex-wrap gap-x-2 gap-y-0.5 py-0.5">
-          {contact && (
-            <Link
-              href={`/dashboard/contacts/${contact.id.toString()}`}
-              className="group flex items-center gap-2 p-1 transition-all duration-100 hover:text-blue-600 hover:underline active:text-blue-700"
+    <TableRow key={coupon.id} className="border-t first:border-none">
+      <TableCell className="p-1 px-2">{coupon.code}</TableCell>
+      <TableCell>
+        <div className="flex justify-center">
+          {contact ? (
+            <DropdownMenu
+              open={contactDropdownOpen}
+              onOpenChange={setContactDropdownOpen}
             >
-              {contact ? contact.name : "-"}
-              <ArrowTopRightOnSquareIcon className="w-4 group-hover:scale-105 " />
-            </Link>
+              <DropdownMenuTrigger asChild>
+                <Button variant={"link"}>{contact.name}</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/contacts/${contact?.id}`}>
+                    <PencilIcon className="me-2 h-4 w-4" />
+                    Upraviť kontakt
+                  </Link>
+                </DropdownMenuItem>
+                <SelectContactDialog
+                  onSelected={(c) => console.error("not implemented")}
+                  onClosed={() => setContactDropdownOpen(false)}
+                >
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <UserIcon className="me-2 h-4 w-4" />
+                    Vybrať iný kontakt
+                  </DropdownMenuItem>
+                </SelectContactDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <SelectContactDialog
+              onSelected={(c) => console.error("not implemented")}
+              onClosed={() => setContactDropdownOpen(false)}
+            >
+              <Button variant={"ghost"} size="icon">
+                <UserPlusIcon className="h-4 w-4" />
+              </Button>
+            </SelectContactDialog>
           )}
         </div>
-      </td>
-      <td className="whitespace-nowrap px-2 text-end">
-        <InstantTextField
-          type="text"
-          defaultValue={coupon.amount.toString()}
-          inline
-          validate={(value) =>
-            yupNumber()
-              .min(0, "Suma musí byť kladné číslo")
-              .required("Suma je povinná")
-              .validate(value)
-              .then(() => null)
-              .catch((err) => err.message)
-          }
-          updateValue={async (value) =>
-            (
-              await coupon.patch({ amount: parseFloat(value!) })
-            ).amount.toString()
-          }
-        />{" "}
-        /{" "}
-        <InstantTextField
-          type="text"
-          defaultValue={coupon.original_amount.toString()}
-          inline
-          validate={(value) =>
-            yupNumber()
-              .min(0, "Suma musí byť kladné číslo")
-              .required("Suma je povinná")
-              .validate(value)
-              .then(() => null)
-              .catch((err) => err.message)
-          }
-          updateValue={async (value) =>
-            (
-              await coupon.patch({ original_amount: parseFloat(value!) })
-            ).original_amount.toString()
-          }
-        />{" "}
-        €
-      </td>
-      <td className="">
+      </TableCell>
+      <TableCell>
+        <div className=" px-2 text-end">
+          <InstantTextField
+            type="text"
+            defaultValue={coupon.amount.toString()}
+            inline
+            validate={(value) =>
+              yupNumber()
+                .min(0, "Suma musí byť kladné číslo")
+                .required("Suma je povinná")
+                .validate(value)
+                .then(() => null)
+                .catch((err) => err.message)
+            }
+            updateValue={async (value) =>
+              (
+                await coupon.patch({ amount: parseFloat(value!) })
+              ).amount.toString()
+            }
+          />{" "}
+          /{" "}
+          <span className="whitespace-nowrap">
+            <InstantTextField
+              type="text"
+              defaultValue={coupon.original_amount.toString()}
+              inline
+              validate={(value) =>
+                yupNumber()
+                  .min(0, "Suma musí byť kladné číslo")
+                  .required("Suma je povinná")
+                  .validate(value)
+                  .then(() => null)
+                  .catch((err) => err.message)
+              }
+              updateValue={async (value) =>
+                (
+                  await coupon.patch({ original_amount: parseFloat(value!) })
+                ).original_amount.toString()
+              }
+            />{" "}
+            €
+          </span>
+        </div>
+      </TableCell>
+      <TableCell className="">
         <div className="flex w-full items-center justify-end">
           {coupon.valid_until ? (
             <>
@@ -176,8 +226,8 @@ function CouponRow({
             </>
           )}
         </div>
-      </td>
-      <td className="text-center">
+      </TableCell>
+      <TableCell className="text-center">
         {validateCoupon(coupon) ? (
           <div className="mx-auto w-fit">
             <Badge color="success">Platné</Badge>
@@ -189,20 +239,26 @@ function CouponRow({
             </Badge>
           </div>
         )}
-      </td>
-      <td className="relative w-24 overflow-clip p-1 text-end has-[:focus]:overflow-visible has-[:hover]:overflow-visible">
-        <InstantTextAreaField
-          autoexpand
-          className="absolute inset-y-auto end-0 w-full -translate-y-1/2 transition-all duration-300 ease-in-out hover:w-64 focus:w-64"
-          defaultValue={coupon.note || ""}
-          placeholder="Poznámka"
-          updateValue={async (value) =>
-            (await coupon.incrementalPatch({ note: value || undefined }))
-              .note || ""
-          }
-        />
-      </td>
-      <td>
+      </TableCell>
+      <TableCell className="text-end">
+        <TextAreaInputDialog
+          title="Poznámka ku poukazu"
+          value={coupon.note}
+          onSave={(note) => coupon.incrementalPatch({ note })}
+          onReset={() => coupon.incrementalPatch({ note: "" })}
+        >
+          {coupon.note ? (
+            <button className="max-w-40 truncate text-end underline-offset-4 hover:underline">
+              {coupon.note}
+            </button>
+          ) : (
+            <Button variant={"ghost"} size={"icon"}>
+              <PlusCircleIcon className="h-4" />
+            </Button>
+          )}
+        </TextAreaInputDialog>
+      </TableCell>
+      <TableCell>
         {isFetchingRedemptions ? (
           <InlineLoading />
         ) : redeemedAt.length > 0 ? (
@@ -222,8 +278,8 @@ function CouponRow({
         ) : (
           <p className="px-2 text-end text-gray-600">-</p>
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {isFetchingCreations ? (
           <InlineLoading />
         ) : createdFrom.length > 0 ? (
@@ -243,8 +299,8 @@ function CouponRow({
         ) : (
           <p className="px-2 text-end text-gray-600">-</p>
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <div className="flex items-center justify-end gap-2">
           {validateCoupon(coupon) && <UseCouponSelectEvent coupon={coupon} />}
           <button
@@ -262,8 +318,8 @@ function CouponRow({
             <TrashIcon className="w-4" />
           </button>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -311,39 +367,31 @@ export default function Coupons() {
       />
       <div className="p-4 pt-0">
         {coupons.length > 0 ? (
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-stone-200 *:px-3 *:py-0.5 first:*:rounded-tl-lg last:*:rounded-tr-lg">
-                <th className="px-2 text-start text-sm font-semibold">Kód</th>
-                <th className="px-2 text-start text-sm font-semibold">
-                  Kontakt
-                </th>
-                <th className="text-end text-sm font-semibold">Suma</th>
-                <th className="text-end text-sm font-semibold">
+          <Table className="">
+            <TableHeader>
+              <TableRow className="first:*:rounded-tl-lg last:*:rounded-tr-lg">
+                <TableHead className="px-2 text-start">Kód</TableHead>
+                <TableHead className="px-2 text-center">Kontakt</TableHead>
+                <TableHead className="text-end">Suma</TableHead>
+                <TableHead className="text-end">
                   Platí do:{" "}
                   <span className="text-xs font-light text-gray-500">
                     (vrátane)
                   </span>
-                </th>
-                <th className=" text-center text-sm font-semibold">Stav</th>
-                <th className="pe-2 text-end text-sm font-semibold">
-                  Poznámka
-                </th>
-                <th className="pe-2 text-end text-sm font-semibold">
-                  Použité pri
-                </th>
-                <th className="pe-2 text-end text-sm font-semibold">
-                  Vytvorené z
-                </th>
-                <th className=""></th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-center">Stav</TableHead>
+                <TableHead className="pe-2 text-end">Poznámka</TableHead>
+                <TableHead className="pe-2 text-end">Použité pri</TableHead>
+                <TableHead className="pe-2 text-end">Vytvorené z</TableHead>
+                <TableHead className=""></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {coupons.map(({ coupon, contact }) => (
                 <CouponRow key={coupon.id} coupon={coupon} contact={contact} />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         ) : isFetchingContacts ? (
           <Loading text="Načítavam poukazy..." />
         ) : query ? (

@@ -3,8 +3,8 @@ import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import Fuse from "fuse.js";
 
 export function contactsEqual(
-  a: Pick<ContactsDocument, "name" | "email" | "phone">,
-  b: Pick<ContactsDocument, "name" | "email" | "phone">,
+  a: Partial<Pick<ContactsDocument, "name" | "email" | "phone">>,
+  b: Partial<Pick<ContactsDocument, "name" | "email" | "phone">>,
 ) {
   return a.name == b.name && a.email == b.email && a.phone == b.phone;
 }

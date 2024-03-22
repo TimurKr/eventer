@@ -5,13 +5,19 @@ import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
 import NoResults from "@/components/NoResults";
 import { InstantTextField } from "@/components/forms/InstantFields";
+import { Button, ConfirmButton } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { string as yupString } from "yup";
-
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   const {
     result: contact,
@@ -139,8 +145,19 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     return <NoResults text="Kontakt neexistuje" />;
   }
 
+  const deleteButton = (
+    <Button
+      variant="destructive"
+      className="mt-4 self-end"
+      type="button"
+      disabled={!!tickets.length}
+    >
+      Vamazať kontakt
+    </Button>
+  );
+
   return (
-    <div>
+    <div className="flex flex-col">
       <h1 className="p-2 text-2xl font-bold tracking-wider">
         {contact?.name || <InlineLoading />}
       </h1>
@@ -210,6 +227,49 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           <p>Coming soon</p>
         </TabsContent>
       </Tabs>
+      {tickets.length ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger className="cursor-not-allowed self-end">
+              {deleteButton}
+            </TooltipTrigger>
+            <TooltipContent side="left" align="end">
+              Nemôžete vymazať kontakt ku ktorému sú priradené lístky
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : coupons.length ? (
+        // <AlertDialog>
+        <ConfirmButton
+          title="POZOR: Kontakt sa využíva pri poukazoch"
+          description={
+            <>
+              Naozaj chcete vymazať tento kontakt? Táto akcia je nezvratná a
+              všetky údaje budú stratené. Poukazy, pri ktorých je tento kontakt
+              použitý, sa nevymažú, ale stratia informáciu o vlastníkovi.
+            </>
+          }
+          variant={"destructive"}
+          onConfirm={() => {
+            contact?.remove();
+            router.back();
+          }}
+        >
+          {deleteButton}
+        </ConfirmButton>
+      ) : (
+        <ConfirmButton
+          title="Naozaj chcete vymazať tento kontakt?"
+          description="Táto akcia je nezvratná a všetky údaje budú stratené."
+          variant={"destructive"}
+          onConfirm={() => {
+            contact?.remove();
+            router.back();
+          }}
+        >
+          {deleteButton}
+        </ConfirmButton>
+      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default function NewContact({
   return (
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>
-        <DialogContent size={"2xl"}>
+        <DialogContent size={"4xl"}>
           <ContactDetail id={params.contactId} />
         </DialogContent>
       </Dialog>

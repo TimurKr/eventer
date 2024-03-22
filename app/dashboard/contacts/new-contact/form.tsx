@@ -1,47 +1,88 @@
 "use client";
 
-import { FormikTextField } from "@/components/forms/FormikElements";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Form } from "@/components/ui/form";
+import { FormTextField } from "@/components/ui/form-text-field";
 import { useRxCollection } from "@/rxdb/db";
-import { Form, Formik, FormikProps } from "formik";
+import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import * as Yup from "yup";
+import { z } from "zod";
+import { contactsEqual } from "../../events/utils";
 
-const validationSchema = Yup.object({
-  name: Yup.string().required().min(2, "Zadajte aspoň 2 znaky"),
-  email: Yup.string().email("Zadajte platný email").default(""),
-  phone: Yup.string().default(""),
+const formSchema = z.object({
+  name: z.string().min(1, "Meno je povinné"),
+  email: z.string().email("Zadajte platný email").or(z.literal("")),
+  phone: z.string(),
 });
 
-type Values = Yup.InferType<typeof validationSchema>;
+type Values = z.infer<typeof formSchema>;
 
 export default function NewContactForm(initValues?: Partial<Values>) {
   const router = useRouter();
 
+  const form = useForm<Values>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      ...initValues,
+    },
+  });
+
   const contactsCollection = useRxCollection("contacts");
 
-  const initialValues: Values = {
-    name: "",
-    email: "",
-    phone: "",
-    ...initValues,
-  };
+  const [duplicateContact, setDuplicateContact] = useState<ContactsDocument>();
+  const [duplicateName, setDuplicateName] = useState<ContactsDocument>();
+  const [duplicateCache, setDuplicateCache] = useState<ContactsDocument[]>([]);
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      const dc = duplicateCache.find((c) => contactsEqual(c, value));
+      const dn = duplicateCache.find((c) => c.name === value.name);
+      setDuplicateContact(dc);
+      setDuplicateName(dc ? undefined : dn);
+    });
+    return () => subscription.unsubscribe();
+  }, [duplicateCache, form]);
 
   const onSubmit = useCallback(
     async (values: Values) => {
       if (!contactsCollection) return;
 
-      const existingContact = await contactsCollection
-        .findOne({
-          selector: values,
-        })
-        .exec();
+      if (!duplicateContact) {
+        const existingContact = await contactsCollection
+          .findOne({
+            selector: values,
+          })
+          .exec();
 
-      if (existingContact) {
-        toast.error("Kontakt už existuje");
-        return;
+        if (existingContact) {
+          setDuplicateContact(existingContact);
+          setDuplicateCache((prev) => [...prev, existingContact]);
+          return;
+        }
+      }
+
+      if (!duplicateName) {
+        const existingContact = await contactsCollection
+          .findOne({
+            selector: { name: values.name },
+          })
+          .exec();
+
+        if (existingContact) {
+          setDuplicateName(existingContact);
+          setDuplicateCache((prev) => [...prev, existingContact]);
+          return;
+        }
       }
 
       const newContact = await contactsCollection.insert({
@@ -49,56 +90,51 @@ export default function NewContactForm(initValues?: Partial<Values>) {
         id: crypto.randomUUID(),
       });
 
-      toast.success("Lístky boli vytvorené", { autoClose: 1500 });
-      router.push(`/dashboard/contacts/${newContact.id}`);
+      toast.success("Kontakt vytvorený!", { autoClose: 2500 });
+      router.replace(`/dashboard/contacts/${newContact.id}`);
     },
-    [contactsCollection, router],
+    [contactsCollection, duplicateContact, duplicateName, router],
   );
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={onSubmit}
-    >
-      {({
-        values,
-        isSubmitting,
-        errors,
-        getFieldMeta,
-        getFieldHelpers,
-        setFieldValue,
-      }: FormikProps<Values>) => (
-        <Form className="flex flex-col gap-2">
-          <FormikTextField
-            name="name"
-            label="Meno"
-            placeHolder="Meno"
-            optional
-            vertical
-          />
-          <FormikTextField
-            name="email"
-            label="Email"
-            placeHolder="Email"
-            optional
-            vertical
-          />
-          <FormikTextField
-            name="phone"
-            label="Telefón"
-            placeHolder="Telefón"
-            optional
-            vertical
-          />
-          <SubmitButton
-            isSubmitting={isSubmitting}
-            label="Vytvoriť"
-            submittingLabel="Vytváram..."
-            className="w-full"
-          />
-        </Form>
+    <Form form={form} onSubmit={onSubmit} className="flex flex-col gap-4">
+      <FormTextField form={form} name={"name"} label="Meno" horizontal />
+      <FormTextField form={form} name={"email"} label="Email" horizontal />
+      <FormTextField form={form} name={"phone"} label="Telefón" horizontal />
+      {duplicateContact && (
+        <Alert variant="destructive">
+          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Kontakt už existuje</AlertTitle>
+          <AlertDescription>
+            <Link
+              href={`/dashboard/contacts/${duplicateContact.id}`}
+              className="underline-offset-4 hover:underline"
+            >
+              Detail
+            </Link>
+          </AlertDescription>
+        </Alert>
       )}
-    </Formik>
+      {duplicateName && (
+        <Alert variant="warning">
+          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Kontakt s rovankým menom už existuje</AlertTitle>
+          <AlertDescription>
+            <Link
+              href={`/dashboard/contacts/${duplicateName.id}`}
+              className="underline-offset-4 hover:underline"
+            >
+              Detail
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      <SubmitButton
+        className="self-end"
+        isSubmitting={form.formState.isSubmitting}
+        label={duplicateContact || duplicateName ? "Vytvoriť nový" : "Vytvoriť"}
+        submittingLabel="Vytváram..."
+      />
+    </Form>
   );
 }

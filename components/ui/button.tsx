@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
@@ -25,7 +36,7 @@ const buttonVariants = cva(
         sm: "h-8 rounded-md px-3 text-xs",
         xs: "py-1 px-2 text-xs",
         lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
+        icon: "p-2",
       },
     },
     defaultVariants: {
@@ -55,4 +66,40 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+const ConfirmButton = ({
+  children,
+  title,
+  description,
+  onConfirm,
+  confirmLabel = "Potvrdiť",
+  onCancel,
+  cancelLabel = "Zrušiť",
+  variant,
+}: React.PropsWithChildren<
+  {
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    onConfirm?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => any;
+    confirmLabel?: React.ReactNode;
+    onCancel?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => any;
+    cancelLabel?: React.ReactNode;
+  } & Pick<VariantProps<typeof buttonVariants>, "variant">
+>) => (
+  <AlertDialog>
+    <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription>{description}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
+        <AlertDialogAction variant={variant} onClick={onConfirm}>
+          {confirmLabel}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+);
+
+export { Button, ConfirmButton, buttonVariants };

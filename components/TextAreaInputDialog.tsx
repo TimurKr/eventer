@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, ConfirmButton } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,9 @@ export default function TextAreaInputDialog({
   onSave,
   onClose,
   onCancel,
+  onReset,
   closeOnSave = true,
+  closeOnReset = true,
   trim = true,
 }: PropsWithChildren<{
   title: string;
@@ -29,7 +31,9 @@ export default function TextAreaInputDialog({
   onSave?: (test: string) => void;
   onClose?: () => void;
   onCancel?: () => void;
+  onReset?: () => void;
   closeOnSave?: boolean;
+  closeOnReset?: boolean;
   trim?: boolean;
 }>) {
   const [open, setOpen] = useState(false);
@@ -44,15 +48,20 @@ export default function TextAreaInputDialog({
     if (onClose) onClose();
   }, [onClose]);
 
-  const cancel = useCallback(() => {
+  const handleCancel = useCallback(() => {
     if (onCancel) onCancel();
     close();
   }, [onCancel, close]);
 
-  const save = useCallback(() => {
+  const handleSave = useCallback(() => {
     if (onSave) onSave(trim ? _value.trim() : _value);
     if (closeOnSave) close();
   }, [onSave, trim, _value, closeOnSave, close]);
+
+  const handleReset = useCallback(() => {
+    if (onReset) onReset();
+    if (closeOnReset) close();
+  }, [onReset, closeOnReset, close]);
 
   return (
     <Dialog
@@ -76,10 +85,22 @@ export default function TextAreaInputDialog({
           placeholder="Zadajte text..."
         ></textarea>
         <DialogFooter>
-          <Button type="button" variant="secondary" onClick={cancel}>
+          {onReset && (
+            <ConfirmButton
+              variant="destructive"
+              onConfirm={handleReset}
+              title={"Naozaj chcete vymazať text?"}
+              confirmLabel={"Vymazať"}
+            >
+              <Button type="button" variant="ghost" className="sm:me-auto">
+                Reset
+              </Button>
+            </ConfirmButton>
+          )}
+          <Button type="button" variant="secondary" onClick={handleCancel}>
             Zrušiť
           </Button>
-          <Button type="button" variant="default" onClick={save}>
+          <Button type="button" variant="default" onClick={handleSave}>
             Uložiť
           </Button>
         </DialogFooter>

@@ -1,9 +1,12 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { PencilIcon } from "@heroicons/react/24/outline";
 import { ToggleSwitch } from "flowbite-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 type InstantFieldProps<T> = {
   defaultValue: T;
@@ -254,19 +257,24 @@ export function InstantTextField({
   };
   return (
     <div
-      className={`${
-        inline ? "inline-flex" : vertical ? "flex flex-col" : "flex"
-      } ${baseClassName}`}
-    >
-      {label && (
-        <label className="px-2 pb-0 text-sm text-gray-600">{label}</label>
+      className={cn(
+        "flex",
+        inline && "inline-flex",
+        vertical && "flex-col",
+        baseClassName,
       )}
+    >
+      {label && <Label className="px-2 pb-1">{label}</Label>}
       {isEditing ? (
-        <input
+        <Input
           type={type}
-          className={`m-0.5 rounded-md border-gray-200 bg-gray-50 text-sm font-normal text-black placeholder:text-xs ${
-            error ? "bg-red-50 focus:border-red-500 focus:ring-red-500" : ""
-          } ${inline ? "p-0 px-1 font-mono" : "px-3 py-1"} ${className} ${!vertical && label ? "" : "grow"}`}
+          error={!!error}
+          className={cn(
+            "px-3 py-1",
+            !vertical && label ? "" : "grow",
+            inline && "p-0 px-1 font-mono",
+            className,
+          )}
           value={value}
           placeholder={placeholder}
           autoFocus={autoFocus || !showAlways}
