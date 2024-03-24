@@ -1,3 +1,4 @@
+import NewContactButton from "@/app/dashboard/contacts/new/button";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function SelectContactDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+
   const { result: allContacts } = useRxData(
     "contacts",
     (c) => c.find({ sort: [{ name: "asc" }] }),
@@ -35,6 +37,7 @@ export function SelectContactDialog({
       initialResult: [],
     },
   );
+
   const contacts = useMemo(
     () =>
       !query
@@ -62,12 +65,12 @@ export function SelectContactDialog({
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="!pb-0 sm:max-w-[425px]">
+      <DialogContent className="!pb-0">
         <DialogHeader>
           <DialogTitle>Vyberte si kontakt</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="grid place-content-center px-1">
+        <div className="flex justify-between">
           <SearchBar
             query={query}
             search={setQuery}
@@ -83,26 +86,33 @@ export function SelectContactDialog({
               }
             }}
           />
+          <NewContactButton
+            initialValues={
+              query.includes("@")
+                ? { email: query }
+                : /\d/.test(query)
+                  ? { phone: query }
+                  : { name: query }
+            }
+          />
         </div>
-        <ScrollArea>
-          <div
-            className="flex max-h-80 flex-col gap-2 pb-12 pe-4"
-            id="list-of-contacts"
-          >
+        <ScrollArea className="max-h-120">
+          <div className="divide-y pb-8 pe-4" id="list-of-contacts">
             {/* TODO: Add a create contact option */}
             {contacts.map((contact) => (
               <button
-                className="flex w-full flex-col rounded-md border px-2 py-1 shadow-sm"
+                className="group flex w-full flex-col px-2 py-2 text-xs font-light text-gray-500"
                 key={contact.id}
                 onClick={() => {
                   onSelected(contact);
                   if (closeOnSelect) close();
                 }}
               >
-                <p className="font-medium">{contact.name}</p>
-                <p className="text-xs font-light text-gray-500">
-                  {[contact.email, contact.phone].filter(Boolean).join(" - ")}
+                <p className="text-sm font-medium text-primary underline-offset-4 group-hover:underline">
+                  {contact.name}
                 </p>
+                {contact.email && <p>Email: {contact.email}</p>}
+                {contact.phone && <p>Telefón: {contact.phone}</p>}
               </button>
             ))}
           </div>

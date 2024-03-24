@@ -2,7 +2,7 @@
 
 import NewContactForm, {
   NewContactFormProps,
-} from "@/app/dashboard/contacts/new-contact/form";
+} from "@/app/dashboard/contacts/new/form";
 import {
   Dialog,
   DialogContent,

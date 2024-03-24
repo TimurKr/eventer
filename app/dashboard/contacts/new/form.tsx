@@ -126,7 +126,7 @@ export default function NewContactForm({
         <Alert variant="destructive">
           <ExclamationTriangleIcon className="h-4 w-4" />
           <AlertTitle>Kontakt už existuje</AlertTitle>
-          <AlertDescription>Chcete si vytvoiť rovnaký?</AlertDescription>
+          <AlertDescription>Určite chcete vytvoriť nový?</AlertDescription>
 
           <AlertAction asChild>
             <Button variant={"ghost"} type="button">
@@ -141,7 +141,7 @@ export default function NewContactForm({
         <Alert variant="warning">
           <ExclamationTriangleIcon className="h-4 w-4" />
           <AlertTitle>Kontakt s rovankým menom už existuje</AlertTitle>
-          <AlertDescription>Chcete si vytvoiť rovnaký?</AlertDescription>
+          <AlertDescription>Určite chcete vytvoriť nový?</AlertDescription>
           <AlertAction asChild>
             <Button variant={"ghost"} type="button">
               <Link href={`/dashboard/contacts/${duplicateName.id}`}>

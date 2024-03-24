@@ -23,8 +23,8 @@ import Fuse from "fuse.js";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../../../components/Header";
-import NewContactButton from "./new-contact/button";
-import NewContactForm from "./new-contact/form";
+import NewContactButton from "./new/button";
+import NewContactForm from "./new/form";
 
 const PAGINATION = 100;
 

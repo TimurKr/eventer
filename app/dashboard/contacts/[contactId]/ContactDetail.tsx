@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import { string as yupString } from "yup";
+
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   const {
     result: contact,

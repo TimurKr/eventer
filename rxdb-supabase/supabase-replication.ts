@@ -13,9 +13,10 @@ import {
   RxReplicationPullStreamItem,
   RxReplicationWriteToMasterRow,
   WithDeleted,
+  WithDeletedAndAttachments,
 } from "rxdb";
 import { RxReplicationState } from "rxdb/plugins/replication";
-import { Subject } from "rxjs";
+import { Subject } from "rxjs/internal/Subject";
 
 const DEFAULT_LAST_MODIFIED_FIELD = "_modified";
 const DEFAULT_DELETED_FIELD = "_deleted";
@@ -430,11 +431,13 @@ export class SupabaseReplication<
   ): Promise<boolean> {
     let query = this.options.supabaseClient
       .from(this.table)
-      .update(row.newDocumentState, { count: "exact" });
+      .update(this.undefinedToNulls(row.newDocumentState), { count: "exact" });
     Object.entries(row.assumedMasterState!).forEach(([field, value]) => {
       const type = typeof value;
-      if (type === "boolean" || value === null || value === undefined) {
+      if (type === "boolean") {
         query = query.is(field, value);
+      } else if (value === null || value === undefined) {
+        query = query.is(field, null);
       } else if (type === "string" || type === "number") {
         query = query.eq(field, value);
       } else {
@@ -538,5 +541,11 @@ export class SupabaseReplication<
       modified: row[this.lastModifiedFieldName],
       primaryKeyValue: row[this.primaryKey],
     };
+  }
+
+  private undefinedToNulls(doc: WithDeletedAndAttachments<RxDocType>) {
+    return Object.fromEntries(
+      Object.entries(doc).map(([k, v]) => [k, v === undefined ? null : v]),
+    );
   }
 }
