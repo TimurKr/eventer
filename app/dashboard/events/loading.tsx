@@ -1,3 +1,5 @@
-import Loading from "@/utils/components/loading";
+import Loa from "@/components/Loading";
 
-export default Loading;
+export default function Loading() {
+  return Loa({ text: "Načítavam vaše udalosti..." });
+}

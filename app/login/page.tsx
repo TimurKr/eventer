@@ -1,4 +1,4 @@
-import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
+import { createServerSupabase, getServerUser } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";

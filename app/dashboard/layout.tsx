@@ -1,104 +1,85 @@
-import { InstantTextField } from "@/utils/forms/FormElements";
-import { createServerSupabase, getServerUser } from "@/utils/supabase/server";
-import { revalidateTag } from "next/cache";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import React from "react";
-import Navbar from "./Navbar";
-import { fetchCoupons } from "./coupons/serverActions";
-import { fetchContacts, fetchEvents } from "./events/serverActions";
-import { mergeNewEvents } from "./events/store/helpers";
-import { fetchServices } from "./services/serverActions";
-import { ContextProvider } from "./store";
+"use client";
 
-export default async function DashboardLayout({
+import InlineLoading from "@/components/InlineLoading";
+import { InstantTextField } from "@/components/forms/InstantFields";
+import { useBrowserUser } from "@/lib/supabase/browser";
+import { DbProvider, useRxData } from "@/rxdb/db";
+import React, { useCallback } from "react";
+import { Id, toast } from "react-toastify";
+import Navbar from "./Navbar";
+
+function BusinessTitle() {
+  const { user } = useBrowserUser();
+
+  const { result: business, isFetching } = useRxData(
+    "businesses",
+    useCallback(
+      (collection) => collection.findOne(user?.id || "Not an ID"),
+      [user],
+    ),
+    { hold: !user },
+  );
+
+  if (isFetching) return <InlineLoading />;
+
+  if (!business) {
+    console.error("No business found... Probably hasn't been fetched yet.");
+    return null;
+  }
+
+  return (
+    <InstantTextField
+      defaultValue={business.name || ""}
+      placeholder="Názov podniku"
+      type="text"
+      updateValue={async (name) =>
+        (await business.incrementalPatch({ name: name || "" })).name || ""
+      }
+      inline
+      showAlways={false}
+      trim
+    />
+  );
+}
+
+export default function DashboardLayout({
   children,
   modals,
 }: {
   children: React.ReactNode;
   modals: React.ReactNode;
 }) {
-  const user = await getServerUser(cookies());
-  if (!user) {
-    return redirect("/login");
-  }
-
-  const servicesQuery = fetchServices();
-  const contactsQuery = fetchContacts();
-  const eventsQuery = fetchEvents();
-  const couponsQuery = fetchCoupons();
-
-  const [services, contacts, events, coupons] = await Promise.all([
-    servicesQuery,
-    contactsQuery,
-    eventsQuery,
-    couponsQuery,
-  ]);
-
-  if (services.error) {
-    throw new Error(services.error.message);
-  }
-  if (contacts.error) {
-    throw new Error(contacts.error.message);
-  }
-  if (events.error) {
-    throw new Error(events.error.message);
-  }
-  if (coupons.error) {
-    throw new Error(coupons.error.message);
-  }
+  const offlineToastId = React.useRef<Id>();
+  const handleOffline = useCallback(
+    () =>
+      (offlineToastId.current = toast.warn(
+        "Nie ste pripojený na internet. Vaše zmeny nemusia byť uložené!",
+        { autoClose: false },
+      )),
+    [],
+  );
+  const handleOnline = useCallback(() => {
+    toast.update(offlineToastId.current!, {
+      render: "Pripojený!",
+      type: "success",
+      autoClose: 1500,
+    });
+  }, []);
 
   return (
-    <ContextProvider
-      initStoreState={{
-        services: {
-          services: services.data,
-          allServices: services.data,
-        },
-        events: {
-          contacts: contacts.data,
-          ...mergeNewEvents({
-            newEvents: events.data,
-            searchTerm: "",
-            contacts: contacts.data,
-          }),
-        },
-        coupons: {
-          allCoupons: coupons.data,
-        },
-      }}
-    >
-      <section className="flex h-screen w-full flex-col justify-start bg-slate-200">
-        <nav className="auto top-0 z-30 flex flex-none flex-row items-center gap-1 bg-inherit p-2 shadow-md">
-          <p className="hidden px-4 text-lg font-bold tracking-wider md:inline">
-            <InstantTextField
-              defaultValue={user?.name || ""}
-              placeholder="Názov podniku"
-              updateDatabase={async (v) => {
-                "use server";
-                const r = await createServerSupabase(cookies())
-                  .from("businesses")
-                  .update({ name: v })
-                  .eq("id", user.id);
-                if (r.error) console.error(r.error);
-                else revalidateTag("user");
-                return r;
-              }}
-              type="text"
-              inline
-              showAlways={false}
-              trim
-            />
-          </p>
+    <DbProvider handleOffline={handleOffline} handleOnline={handleOnline}>
+      <section className="flex h-screen w-full flex-col justify-start gap-2 bg-stone-300 p-2">
+        <nav className="top-0 z-30 flex flex-none flex-row items-center gap-1 rounded-lg bg-inherit bg-stone-50 p-2 shadow-md">
+          <div className="hidden px-4 text-lg font-bold tracking-wider md:inline">
+            <BusinessTitle />
+          </div>
           <Navbar />
         </nav>
-        <div className="grow overflow-y-scroll p-2">
-          <div className="rounded-xl bg-white p-4 pt-0">
-            {children}
-            {modals}
-          </div>
+        <div className="h-full grow overflow-scroll  rounded-lg bg-stone-50 pt-0 shadow-md">
+          {children}
+          {modals}
         </div>
       </section>
-    </ContextProvider>
+    </DbProvider>
   );
 }

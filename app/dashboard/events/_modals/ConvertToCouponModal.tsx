@@ -1,52 +1,83 @@
 "use client";
 
-import { SubmitButton } from "@/utils/forms/FormElements";
+import InlineLoading from "@/components/InlineLoading";
+import SubmitButton from "@/components/forms/SubmitButton";
+import { Button } from "@/components/ui/button";
+import { useRxCollection, useRxData } from "@/rxdb/db";
+import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Alert, Modal, Spinner } from "flowbite-react";
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
-import { useStoreContext } from "../../store";
-import { convertTicketsToCoupon } from "../serverActions";
-import { Events } from "../store/helpers";
 
 export default function ConvertToCouponModal({
-  event,
-  disabled,
+  selectedTickets,
 }: {
-  event: Events;
-  disabled?: boolean;
+  selectedTickets: TicketsDocument[];
 }) {
   const [isSubmitting, startSubmition] = useTransition();
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { refresh, selectedTickets, ticketTypes } = useStoreContext(
-    (state) => ({
-      ...state.events,
-      selectedTickets: state.events.allEvents
-        .find((e) => e.id === event.id)!
-        .tickets.filter((t) => state.events.selectedTicketIds.includes(t.id)),
-      ticketTypes: state.services.allServices.find(
-        (s) => s.id === event.service_id,
-      )!.ticket_types,
-    }),
+  const { result: ticketTypes } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: {
+            id: { $in: selectedTickets.map((t) => t.type_id) },
+          },
+        }),
+      [selectedTickets],
+    ),
   );
+
+  const ticketsCollection = useRxCollection("tickets");
+  const couponsCollection = useRxCollection("coupons");
+
+  const submit = () => {
+    if (!ticketsCollection || !couponsCollection) return;
+    startSubmition(async () => {
+      const amount = selectedTickets
+        .map((t) => t.price)
+        .reduce((a, b) => a + b, 0);
+      const newCoupon = await couponsCollection.insert({
+        id: crypto.randomUUID(),
+        code: crypto.randomUUID().slice(0, 8).toUpperCase(),
+        amount,
+        original_amount: amount,
+      });
+
+      await ticketsCollection.bulkUpsert(
+        selectedTickets.map((t) => ({
+          ...t,
+          payment_status: "zrušené",
+          coupon_created_id: newCoupon.id,
+        })),
+      );
+
+      toast.success("Lístky boli premenené na poukaz", {
+        autoClose: 1500,
+      });
+      setIsOpen(false);
+    });
+  };
 
   return (
     <>
-      <button
-        className="rounded-md bg-cyan-600 px-2 py-0.5 text-xs text-white hover:bg-cyan-700 active:bg-cyan-800 disabled:!bg-gray-400"
+      <Button
+        variant={"outline"}
+        size={"xs"}
         onClick={() =>
           selectedTickets.length == 0
             ? alert("Zvolte aspoň jeden lístok")
             : setIsOpen(true)
         }
-        disabled={disabled}
       >
         Premeniť na poukaz
-      </button>
+      </Button>
       <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
         <Modal.Header>
           Naozaj chcete premeniť zvolené lístky na poukaz?
@@ -54,7 +85,7 @@ export default function ConvertToCouponModal({
         <Modal.Body>
           <div className="flex flex-wrap items-center gap-2">
             <p className="p-2">Zvolené lístky:</p>
-            {ticketTypes.map((type) => (
+            {ticketTypes?.map((type) => (
               <div
                 key={type.label}
                 className="rounded-lg border border-gray-300 bg-slate-50 px-2 py-1"
@@ -65,7 +96,7 @@ export default function ConvertToCouponModal({
                 </span>{" "}
                 lístkov
               </div>
-            ))}
+            )) || <InlineLoading />}
             {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
@@ -74,22 +105,7 @@ export default function ConvertToCouponModal({
             Zvolené lístky budú zrušené a vytvorí sa jeden poukaz v hodnote{" "}
             {selectedTickets.map((t) => t.price).reduce((a, b) => a + b, 0)}€
           </p>
-          <form
-            action={() => {
-              startSubmition(async () => {
-                const r = await convertTicketsToCoupon(selectedTickets);
-                if (r.error) {
-                  setErrorMessages(r.error.message.split("\n"));
-                  return;
-                }
-                await refresh();
-                toast.success("Lístky boli premenené na poukaz", {
-                  autoClose: 1500,
-                });
-                setIsOpen(false);
-              });
-            }}
-          >
+          <form action={submit}>
             <SubmitButton
               isSubmitting={isSubmitting}
               label="Potvrdiť"

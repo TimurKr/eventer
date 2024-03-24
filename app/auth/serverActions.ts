@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabase } from "@/utils/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

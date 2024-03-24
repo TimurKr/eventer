@@ -1,5 +1,5 @@
 "use client";
 
-import Error from "@/utils/components/error";
+import Error from "@/components/Error";
 
 export default Error;

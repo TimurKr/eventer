@@ -1,12 +1,7 @@
-import { redirect } from "next/navigation";
 import NewTicketsForm from "./form";
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: { eventId: string; couponCode?: string };
-}) {
-  if (!searchParams.eventId) redirect("/dashboard/events");
+export default async function Page() {
+  // if (!searchParams.eventId) redirect("/dashboard/events");
 
   return (
     <div>
@@ -14,7 +9,7 @@ export default async function Page({
         Vytvorte nové lístky
       </h1>
       <div className="grid place-content-center">
-        <NewTicketsForm {...searchParams} />
+        <NewTicketsForm />
       </div>
     </div>
   );

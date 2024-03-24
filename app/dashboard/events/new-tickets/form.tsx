@@ -1,15 +1,25 @@
 "use client";
 
+import InlineLoading from "@/components/InlineLoading";
+import CustomComboBox from "@/components/forms/ComboBox";
 import {
-  CustomComboBox,
   CustomErrorMessage,
   FormikSelectField,
   FormikTextField,
-  SubmitButton,
-} from "@/utils/forms/FormElements";
-import { Contacts, Coupons } from "@/utils/supabase/database.types";
+} from "@/components/forms/FormikElements";
+import SubmitButton from "@/components/forms/SubmitButton";
+import { useRxCollection, useRxData } from "@/rxdb/db";
+import { ContactsDocumentType } from "@/rxdb/schemas/public/contacts";
+import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
+import { TicketTypesDocument } from "@/rxdb/schemas/public/ticket_types";
 import {
+  TicketsDocument,
+  TicketsDocumentType,
+} from "@/rxdb/schemas/public/tickets";
+import {
+  ArrowDownLeftIcon,
   CurrencyEuroIcon,
+  InformationCircleIcon,
   PlusCircleIcon,
   SquaresPlusIcon,
   UserCircleIcon,
@@ -18,86 +28,216 @@ import { CheckBadgeIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Alert, Tooltip } from "flowbite-react";
 import { FieldArray, Form, Formik, FormikHelpers, FormikProps } from "formik";
 import Link from "next/link";
-import { redirect, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { HiExclamationTriangle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-import { useStoreContext } from "../../store";
 import CouponCodeField from "../_modals/CouponCodeField";
-import {
-  bulkInsertTickets,
-  bulkUpsertContacts,
-  redeemCoupon,
-  validateCouponCode,
-} from "../serverActions";
 import { contactsEqual } from "../utils";
 
-export default function NewTicketsForm({
+function AddTicketButton({
+  type,
+  creatingTickets,
   eventId,
-  couponCode,
+  onClick,
 }: {
+  type: TicketTypesDocument;
+  creatingTickets: Pick<TicketsDocument, "type_id">[];
   eventId: string;
-  couponCode?: string;
+  onClick: (
+    ticket: Pick<TicketsDocumentType, "type_id" | "price"> &
+      Pick<ContactsDocumentType, "name" | "email" | "phone">,
+  ) => void;
 }) {
+  const creating = useMemo(
+    () => creatingTickets.filter((t) => t.type_id == type.id).length,
+    [creatingTickets, type.id],
+  );
+
+  const { result: soldTickets } = useRxData(
+    "tickets",
+    useCallback(
+      (c) =>
+        c.find({
+          selector: {
+            type_id: type.id,
+            payment_status: { $ne: "zrušené" },
+            event_id: eventId,
+          },
+        }),
+      [eventId, type.id],
+    ),
+  );
+
+  return (
+    <button
+      key={type.id}
+      type="button"
+      className={`flex items-center gap-2 rounded-lg border p-0 px-2 py-1 text-sm ${
+        type.capacity && creating > type.capacity - (soldTickets?.length || 0)
+          ? "border-red-100 bg-red-100 text-red-600 hover:cursor-default"
+          : type.capacity &&
+              creating == type.capacity - (soldTickets?.length || 0)
+            ? "border-gray-100 bg-gray-50 text-gray-400 hover:cursor-default"
+            : "border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+      onClick={() =>
+        onClick({
+          name: "",
+          email: "",
+          phone: "",
+          type_id: type.id,
+          price: type.price,
+        })
+      }
+    >
+      {type.is_vip && <CheckBadgeIcon className="h-5 w-5 text-green-500" />}
+      <div className="flex flex-col items-start">
+        <p className="font-medium">{type.label}</p>
+        <div className="text-xs font-light">
+          <span className="font-medium">{creating}</span>
+          {type.capacity &&
+            `/${type.capacity - (soldTickets?.length || 0)} voľných`}
+        </div>
+      </div>
+      <PlusCircleIcon className="h-5 w-5" />
+    </button>
+  );
+}
+
+function TooManySoldAlert({
+  type,
+  creatingTickets,
+  eventId,
+}: {
+  type: TicketTypesDocument;
+  creatingTickets: Pick<TicketsDocument, "type_id">[];
+  eventId: string;
+}) {
+  const { result: soldTickets } = useRxData(
+    "tickets",
+    useCallback(
+      (c) =>
+        c.find({
+          selector: {
+            type_id: type.id,
+            payment_status: { $ne: "zrušené" },
+            event_id: eventId,
+          },
+        }),
+      [eventId, type.id],
+    ),
+    { initialResult: [] },
+  );
+
+  const afterSaleCount = useMemo(
+    () =>
+      (soldTickets.length || 0) +
+      creatingTickets.filter((t) => t.type_id == type.id).length,
+    [creatingTickets, soldTickets, type.id],
+  );
+
+  if (type.capacity && afterSaleCount > type.capacity) {
+    return (
+      <Alert
+        color="failure"
+        icon={HiExclamationTriangle}
+        className="my-2"
+        key={type.id}
+      >
+        Po vytvorení bude {afterSaleCount} lístkov typu{" "}
+        <span className="font-semibold">{type.label}</span>, čo je viac ako
+        povolených {type.capacity}.
+      </Alert>
+    );
+  }
+}
+
+export default function NewTicketsForm({}: {}) {
   const router = useRouter();
 
-  const [coupon, setCoupon] = useState<Coupons | undefined | null>(undefined);
+  const params = useSearchParams();
+  const eventId = params.get("eventId") || "";
+  const couponCode = params.get("couponCode") || undefined;
+  const contactId = params.get("contactId") || undefined;
 
-  const { event, refresh, ticketTypes, setPartialCoupon, contacts } =
-    useStoreContext((state) => {
-      let event = state.events.allEvents.find(
-        (e) => e.id.toString() === eventId,
-      );
-      return {
-        event,
-        refresh: state.events.refresh,
-        ticketTypes:
-          state.services.services
-            .find((s) => event?.service_id === s.id)
-            ?.ticket_types.map((t) => ({
-              ...t,
-              sold:
-                event?.tickets.filter((ticket) => ticket.type_id == t.id)
-                  .length || 0,
-            })) || [],
-        setPartialCoupon: state.coupons.setPartialCoupon,
-        contacts: state.events.contacts,
-      };
-    });
+  const [coupon, setCoupon] = useState<CouponsDocument | undefined | null>(
+    undefined,
+  );
 
-  const validationSchema = Yup.object({
-    billingName: Yup.string()
-      .min(2, "Zadajte aspoň 2 znaky")
-      .required("Meno je povinné"),
-    billingEmail: Yup.string().email("Zadajte platný email").optional(),
-    billingPhone: Yup.string().optional(),
-    paymentStatus: Yup.mixed()
-      .oneOf(["zaplatené", "rezervované", "zrušené"])
-      .required("Musíte zadať stav platby"),
-    tickets: Yup.array()
-      .of(
-        Yup.object({
-          name: Yup.string().min(2, "Zadajte aspoň 2 znaky").optional(),
-          email: Yup.string().email("Zadajte platný email").optional(),
-          phone: Yup.string().optional(),
-          type_id: Yup.string()
-            .oneOf(
-              ticketTypes.map((t) => t.id),
-              "Zadajte platnú možnosť",
-            )
-            .required("Musíte zadať typ"),
-          price: Yup.number().required("Cena je povinná"),
+  const { result: event, isFetching: isEventFetching } = useRxData(
+    "events",
+    useCallback((collection) => collection.findOne(eventId), [eventId]),
+  );
+
+  const { result: contact } = useRxData(
+    "contacts",
+    useCallback((c) => c.findOne(contactId || "NOT ID"), [contactId]),
+  );
+
+  const { result: ticketTypes, isFetching: isFetchingTicketTypes } = useRxData(
+    "ticket_types",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: { service_id: { $eq: event?.service_id } },
         }),
-      )
-      .required("Musíte pridať aspoň jeden lístok")
-      .min(1, "Musíte pridať aspoň jeden lístok"),
-  });
+      [event?.service_id],
+    ),
+    {
+      hold: isEventFetching,
+      initialResult: [],
+    },
+  );
+
+  const { result: allContacts, collection: contactsCollection } = useRxData(
+    "contacts",
+    useCallback((c) => c.find(), []),
+    { initialResult: [] },
+  );
+
+  const ticketsCollection = useRxCollection("tickets");
+  const couponsCollection = useRxCollection("coupons");
+
+  const validationSchema = useMemo(
+    () =>
+      Yup.object({
+        billingName: Yup.string()
+          .min(2, "Zadajte aspoň 2 znaky")
+          .required("Meno je povinné"),
+        billingEmail: Yup.string().email("Zadajte platný email").default(""),
+        billingPhone: Yup.string().default(""),
+        paymentStatus: Yup.mixed()
+          .oneOf(["zaplatené", "rezervované", "zrušené"])
+          .required("Musíte zadať stav platby"),
+        tickets: Yup.array()
+          .of(
+            Yup.object({
+              name: Yup.string().min(2, "Zadajte aspoň 2 znaky"),
+              email: Yup.string().email("Zadajte platný email"),
+              phone: Yup.string(),
+              type_id: Yup.string()
+                .oneOf(
+                  ticketTypes?.map((t) => t.id) || [],
+                  "Zadajte platnú možnosť",
+                )
+                .required("Musíte zadať typ"),
+              price: Yup.number().required("Cena je povinná"),
+            }),
+          )
+          .required("Musíte pridať aspoň jeden lístok")
+          .min(1, "Musíte pridať aspoň jeden lístok"),
+      }),
+    [ticketTypes],
+  );
 
   type TicketOrderType = Yup.InferType<typeof validationSchema>;
 
   const initialValues: TicketOrderType = {
-    billingName: "",
+    billingName: contact?.name || "",
+    billingEmail: contact?.email || "",
+    billingPhone: contact?.phone || "",
     tickets: [],
     paymentStatus: "rezervované",
   };
@@ -106,87 +246,96 @@ export default function NewTicketsForm({
     values: TicketOrderType,
     { setErrors }: FormikHelpers<TicketOrderType>,
   ) => {
-    // TODO: see if this whole thing could be moved to a single server action
-    const { data: billingContacts, error: billingError } =
-      // ServerAction
-      await bulkUpsertContacts([
-        {
+    if (!event || !contactsCollection || !ticketsCollection) {
+      return;
+    }
+
+    let billingContact = await contactsCollection
+      .findOne({
+        selector: {
           name: values.billingName,
           email: values.billingEmail,
           phone: values.billingPhone,
         },
-      ]);
-    if (billingError) {
-      setErrors({
-        tickets:
-          "Chyba pri vytváraní fakturačného kontaktu: " + billingError.message,
+      })
+      .exec();
+
+    if (!billingContact) {
+      billingContact = await contactsCollection.insert({
+        id: crypto.randomUUID(),
+        name: values.billingName,
+        email: values.billingEmail,
+        phone: values.billingPhone,
       });
-      return;
     }
-    const billingContact = billingContacts[0];
-    const { data: guestContacts, error: guestsError } =
-      // ServerAction
-      await bulkUpsertContacts(
-        values.tickets
-          .map(
-            (ticket) =>
-              ({
-                name: ticket.name || values.billingName,
-                email: ticket.email || values.billingEmail,
-                phone: ticket.phone || values.billingPhone,
-              }) as Contacts,
+
+    const s = values.tickets.map((ticket) => ({
+      name: ticket.name || values.billingName,
+      email: ticket.email || values.billingEmail,
+      phone: ticket.phone || values.billingPhone,
+    }));
+
+    let oldGuestContacts = await contactsCollection
+      .find({
+        selector: {
+          $or: s,
+        },
+      })
+      .exec();
+
+    let insertData: Pick<
+      ContactsDocumentType,
+      "id" | "name" | "email" | "phone"
+    >[] = [];
+
+    values.tickets
+      .map((t) => ({
+        name: t.name || values.billingName,
+        email: t.email || values.billingEmail,
+        phone: t.phone || values.billingPhone,
+      }))
+      .forEach((ticketContact) => {
+        if (
+          oldGuestContacts.find((contact) =>
+            contactsEqual(contact, ticketContact),
           )
-          .filter(
-            (ticket, i, a) =>
-              i === a.findIndex((t) => contactsEqual(t, ticket)),
-          ),
-      );
-    if (guestsError) {
-      setErrors({ tickets: "Chyba pri vytváraní kontaktov: " + guestsError });
-      return;
-    }
-    // ServerAction
-    const { data: createdTickets, error } = await bulkInsertTickets(
-      values.tickets.map((ticket) => ({
-        billing_id: billingContact!.id,
-        guest_id: guestContacts.find((c) =>
-          contactsEqual(c, {
-            name: ticket.name || values.billingName!,
-            email: ticket.email || values.billingEmail || "",
-            phone: ticket.phone || values.billingPhone || "",
-            address: "",
-          }),
-        )!.id,
-        event_id: event!.id,
-        type_id: ticket.type_id,
-        price: ticket.price,
-        payment_status: values.paymentStatus as string,
-        coupon_redeemed_id: coupon?.id || null,
-      })),
-    );
-    if (error) {
-      setErrors({ tickets: "Chyba pri vytváraní lístkov: " + error });
-      return;
-    }
-    await refresh(); // ServerAction?
-    if (coupon) {
-      // ServerAction
-      const couponAmountUpdate = await redeemCoupon(
-        coupon.id,
-        coupon.amount -
-          Math.min(
-            coupon.amount,
-            createdTickets.map((t) => t.price).reduce((a, b) => a + b, 0),
-          ),
-      );
-      if (couponAmountUpdate.error) {
-        setErrors({
-          tickets: "Chyba pri aplikovaní poukazu: " + couponAmountUpdate.error,
+        )
+          return;
+        if (insertData.find((contact) => contactsEqual(contact, ticketContact)))
+          return;
+
+        insertData.push({
+          ...ticketContact,
+          id: crypto.randomUUID(),
         });
-        return;
-      }
-      setPartialCoupon({
-        id: coupon.id,
+      });
+
+    const { success: newGuestContacts } =
+      await contactsCollection.bulkInsert(insertData);
+
+    const guestContacts = [...oldGuestContacts, ...newGuestContacts];
+
+    const ticketToCreate = values.tickets.map((ticket) => ({
+      id: crypto.randomUUID(),
+      billing_id: billingContact!.id,
+      guest_id: guestContacts.find((c) =>
+        contactsEqual(c, {
+          name: ticket.name || values.billingName,
+          email: ticket.email || values.billingEmail || "",
+          phone: ticket.phone || values.billingPhone,
+        }),
+      )!.id,
+      event_id: event!.id,
+      type_id: ticket.type_id,
+      price: ticket.price,
+      payment_status: values.paymentStatus as string,
+      coupon_redeemed_id: coupon?.id,
+    }));
+
+    const { success: createdTickets } =
+      await ticketsCollection.bulkInsert(ticketToCreate);
+    if (coupon) {
+      const r = await coupon.incrementalPatch({
         amount:
           coupon.amount -
           Math.min(
@@ -200,11 +349,12 @@ export default function NewTicketsForm({
     router.back();
   };
 
-  if (event === undefined) {
-    return redirect("/dashboard/events");
+  if (!eventId || (!event && !isEventFetching)) {
+    router.back();
+    return null;
   }
 
-  if (ticketTypes.length === 0) {
+  if (ticketTypes.length === 0 && !isFetchingTicketTypes) {
     return (
       <div className="flex h-full w-full flex-col items-center gap-2">
         <p>Na zvolenú udalosť neexistujú typy lístkov</p>
@@ -220,6 +370,7 @@ export default function NewTicketsForm({
 
   return (
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={onSubmit}
@@ -231,25 +382,66 @@ export default function NewTicketsForm({
         getFieldMeta,
         getFieldHelpers,
         setFieldValue,
-        validateField,
       }: FormikProps<TicketOrderType>) => (
         <Form>
-          <p className="ps-1 font-bold">Fakturčné údaje</p>
+          <div className="flex items-center gap-1 ps-1 font-bold">
+            <span className="me-auto font-bold">Fakturčné údaje</span>
+            {contact &&
+              (contactsEqual(contact, {
+                name: values.billingName,
+                email: values.billingEmail,
+                phone: values.billingPhone,
+              }) ? (
+                <>
+                  <InformationCircleIcon className="h-4 w-4 " />
+                  <span className="text-sm font-light text-gray-600">
+                    Automaticky zvolené podľa kontaktu pri poukaze
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-normal text-gray-600">
+                    <button
+                      type="button"
+                      className="flex gap-1 text-gray-500 hover:text-gray-700 active:text-gray-800"
+                      onClick={() => {
+                        setFieldValue("billingName", contact.name, true);
+                        setFieldValue("billingEmail", contact.email, true);
+                        setFieldValue("billingPhone", contact.phone, true);
+                      }}
+                    >
+                      <ArrowDownLeftIcon className="h-4 w-4" />
+                      <UserCircleIcon className="h-4 w-4" />
+                      Vyplniť podľa kontaktu pri kupóne
+                    </button>
+                  </span>
+                </>
+              ))}
+          </div>
           <div className="flex gap-2 rounded-xl border border-gray-400 p-2">
-            {/* {getFieldMeta("billingName").value} */}
             <CustomComboBox
-              options={contacts as Partial<Contacts>[]}
+              options={allContacts.map((c) => {
+                const { _attachments, _deleted, _meta, _rev, id, ...data } =
+                  c._data;
+                return data;
+              })}
+              defaultValue={{
+                name: values.billingName,
+                email: values.billingEmail,
+                phone: values.billingPhone,
+              }}
               displayFun={(c) => c?.name || ""}
               searchKeys={["name"]}
-              newValueBuilder={(input) => ({ name: input })}
+              newValueBuilder={(input) => ({
+                name: input,
+                email: values.billingEmail || "",
+                phone: values.billingPhone || "",
+                id: crypto.randomUUID(),
+              })}
               onSelect={async (contact) => {
-                await setFieldValue("billingName", contact.name, true);
-                if (contact.id) {
-                  await setFieldValue("billingEmail", contact.email, true);
-                  await setFieldValue("billingPhone", contact.phone, true);
-                }
-                // await validateField("billingName");
-                console.log(values);
+                await setFieldValue("billingName", contact?.name || "", true);
+                await setFieldValue("billingEmail", contact?.email || "", true);
+                await setFieldValue("billingPhone", contact?.phone || "", true);
               }}
               label="Meno"
               placeholder="Adam Kováč"
@@ -259,19 +451,17 @@ export default function NewTicketsForm({
                 <CustomErrorMessage fieldMeta={getFieldMeta("billingName")} />
               }
             />
-
             <FormikTextField
-              // type="email"
               name="billingEmail"
               label="Email"
-              placeHolder="adam.kovac@gmail.com"
+              placeHolder="-"
               optional
               vertical
             />
             <FormikTextField
               name="billingPhone"
               label="Telefón"
-              placeHolder="0900 123 456"
+              placeHolder="-"
               optional
               vertical
             />
@@ -281,6 +471,7 @@ export default function NewTicketsForm({
               <option value="zrušené">Zrušené</option>
             </FormikSelectField>
           </div>
+
           <p className="ps-1 pt-4 font-bold">Lístky</p>
           <div className="rounded-xl border border-gray-400 p-2">
             <FieldArray name="tickets">
@@ -312,11 +503,55 @@ export default function NewTicketsForm({
                         {values.tickets.map((ticket, index) => (
                           <tr key={index}>
                             <td className="px-1">
-                              <FormikTextField
-                                name={`tickets[${index}].name`}
-                                placeHolder={values.billingName || "Adam Kováč"}
+                              <CustomComboBox
+                                options={allContacts.map((c) => {
+                                  const {
+                                    _attachments,
+                                    _deleted,
+                                    _meta,
+                                    _rev,
+                                    ...data
+                                  } = c._data;
+                                  return data;
+                                })}
                                 optional
+                                displayFun={(c) => c?.name || ""}
+                                searchKeys={["name"]}
+                                newValueBuilder={(input) => ({
+                                  name: input,
+                                  email: values.tickets[index].email || "",
+                                  phone: values.tickets[index].phone || "",
+                                  id: crypto.randomUUID(),
+                                })}
+                                onSelect={async (contact) => {
+                                  await setFieldValue(
+                                    `tickets[${index}].name`,
+                                    contact?.name || "",
+                                    true,
+                                  );
+                                  if (contact?.id) {
+                                    await setFieldValue(
+                                      `tickets[${index}].email`,
+                                      contact?.email || "",
+                                      true,
+                                    );
+                                    await setFieldValue(
+                                      `tickets[${index}].phone`,
+                                      contact?.phone || "",
+                                      true,
+                                    );
+                                  }
+                                }}
+                                placeholder={values.billingName || "-"}
                                 vertical
+                                iconStart={
+                                  <UserCircleIcon className="h-4 w-4 text-gray-500" />
+                                }
+                                error={
+                                  <CustomErrorMessage
+                                    fieldMeta={getFieldMeta("billingName")}
+                                  />
+                                }
                               />
                             </td>
                             <td className="px-1">
@@ -351,8 +586,8 @@ export default function NewTicketsForm({
                                   getFieldHelpers(
                                     `tickets[${index}].price`,
                                   ).setValue(
-                                    ticketTypes.find((t) => t.id == v)?.price ||
-                                      0,
+                                    ticketTypes.find((t) => t.id === v)
+                                      ?.price || 0,
                                   );
                                 }}
                               >
@@ -397,46 +632,19 @@ export default function NewTicketsForm({
                     <CustomErrorMessage fieldMeta={getFieldMeta("tickets")} />
                   </div>
                   <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
-                    {ticketTypes.map((type) => {
-                      const creating = values.tickets.filter(
-                        (t) => t.type_id == type.id,
-                      ).length;
-
-                      return (
-                        <button
+                    {isFetchingTicketTypes ? (
+                      <InlineLoading />
+                    ) : (
+                      ticketTypes.map((type) => (
+                        <AddTicketButton
                           key={type.id}
-                          type="button"
-                          className={`flex items-center gap-2 rounded-lg border p-0 px-2 py-1 text-sm ${
-                            type.capacity &&
-                            creating > type.capacity - type.sold
-                              ? "border-red-100 bg-red-100 text-red-600"
-                              : type.capacity &&
-                                  creating == type.capacity - type.sold
-                                ? "border-gray-100 bg-gray-50 text-gray-400 hover:cursor-default"
-                                : "border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
-                          onClick={() =>
-                            ticketsProps.push({
-                              type_id: type.id,
-                              price: type.price,
-                            })
-                          }
-                        >
-                          {type.is_vip && (
-                            <CheckBadgeIcon className="h-5 w-5 text-green-500" />
-                          )}
-                          <div className="flex flex-col items-start">
-                            <p className="font-medium">{type.label}</p>
-                            <div className="text-xs font-light">
-                              <span className="font-medium">{creating}</span>
-                              {type.capacity &&
-                                `/${type.capacity - type.sold} voľných`}
-                            </div>
-                          </div>
-                          <PlusCircleIcon className="h-5 w-5" />
-                        </button>
-                      );
-                    })}
+                          type={type}
+                          creatingTickets={values.tickets}
+                          eventId={eventId}
+                          onClick={ticketsProps.push}
+                        />
+                      ))
+                    )}
                     <button
                       type="button"
                       className="rounded-lg p-2 text-gray-600 transition-all hover:scale-110 hover:text-gray-700"
@@ -463,26 +671,14 @@ export default function NewTicketsForm({
               )}
             </FieldArray>
           </div>
-
-          {ticketTypes.map((type) => {
-            const afterSaleCount =
-              type.sold +
-              values.tickets.filter((t) => t.type_id == type.id).length;
-            if (type.capacity && afterSaleCount > type.capacity) {
-              return (
-                <Alert
-                  color="failure"
-                  icon={HiExclamationTriangle}
-                  className="my-2"
-                  key={type.id}
-                >
-                  Po vytvorení bude {afterSaleCount} lístkov typu{" "}
-                  <span className="font-semibold">{type.label}</span>, čo je
-                  viac ako povolených {type.capacity}.
-                </Alert>
-              );
-            }
-          })}
+          {ticketTypes.map((type) => (
+            <TooManySoldAlert
+              key={type.id}
+              type={type}
+              creatingTickets={values.tickets}
+              eventId={eventId}
+            />
+          ))}
           <div className="my-6 flex flex-row items-center gap-4">
             <span className="shrink text-lg font-medium">Rekapitulácia</span>
             <div className="h-px grow bg-gray-300" />
@@ -501,7 +697,7 @@ export default function NewTicketsForm({
                     defaultCode={couponCode}
                     coupon={coupon}
                     setCoupon={setCoupon}
-                    validate={async (code) => validateCouponCode(code)}
+                    couponsCollection={couponsCollection}
                   />
                 </td>
                 <td className="px-2 text-end">

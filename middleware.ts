@@ -1,4 +1,4 @@
-import { createMiddlewareSupabase } from "@/utils/supabase/middleware";
+import { createMiddlewareSupabase } from "@/lib/supabase/middleware";
 import { Route } from "next";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -11,6 +11,7 @@ const protectedRoutes: ExhaustiveRoute[] = ["/dashboard/*"];
 const onlyPublicRoutes: ExhaustiveRoute[] = ["/login", "/signup"];
 const redirects: Record<string, Route> = {
   "/": "/dashboard",
+  "/dashboard": "/dashboard/events",
 };
 
 function pathInExhaustiveRoutes(route: string, routes: ExhaustiveRoute[]) {

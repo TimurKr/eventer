@@ -8,6 +8,7 @@ const font = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-sans",
 });
 
 const defaultUrl = process.env.VERCEL_URL
@@ -26,7 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={font.className}>
-      <body className="h-screen bg-background text-foreground">
+      <body
+        className={`h-screen bg-background text-foreground ${font.variable}`}
+      >
         <main className="h-full min-h-screen w-full">{children}</main>
         <ToastContainer position="top-right" />
       </body>
