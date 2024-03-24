@@ -1,7 +1,13 @@
 "use client";
 
 import SubmitButton from "@/components/forms/SubmitButton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { FormTextField } from "@/components/ui/form-text-field";
 import { useRxCollection } from "@/rxdb/db";
@@ -24,7 +30,15 @@ const formSchema = z.object({
 
 type Values = z.infer<typeof formSchema>;
 
-export default function NewContactForm(initValues?: Partial<Values>) {
+export type NewContactFormProps = {
+  initValues?: Partial<Values>;
+  onSubmit?: (values: ContactsDocument) => void;
+};
+
+export default function NewContactForm({
+  initValues,
+  onSubmit,
+}: NewContactFormProps) {
   const router = useRouter();
 
   const form = useForm<Values>({
@@ -53,7 +67,13 @@ export default function NewContactForm(initValues?: Partial<Values>) {
     return () => subscription.unsubscribe();
   }, [duplicateCache, form]);
 
-  const onSubmit = useCallback(
+  useEffect(() => {
+    form.setValue("name", initValues?.name || "");
+    form.setValue("email", initValues?.email || "");
+    form.setValue("phone", initValues?.phone || "");
+  }, [form, initValues]);
+
+  const handleSubmit = useCallback(
     async (values: Values) => {
       if (!contactsCollection) return;
 
@@ -67,7 +87,6 @@ export default function NewContactForm(initValues?: Partial<Values>) {
         if (existingContact) {
           setDuplicateContact(existingContact);
           setDuplicateCache((prev) => [...prev, existingContact]);
-          return;
         }
       }
 
@@ -91,13 +110,15 @@ export default function NewContactForm(initValues?: Partial<Values>) {
       });
 
       toast.success("Kontakt vytvorený!", { autoClose: 2500 });
-      router.replace(`/dashboard/contacts/${newContact.id}`);
+      onSubmit
+        ? onSubmit(newContact)
+        : router.replace(`/dashboard/contacts/${newContact.id}`);
     },
-    [contactsCollection, duplicateContact, duplicateName, router],
+    [contactsCollection, duplicateContact, duplicateName, onSubmit, router],
   );
 
   return (
-    <Form form={form} onSubmit={onSubmit} className="flex flex-col gap-4">
+    <Form form={form} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <FormTextField form={form} name={"name"} label="Meno" horizontal />
       <FormTextField form={form} name={"email"} label="Email" horizontal />
       <FormTextField form={form} name={"phone"} label="Telefón" horizontal />
@@ -105,28 +126,29 @@ export default function NewContactForm(initValues?: Partial<Values>) {
         <Alert variant="destructive">
           <ExclamationTriangleIcon className="h-4 w-4" />
           <AlertTitle>Kontakt už existuje</AlertTitle>
-          <AlertDescription>
-            <Link
-              href={`/dashboard/contacts/${duplicateContact.id}`}
-              className="underline-offset-4 hover:underline"
-            >
-              Detail
-            </Link>
-          </AlertDescription>
+          <AlertDescription>Chcete si vytvoiť rovnaký?</AlertDescription>
+
+          <AlertAction asChild>
+            <Button variant={"ghost"} type="button">
+              <Link href={`/dashboard/contacts/${duplicateContact.id}`}>
+                Detail
+              </Link>
+            </Button>
+          </AlertAction>
         </Alert>
       )}
-      {duplicateName && (
+      {!duplicateContact && duplicateName && (
         <Alert variant="warning">
           <ExclamationTriangleIcon className="h-4 w-4" />
           <AlertTitle>Kontakt s rovankým menom už existuje</AlertTitle>
-          <AlertDescription>
-            <Link
-              href={`/dashboard/contacts/${duplicateName.id}`}
-              className="underline-offset-4 hover:underline"
-            >
-              Detail
-            </Link>
-          </AlertDescription>
+          <AlertDescription>Chcete si vytvoiť rovnaký?</AlertDescription>
+          <AlertAction asChild>
+            <Button variant={"ghost"} type="button">
+              <Link href={`/dashboard/contacts/${duplicateName.id}`}>
+                Detail
+              </Link>
+            </Button>
+          </AlertAction>
         </Alert>
       )}
       <SubmitButton

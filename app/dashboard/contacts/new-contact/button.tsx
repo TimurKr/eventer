@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { NewContactFormProps } from "./form";
 
 export default function NewContactButton({
-  params,
+  initialValues,
   className,
 }: {
-  params?: {};
+  initialValues?: NewContactFormProps["initValues"];
   className?: string;
 }) {
   return (
@@ -14,7 +15,7 @@ export default function NewContactButton({
       <Link
         href={{
           pathname: "/dashboard/contacts/new-contact",
-          query: params,
+          query: initialValues,
         }}
         onClick={(e) => e.stopPropagation()}
       >

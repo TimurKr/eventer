@@ -24,6 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../../../components/Header";
 import NewContactButton from "./new-contact/button";
+import NewContactForm from "./new-contact/form";
 
 const PAGINATION = 100;
 
@@ -137,7 +138,17 @@ export default function Contacts() {
     <>
       <Header
         title="Kontakty"
-        actionButton={<NewContactButton />}
+        actionButton={
+          <NewContactButton
+            initialValues={
+              query.includes("@")
+                ? { email: query }
+                : /\d/.test(query)
+                  ? { phone: query }
+                  : { name: query }
+            }
+          />
+        }
         search={{
           search: (query) => setQuery(query),
           query,
@@ -196,11 +207,19 @@ export default function Contacts() {
           <Loading text="Načítavam kotakty..." />
         ) : query ? (
           <NoResults text="Nenašli sme žiadne kontakty vyhovujúce vášmu hladaniu...">
-            <NewContactButton />
+            <NewContactForm
+              initValues={
+                query.includes("@")
+                  ? { email: query }
+                  : /\d/.test(query)
+                    ? { phone: query }
+                    : { name: query }
+              }
+            />
           </NoResults>
         ) : (
           <CreateFirst text="Nemáte žiadne kontakty. Vytvorte si svoj prvý...">
-            <NewContactButton />
+            <NewContactForm />
           </CreateFirst>
         )}
       </div>

@@ -2,9 +2,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { Slot } from "@radix-ui/react-slot";
+import { buttonVariants } from "./button";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7",
+  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*:not(button)]:pl-7",
   {
     variants: {
       variant: {
@@ -58,4 +60,25 @@ const AlertDescription = React.forwardRef<
 ));
 AlertDescription.displayName = "AlertDescription";
 
-export { Alert, AlertDescription, AlertTitle };
+const AlertAction = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    asChild?: boolean;
+  }
+>(({ className, asChild, ...props }, ref) => {
+  const Comp = asChild ? Slot : "button";
+  return (
+    <Comp
+      className={cn(
+        asChild || buttonVariants({ variant: "outline", size: "sm" }),
+        "absolute right-3 top-3",
+        className,
+      )}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+AlertAction.displayName = "AlertAction";
+
+export { Alert, AlertAction, AlertDescription, AlertTitle };

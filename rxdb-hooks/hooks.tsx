@@ -187,11 +187,6 @@ export function RxHookBuilder<
       ? Result
       : Result | undefined;
 
-    type State<Result> = {
-      result: Result;
-      isFetching: boolean;
-    };
-
     const [state, setState] = useState<{
       result: Returning;
       isFetching: boolean;
@@ -224,7 +219,7 @@ export function RxHookBuilder<
    *
    * @param collectionKey The name of the collection to query.
    * @param query The query function that takes the collection and returns an RxQuery.
-   * @returns The state object containing the query result and fetch status.
+   * @returns undefined or initialResult while fetching, result of the query when fetched.
    */
   function useRxData<
     CollectionKey extends CollectionKeys,

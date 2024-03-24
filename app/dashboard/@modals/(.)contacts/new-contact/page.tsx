@@ -1,6 +1,8 @@
 "use client";
 
-import NewContactForm from "@/app/dashboard/contacts/new-contact/form";
+import NewContactForm, {
+  NewContactFormProps,
+} from "@/app/dashboard/contacts/new-contact/form";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
-export default function NewContact() {
+export default function NewContact({
+  searchParams,
+}: {
+  searchParams: NewContactFormProps["initValues"];
+}) {
   const router = useRouter();
 
   return (
@@ -18,7 +24,7 @@ export default function NewContact() {
         <DialogTrigger />
         <DialogContent>
           <DialogHeader>Vytvorte nový kontakt</DialogHeader>
-          <NewContactForm />
+          <NewContactForm initValues={searchParams} />
         </DialogContent>
       </Dialog>
     </>
