@@ -1,4 +1,4 @@
-import NewContactButton from "@/app/dashboard/contacts/new/button";
+import NewContactForm from "@/app/dashboard/contacts/new/form";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
 import Fuse from "fuse.js";
 import { useCallback, useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
+import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 
 export function SelectContactDialog({
@@ -56,6 +58,14 @@ export function SelectContactDialog({
     if (onClosed) onClosed();
   }, [onClosed]);
 
+  const handleSelected = useCallback(
+    (contact: ContactsDocument) => {
+      onSelected(contact);
+      if (closeOnSelect) close();
+    },
+    [onSelected, closeOnSelect, close],
+  );
+
   return (
     <Dialog
       open={open}
@@ -65,7 +75,7 @@ export function SelectContactDialog({
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="!pb-0">
+      <DialogContent className="max-h-dvh !pb-0">
         <DialogHeader>
           <DialogTitle>Vyberte si kontakt</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -86,27 +96,38 @@ export function SelectContactDialog({
               }
             }}
           />
-          <NewContactButton
-            initialValues={
-              query.includes("@")
-                ? { email: query }
-                : /\d/.test(query)
-                  ? { phone: query }
-                  : { name: query }
-            }
-          />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button type="button">
+                <UserPlusIcon className="mr-2 h-4 w-4" />
+                Vytvoriť kontakt
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>Vytvorte nový kontakt</DialogHeader>
+              <NewContactForm
+                initValues={
+                  query.includes("@")
+                    ? { email: query }
+                    : /\d/.test(query)
+                      ? { phone: query }
+                      : query
+                        ? { name: query }
+                        : undefined
+                }
+                onSubmit={handleSelected}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
-        <ScrollArea className="max-h-120">
+        <ScrollArea className="max-h-72 sm:max-h-96">
           <div className="divide-y pb-8 pe-4" id="list-of-contacts">
             {/* TODO: Add a create contact option */}
             {contacts.map((contact) => (
               <button
                 className="group flex w-full flex-col px-2 py-2 text-xs font-light text-gray-500"
                 key={contact.id}
-                onClick={() => {
-                  onSelected(contact);
-                  if (closeOnSelect) close();
-                }}
+                onClick={() => handleSelected(contact)}
               >
                 <p className="text-sm font-medium text-primary underline-offset-4 group-hover:underline">
                   {contact.name}

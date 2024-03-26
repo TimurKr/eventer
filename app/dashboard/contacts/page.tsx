@@ -82,7 +82,7 @@ export default function Contacts() {
     useCallback(
       (c) =>
         c.find({
-          sort: [{ [sort]: sortDirection }],
+          sort: [{ [sort]: sortDirection, created_at: "asc" }],
         }),
       [sort, sortDirection],
     ),
@@ -172,7 +172,7 @@ export default function Contacts() {
                   <TableHead>Email</TableHead>
                   <TableHead>Telefón</TableHead>
                   <TableHead>Množstvo lístkov</TableHead>
-                  <TableHead>Množstvo kupónov</TableHead>
+                  <TableHead>Množstvo poukazov</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

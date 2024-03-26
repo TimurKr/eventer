@@ -3,7 +3,8 @@ import NewContactForm, { NewContactFormProps } from "./form";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: NewContactFormProps["initValues"];
+  searchParams: NewContactFormProps["initValues"] &
+    Pick<NewContactFormProps, "redirectOnSuccess">;
 }) {
   return (
     <div className="p-6">
@@ -11,7 +12,10 @@ export default async function Page({
         Vytvorte nové lístky
       </h1>
       <div className="grid place-content-center">
-        <NewContactForm initValues={searchParams} />
+        <NewContactForm
+          initValues={searchParams}
+          redirectOnSuccess={searchParams.redirectOnSuccess}
+        />
       </div>
     </div>
   );

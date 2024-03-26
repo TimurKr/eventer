@@ -14,10 +14,10 @@ import { useRouter } from "next/navigation";
 export default function NewContact({
   searchParams,
 }: {
-  searchParams: NewContactFormProps["initValues"];
+  searchParams: NewContactFormProps["initValues"] &
+    Pick<NewContactFormProps, "redirectOnSuccess">;
 }) {
   const router = useRouter();
-
   return (
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>

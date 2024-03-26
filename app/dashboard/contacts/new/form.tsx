@@ -12,8 +12,13 @@ import { Form } from "@/components/ui/form";
 import { FormTextField } from "@/components/ui/form-text-field";
 import { useRxCollection } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import {
+  AtSymbolIcon,
+  ExclamationTriangleIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -33,11 +38,13 @@ type Values = z.infer<typeof formSchema>;
 export type NewContactFormProps = {
   initValues?: Partial<Values>;
   onSubmit?: (values: ContactsDocument) => void;
+  redirectOnSuccess?: Route | "back";
 };
 
 export default function NewContactForm({
   initValues,
   onSubmit,
+  redirectOnSuccess,
 }: NewContactFormProps) {
   const router = useRouter();
 
@@ -110,17 +117,42 @@ export default function NewContactForm({
       });
 
       toast.success("Kontakt vytvorený!", { autoClose: 2500 });
-      onSubmit
-        ? onSubmit(newContact)
-        : router.replace(`/dashboard/contacts/${newContact.id}`);
+      if (onSubmit) {
+        onSubmit(newContact);
+      } else if (redirectOnSuccess === "back") {
+        router.back();
+      } else {
+        router.replace(
+          redirectOnSuccess || `/dashboard/contacts/${newContact.id}`,
+        );
+      }
     },
-    [contactsCollection, duplicateContact, duplicateName, onSubmit, router],
+    [
+      contactsCollection,
+      duplicateContact,
+      duplicateName,
+      onSubmit,
+      redirectOnSuccess,
+      router,
+    ],
   );
 
   return (
     <Form form={form} onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormTextField form={form} name={"name"} label="Meno" horizontal />
-      <FormTextField form={form} name={"email"} label="Email" horizontal />
+      <FormTextField
+        form={form}
+        name={"name"}
+        label="Meno"
+        horizontal
+        icons={{ start: <UserIcon className="h-4 w-4" /> }}
+      />
+      <FormTextField
+        form={form}
+        name={"email"}
+        label="Email"
+        horizontal
+        icons={{ start: <AtSymbolIcon className="h-4 w-4" /> }}
+      />
       <FormTextField form={form} name={"phone"} label="Telefón" horizontal />
       {duplicateContact && (
         <Alert variant="destructive">

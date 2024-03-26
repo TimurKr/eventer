@@ -69,7 +69,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
     if (
       !values.contact.name &&
       !confirm(
-        "Naozaj chcete vytvoriť kupón bez mena? Kupón nebude priradený k žiadnemu kontaktu.",
+        "Naozaj chcete vytvoriť poukaz bez mena? Poukaz nebude priradený k žiadnemu kontaktu.",
       )
     )
       return;

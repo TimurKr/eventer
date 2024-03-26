@@ -39,6 +39,7 @@ export function FormTextField<Values extends FieldValues>({
           className={cn(
             horizontal ? "grid grid-cols-4 items-center gap-x-4 space-y-0" : "",
             props.type === "hidden" ? "hidden" : "",
+            props.baseClassName,
           )}
         >
           {label && (
@@ -51,9 +52,8 @@ export function FormTextField<Values extends FieldValues>({
               {...field}
               error={!!fieldState.error}
               {...props}
-              className={cn(
+              baseClassName={cn(
                 horizontal ? (label ? "col-span-3" : "col-span-4") : "",
-                props.className,
               )}
             />
           </FormControl>
