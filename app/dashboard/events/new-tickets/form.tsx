@@ -17,7 +17,7 @@ import { z } from "zod";
 import CouponCodeField from "../_modals/CouponCodeField";
 
 import InlineLoading from "@/components/InlineLoading";
-import { SelectContactDialog } from "@/components/SelectContact";
+import SelectContactField from "@/components/SelectContactField";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,14 +34,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { TicketTypesDocument } from "@/rxdb/schemas/public/ticket_types";
 import {
   ArrowDownLeftIcon,
-  ArrowPathIcon,
   CurrencyEuroIcon,
   InformationCircleIcon,
-  PlusCircleIcon,
   SquaresPlusIcon,
   TrashIcon,
   UserCircleIcon,
@@ -85,44 +82,21 @@ function FormTicketRow({
     name: `tickets.${index}.contact`,
   });
 
-  const { result: contact, isFetching: isFetchingContact } = useRxData(
-    "contacts",
-    useCallback((c) => c.findOne(contactId), [contactId]),
-  );
-
   return (
     <tr>
       <td className="px-1">
-        <SelectContactDialog
-          onSelected={(c) => form.setValue(`tickets.${index}.contact`, c.id)}
-          description="Zvolte kontakt ktorý sa priradí k lístku"
-        >
-          <Button
-            variant={"link"}
-            className={cn(
-              !isFetchingContact &&
-                contact?.id === form.getValues("contact") &&
-                "text-gray-600",
-              contact === null && "text-red-600",
-            )}
-          >
-            {contact ? (
-              <>
-                {contact?.name}
-                <ArrowPathIcon className="ms-2 h-4 w-4" />
-              </>
-            ) : (
-              <>
-                <PlusCircleIcon className="me-2 h-4 w-4" />
-                Pridať kontakt
-              </>
-            )}
-          </Button>
-        </SelectContactDialog>
-        <FormField
-          control={form.control}
+        <SelectContactField
+          form={form}
           name={`tickets.${index}.contact`}
-          render={() => <FormMessage className="ps-2" />}
+          description="Zvoľte kontakt ktorý sa priradí k lístku"
+          buttonProps={
+            form.getValues(`tickets.${index}.contact`) &&
+            form.getValues("contact") ===
+              form.getValues(`tickets.${index}.contact`)
+              ? { className: "text-gray-600" }
+              : undefined
+          }
+          required
         />
       </td>
       <td className="w-px">
@@ -147,7 +121,7 @@ function FormTicketRow({
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Zvolte typ lístka" />
+                    <SelectValue placeholder="Zvoľte typ lístka" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -192,7 +166,7 @@ function FormTicketRow({
   );
 }
 
-export default function NewTicketsForm({}: {}) {
+export default function NewTicketsForm() {
   const router = useRouter();
 
   // Get params
@@ -391,42 +365,21 @@ export default function NewTicketsForm({}: {}) {
         </div>
       </div>
       <div className="flex justify-between gap-2 rounded-xl border border-gray-400 p-2">
-        <div>
-          <SelectContactDialog
-            onSelected={(c) => {
-              form.setValue("contact", c.id, { shouldValidate: true });
-              form.getValues("tickets").forEach((ticket, index, array) => {
-                ticket.contact ||
-                  form.setValue(`tickets.${index}.contact`, c.id, {
-                    shouldValidate: true,
-                  });
-              });
-            }}
-            description="Zvolte fakturačný kontakt alebo vytvorte nový."
-          >
-            <Button
-              variant={"link"}
-              className={cn(!contact?.id && "text-red-600")}
-            >
-              {contact ? (
-                <>
-                  {contact?.name}
-                  <ArrowPathIcon className="ms-2 h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  <PlusCircleIcon className="me-2 h-4 w-4" />
-                  Pridať kontakt
-                </>
-              )}
-            </Button>
-          </SelectContactDialog>
-          <FormField
-            control={form.control}
-            name="contact"
-            render={() => <FormMessage className="ps-2" />}
-          />
-        </div>
+        <SelectContactField
+          form={form}
+          name="contact"
+          onSelected={(c) => {
+            form.setValue("contact", c.id, { shouldValidate: true });
+            form.getValues("tickets").forEach((ticket, index, array) => {
+              ticket.contact ||
+                form.setValue(`tickets.${index}.contact`, c.id, {
+                  shouldValidate: true,
+                });
+            });
+          }}
+          description="Zvoľte fakturačný kontakt alebo vytvorte nový."
+          required
+        />
         {contact && (
           <div className="me-auto self-center">
             {contact.email && (

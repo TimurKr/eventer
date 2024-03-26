@@ -16,19 +16,21 @@ import SearchBar from "./SearchBar";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 
+export type SelectContactDialogProps = {
+  children: React.ReactNode;
+  onSelected: (contact: ContactsDocument) => void;
+  closeOnSelect?: boolean;
+  onClosed?: () => void;
+  description?: string;
+};
+
 export function SelectContactDialog({
   children,
   onSelected,
   closeOnSelect = true,
   onClosed,
   description,
-}: {
-  children: React.ReactNode;
-  onSelected: (contact: ContactsDocument) => void;
-  closeOnSelect?: boolean;
-  onClosed?: () => void;
-  description?: string;
-}) {
+}: SelectContactDialogProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
