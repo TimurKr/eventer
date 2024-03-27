@@ -1,8 +1,8 @@
 "use client";
-import DropdownSelector from "@/components/DropdownSelector";
 import InlineLoading from "@/components/InlineLoading";
-import { SelectContactDialog } from "@/components/SelectContact";
-import TextAreaInputDialog from "@/components/TextAreaInputDialog";
+import DropdownSelector from "@/components/inputs/DropdownSelector";
+import { SelectContactDialog } from "@/components/inputs/SelectContactDialog";
+import TextAreaInputDialog from "@/components/inputs/TextAreaInputDialog";
 import { BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useRxCollection, useRxData } from "@/rxdb/db";
@@ -247,7 +248,7 @@ export default function TicketRow({
         />
       </TableCell>
       <TableCell>
-        <Checkbox
+        <Switch
           checked={ticket.arrived}
           disabled={disableArrived}
           onCheckedChange={() =>

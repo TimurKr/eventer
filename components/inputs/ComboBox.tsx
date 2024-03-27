@@ -2,9 +2,9 @@
 
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/outline";
-import { Badge } from "flowbite-react";
 import Fuse from "fuse.js";
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { Badge } from "../ui/badge";
 
 export default function CustomComboBox<T extends {}>({
   options = [],
@@ -106,11 +106,11 @@ export default function CustomComboBox<T extends {}>({
               {((value && displayFun(value).length == 0) ||
                 (!value && query.length == 0)) &&
                 (optional ? (
-                  <Badge color={"gray"} className="pointer-events-none">
+                  <Badge variant="outline" className="pointer-events-none">
                     Volitelné
                   </Badge>
                 ) : (
-                  <Badge color={"red"} className="pointer-events-none">
+                  <Badge variant="secondary" className="pointer-events-none">
                     Povinné
                   </Badge>
                 ))}

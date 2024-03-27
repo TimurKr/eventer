@@ -307,7 +307,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           </AlertTitle>
           <AlertDescription className="pe-20">
             Pretože máte viacero kontaktov s rovnakými údajmi, odporúčame ich
-            spojiť do jedného. Všetky lístky a a kupóny patriace ostatným sa
+            spojiť do jedného. Všetky lístky a poukazy patriace ostatným sa
             priradia ku tomuto.
           </AlertDescription>
           <AlertAction type="button" onClick={() => mergeDuplicates()}>
@@ -323,10 +323,11 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
               Máte viac ako jeden kontakt s rovnakým menom.
             </AlertTitle>
             <AlertDescription className="pe-20">
-              Chcete zosynchronizovať údaje tohto kontaktu s ostatnými?
-              Prepíšete tak údaje ostatných kontaktov. Ak nechcete aby sa toto
-              upozornenie zobrazovalo, zmeňte mierne meno, napríklad pridaním
-              medzery medzi meno a priezvisko.
+              Ak ide o tú istú osobu, odporúčame zosynchronizovať údaje pri
+              všetkých kontaktoch. Následne sa vám ukáže možnosť kontakty spojiť
+              do jedného. Ak nechcete aby sa toto upozornenie zobrazovalo,
+              zmeňte mierne meno, napríklad pridaním medzery medzi meno a
+              priezvisko.
             </AlertDescription>
 
             <AlertAction asChild>
@@ -343,7 +344,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
       <Tabs defaultValue="tickets" className="pt-8">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="tickets">Lístky</TabsTrigger>
-          <TabsTrigger value="coupons">Kupóny</TabsTrigger>
+          <TabsTrigger value="coupons">Poukazy</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets">
           {isFetching ? (

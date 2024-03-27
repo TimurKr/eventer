@@ -2,7 +2,7 @@
 
 import NewCouponForm from "@/app/dashboard/coupons/new/form";
 import { type EditEventFormProps } from "@/app/dashboard/events/edit-event/form";
-import { Modal } from "flowbite-react";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 export default function Page({
@@ -14,12 +14,12 @@ export default function Page({
 
   return (
     <>
-      <Modal show={true} onClose={() => router.back()} dismissible>
-        <Modal.Header>Vytvorte nový pokaz</Modal.Header>
-        <Modal.Body>
+      <Dialog open={true} onOpenChange={() => router.back()}>
+        <DialogContent>
+          <DialogHeader>Vytvorte nový pokaz</DialogHeader>
           <NewCouponForm />
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

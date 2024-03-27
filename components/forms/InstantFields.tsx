@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils";
 import { PencilIcon } from "@heroicons/react/24/outline";
-import { ToggleSwitch } from "flowbite-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Input } from "../ui/input";
@@ -26,82 +25,6 @@ type InstantFieldProps<T> = {
   onBlur?: () => void;
   autoFocus?: boolean;
 };
-
-export function InstantSwitchField({
-  defaultValue,
-  className,
-  disabled = false,
-  validate,
-  updateValue,
-  onBlur,
-}: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
-  const [value, setValue] = useState<boolean>(defaultValue);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
-
-  return (
-    <ToggleSwitch
-      className={`${className}`}
-      sizing={"sm"}
-      disabled={disabled}
-      checked={value}
-      onChange={async (newValue) => {
-        setValue(newValue);
-        const err = validate && (await validate(newValue));
-        if (err) setError(err);
-        else setError(null);
-        await updateValue(newValue);
-        onBlur && onBlur();
-      }}
-    />
-  );
-}
-
-export function InstantCheckboxField({
-  defaultValue,
-  className,
-  disabled = false,
-  validate,
-  updateValue,
-  onBlur,
-}: Omit<InstantFieldProps<boolean>, "placeholder"> & { disabled: boolean }) {
-  const [value, setValue] = useState<boolean>(defaultValue);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
-
-  return (
-    <input
-      className={`rounded-md border-gray-400 bg-gray-200 indeterminate:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-      disabled={disabled}
-      type={"checkbox"}
-      checked={value}
-      onChange={async (e) => {
-        setValue(e.target.checked);
-        const err = validate && (await validate(e.target.value == "on"));
-        if (err) setError(err);
-        else setError(null);
-        await updateValue(e.target.checked)
-          .then((r) => {
-            setValue(r);
-            onBlur && onBlur();
-          })
-          .catch((error) => {
-            setError(error.message);
-            e.target.focus();
-          });
-        await updateValue(e.target.checked);
-
-        onBlur && onBlur();
-      }}
-    />
-  );
-}
 
 export function InstantTextAreaField({
   autoexpand,

@@ -1,10 +1,10 @@
 "use client";
 
-import DatePicker from "@/components/DatePicker";
 import InlineLoading from "@/components/InlineLoading";
-import { SelectContactDialog } from "@/components/SelectContact";
-import TextAreaInputDialog from "@/components/TextAreaInputDialog";
 import { InstantTextField } from "@/components/forms/InstantFields";
+import DatePicker from "@/components/inputs/DatePicker";
+import { SelectContactDialog } from "@/components/inputs/SelectContactDialog";
+import TextAreaInputDialog from "@/components/inputs/TextAreaInputDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -170,36 +170,12 @@ export default function CouponRow({
                     { label: "O pol roka", value: 180 },
                     { label: "O rok", value: 365 },
                   ]}
-                  className={{
-                    button: "h-auto w-auto px-2 py-1",
-                  }}
+                  buttonProps={{ className: "h-auto w-auto px-2 py-1" }}
                 />
-                {/* language="sk-SK"
-                  autoHide
-                  showClearButton={false}
-                  showTodayButton={false}
-                  defaultDate={new Date(coupon.valid_until)}
-                  weekStart={1}
-                  onSelectedDateChanged={(date) =>
-                    coupon.incrementalPatch({
-                      valid_until: date?.toDateString(),
-                    })
-                  }
-                  theme={{
-                    root: {
-                      input: {
-                        field: {
-                          input: {
-                            base: "!py-0.5 text-sm text-end !px-2 font-mono",
-                          },
-                          icon: { base: "hidden" },
-                        },
-                      },
-                    },
-                  }}
-                /> */}
                 <p className="px-2 text-end text-xs text-gray-500">
-                  {"o " +
+                  {(moment(coupon.valid_until).endOf("day") >= moment()
+                    ? "o "
+                    : "pred ") +
                     formatDistance(new Date(coupon.valid_until), new Date(), {
                       locale: sk,
                     })}

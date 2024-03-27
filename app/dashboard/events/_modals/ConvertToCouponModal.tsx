@@ -72,7 +72,7 @@ export default function ConvertToCouponModal({
         size={"xs"}
         onClick={() =>
           selectedTickets.length == 0
-            ? alert("Zvolte aspoň jeden lístok")
+            ? alert("Zvoľte aspoň jeden lístok")
             : setIsOpen(true)
         }
       >

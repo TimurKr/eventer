@@ -6,7 +6,7 @@ export default function NewCouponButton() {
   return (
     <Button asChild variant={"default"} size={"sm"}>
       <Link href="/dashboard/coupons/new">
-        <PlusCircleIcon className="h-5 w-5" />
+        <PlusCircleIcon className="me-2 h-5 w-5" />
         Nový poukaz
       </Link>
     </Button>

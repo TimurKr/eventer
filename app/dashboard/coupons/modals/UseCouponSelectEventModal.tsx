@@ -51,7 +51,7 @@ export default function UseCouponSelectEvent({
                 event={event}
                 onClick={() =>
                   router.push(
-                    `/dashboard/events/new-tickets?eventId=${event.id.toString()}&couponCode=${coupon.code}&contactId=${coupon.contact_id}`,
+                    `/dashboard/events/new-tickets?eventId=${event.id.toString()}&couponCode=${coupon.code}`,
                   )
                 }
               />

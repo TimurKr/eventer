@@ -201,7 +201,7 @@ export default function EventDetail({
                   size={"xs"}
                   onClick={() => {
                     if (selectedTickets.length === 0) {
-                      alert("Zvolte aspoň jeden lístok");
+                      alert("Zvoľte aspoň jeden lístok");
                       return;
                     }
                     if (
