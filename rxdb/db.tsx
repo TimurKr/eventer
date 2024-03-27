@@ -71,7 +71,10 @@ export const {
   useRxData,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
-  await removeRxDatabase("mydatabase", storage);
+
+  if (process.env.NODE_ENV === "development") {
+    await removeRxDatabase("mydatabase", storage);
+  }
 
   // Create your database
   const db = await createRxDatabase<Collections>({
