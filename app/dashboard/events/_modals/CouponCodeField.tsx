@@ -2,7 +2,7 @@ import {
   CouponsCollection,
   CouponsDocument,
 } from "@/rxdb/schemas/public/coupons";
-import { Spinner } from "flowbite-react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import {
   Dispatch,
   SetStateAction,
@@ -98,7 +98,7 @@ export default function CouponCodeField({
       />
       {isValidating ? (
         <div className="absolute inset-y-0 end-2 grid place-content-center">
-          <Spinner />
+          <ArrowPathIcon className="h-4 w-4" />
         </div>
       ) : coupon ? (
         <div className="absolute inset-y-0 end-2 grid place-content-center">

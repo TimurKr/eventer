@@ -5,13 +5,14 @@ import {
   FormikSelectField,
 } from "@/components/forms/formik_dep/FormikElements";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Alert } from "@/components/ui/alert";
 import { useRxData } from "@/rxdb/db";
-import { Alert, Datepicker } from "flowbite-react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { Datepicker } from "flowbite-react";
 import { Field, Form, Formik } from "formik";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 
 export type EditEventFormProps = {
@@ -138,11 +139,8 @@ export default function EditEventForm(
                 className="mt-auto"
               />
               {errorMessages.length > 0 && (
-                <Alert
-                  color="failure"
-                  className="mt-4"
-                  icon={HiOutlineExclamationCircle}
-                >
+                <Alert variant="destructive" className="mt-4">
+                  <ExclamationTriangleIcon className="h-4 w-4" />
                   {errorMessages.map((message) => (
                     <p key={message}>{message}</p>
                   ))}

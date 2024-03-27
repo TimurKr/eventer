@@ -3,7 +3,7 @@
 import EditEventForm, {
   type EditEventFormProps,
 } from "@/app/dashboard/events/edit-event/form";
-import { Modal } from "flowbite-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 export default function NewServiceModal({
@@ -15,14 +15,14 @@ export default function NewServiceModal({
 
   return (
     <>
-      <Modal show={true} onClose={() => router.back()} dismissible>
-        <Modal.Header>
-          {searchParams.eventId ? "Upravte udalosť" : "Zvolťe nový termín"}
-        </Modal.Header>
-        <Modal.Body>
+      <Dialog open={true} onOpenChange={() => router.back()}>
+        <DialogContent>
+          <DialogTitle>
+            {searchParams.eventId ? "Upravte udalosť" : "Zvolťe nový termín"}
+          </DialogTitle>
           <EditEventForm {...searchParams} />
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

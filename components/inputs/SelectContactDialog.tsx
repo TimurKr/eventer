@@ -77,7 +77,7 @@ export function SelectContactDialog({
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-h-dvh !pb-0">
+      <DialogContent className="pb-0">
         <DialogHeader>
           <DialogTitle>Vyberte si kontakt</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

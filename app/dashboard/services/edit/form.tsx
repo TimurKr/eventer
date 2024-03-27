@@ -6,19 +6,25 @@ import {
   FormikTextField,
 } from "@/components/forms/formik_dep/FormikElements";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Alert } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRxData } from "@/rxdb/db";
 import {
   CurrencyEuroIcon,
+  ExclamationTriangleIcon,
   InformationCircleIcon,
   PlusIcon,
   TrashIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
-import { Alert, Tooltip } from "flowbite-react";
 import { Field, FieldArray, Form, Formik, FormikHelpers } from "formik";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import * as Yup from "yup";
 
 const validationSchema = Yup.object().shape({
@@ -209,25 +215,49 @@ export default function ServiceForm({
                         <th className="px-2 text-sm font-normal text-gray-500">
                           <div className="flex items-center gap-1">
                             Kapacita
-                            <Tooltip content="Kapacita je nezáväzná, môžete ju kedykoľvek prekročiť. Nechajte prázdne pre neobmedzenú.">
-                              <InformationCircleIcon className="h-4 w-4" />
-                            </Tooltip>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InformationCircleIcon className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Kapacita je nezáväzná, môžete ju kedykoľvek
+                                  prekročiť. Nechajte prázdne pre neobmedzenú.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </th>
                         <th className="px-2 text-sm font-normal text-gray-500">
                           <div className="flex items-center gap-1">
                             Cena
-                            <Tooltip content="Cena je nezáväzná a pri každom lístku ju viete zmeniť.">
-                              <InformationCircleIcon className="h-4 w-4" />
-                            </Tooltip>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InformationCircleIcon className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Cena je nezáväzná a pri každom lístku ju viete
+                                  zmeniť.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </th>
                         <th className="px-1 text-start text-sm font-normal text-gray-500">
                           <div className="flex items-center gap-1">
                             VIP
-                            <Tooltip content="Iba pre vašu referenciu, aby sa vám ľahšie rozlišovalo medzi lístkami.">
-                              <InformationCircleIcon className="h-4 w-4" />
-                            </Tooltip>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <InformationCircleIcon className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Iba pre vašu referenciu, aby sa vám ľahšie
+                                  rozlišovalo medzi lístkami.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </th>
                         <th></th>
@@ -341,11 +371,8 @@ export default function ServiceForm({
         )}
       </Formik>
       {errorMessages.length > 0 && (
-        <Alert
-          color="failure"
-          className="mt-4"
-          icon={HiOutlineExclamationCircle}
-        >
+        <Alert variant="destructive" className="mt-4">
+          <ExclamationTriangleIcon className="h-4 w-4" />
           {errorMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}

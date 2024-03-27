@@ -2,10 +2,11 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import { Modal, Spinner } from "flowbite-react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "react-toastify";
 import EventRow from "../../../../components/EventRow";
@@ -81,11 +82,11 @@ export default function MoveTicketsToDifferentEventModal({
       >
         Posunúť na inú udalosť
       </Button>
-      <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-        <Modal.Header>
-          Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
-        </Modal.Header>
-        <Modal.Body>
+      <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
+        <DialogContent>
+          <DialogTitle>
+            Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
+          </DialogTitle>
           <div className="flex flex-wrap gap-2">
             {ticketTypes?.map((type) => (
               <div
@@ -99,7 +100,7 @@ export default function MoveTicketsToDifferentEventModal({
                 lístkov
               </div>
             )) || <InlineLoading />}
-            {isSubmitting && <Spinner />}
+            {isSubmitting && <ArrowPathIcon className="h-4 w-4" />}
           </div>
           <hr className="my-2" />
           <div className="flex flex-col gap-2">
@@ -125,8 +126,8 @@ export default function MoveTicketsToDifferentEventModal({
               />
             )) || <InlineLoading />}
           </div>
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
