@@ -1,5 +1,5 @@
-import InlineLoading from "./InlineLoading";
-import { Badge, BadgeProps } from "./ui/badge";
+import InlineLoading from "../InlineLoading";
+import { Badge, BadgeProps } from "../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 
 export default function DropdownSelector<
   T extends Record<

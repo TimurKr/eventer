@@ -1,45 +1,42 @@
 import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
+import DatePicker, { DatePickerProps } from "../inputs/DatePicker";
 import {
-  FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "./form";
-import { Input, InputProps } from "./input";
+} from "../ui/form";
 
 export type FormTextFieldProps<Values extends FieldValues> = Omit<
-  InputProps,
-  "form"
+  DatePickerProps,
+  "onChange" | "value"
 > & {
   form: UseFormReturn<Values>;
   name: Path<Values>;
   label?: string;
   horizontal?: boolean;
-  hint?: string;
+  description?: string;
 };
 
-export function FormTextField<Values extends FieldValues>({
+export function FormDateField<Values extends FieldValues>({
   form,
   name,
   label,
   horizontal,
-  hint,
+  description,
   ...props
 }: FormTextFieldProps<Values>) {
   return (
     <FormField
-      name={name}
       control={form.control}
-      render={({ field, fieldState }) => (
+      name={name}
+      render={({ field }) => (
         <FormItem
           className={cn(
             horizontal ? "grid grid-cols-4 items-center gap-x-4 space-y-0" : "",
-            props.type === "hidden" ? "hidden" : "",
-            props.baseClassName,
           )}
         >
           {label && (
@@ -47,32 +44,31 @@ export function FormTextField<Values extends FieldValues>({
               {label}
             </FormLabel>
           )}
-          <FormControl>
-            <Input
-              {...field}
-              error={!!fieldState.error}
-              {...props}
-              baseClassName={cn(
-                horizontal ? (label ? "col-span-3" : "col-span-4") : "",
-              )}
-            />
-          </FormControl>
-          {hint && (
+          <DatePicker
+            value={field.value}
+            onChange={field.onChange}
+            buttonProps={{
+              className: cn(
+                horizontal && "w-full",
+                horizontal ? (label ? "col-span-3" : "col-span-4") : "flex",
+              ),
+            }}
+            {...props}
+          />
+          {description && (
             <FormDescription
               className={cn(
                 horizontal && "col-span-3 col-start-2 pt-1",
                 "px-1",
-                props.className,
               )}
             >
-              {hint}
+              {description}
             </FormDescription>
           )}
           <FormMessage
             className={cn(
               horizontal ? "col-span-3 col-start-2 pt-1" : "",
               "px-1",
-              props.className,
             )}
           />
         </FormItem>

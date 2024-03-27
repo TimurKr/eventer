@@ -17,7 +17,8 @@ import { z } from "zod";
 import CouponCodeField from "../_modals/CouponCodeField";
 
 import InlineLoading from "@/components/InlineLoading";
-import SelectContactField from "@/components/SelectContactField";
+import { FormTextField } from "@/components/forms/FormTextField";
+import SelectContactField from "@/components/forms/SelectContactField";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -26,7 +27,6 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { FormTextField } from "@/components/ui/form-text-field";
 import {
   Select,
   SelectContent,

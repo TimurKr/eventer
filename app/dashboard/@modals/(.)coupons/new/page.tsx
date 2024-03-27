@@ -15,8 +15,8 @@ export default function Page({
   return (
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>
-        <DialogHeader>Vytvorte nový pokaz</DialogHeader>
         <DialogContent>
+          <DialogHeader>Vytvorte nový pokaz</DialogHeader>
           <NewCouponForm />
         </DialogContent>
       </Dialog>

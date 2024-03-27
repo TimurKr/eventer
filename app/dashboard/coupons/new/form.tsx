@@ -1,30 +1,35 @@
 "use client";
 
-import CustomComboBox from "@/components/forms/ComboBox";
-import CustomDatePicker from "@/components/forms/DatePicker";
-import {
-  CustomErrorMessage,
-  FormikTextField,
-} from "@/components/forms/FormikElements";
+import { FormDateField } from "@/components/forms/FormDateField";
+import { FormTextField } from "@/components/forms/FormTextField";
+import SelectContactField from "@/components/forms/SelectContactField";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Form } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { useRxCollection, useRxData } from "@/rxdb/db";
-import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
-import {
-  ArrowPathIcon,
-  CurrencyEuroIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
-import { Alert } from "flowbite-react";
-import { Form, Formik } from "formik";
+import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { useCallback } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
-import * as Yup from "yup";
+import * as z from "zod";
+
+const validationSchema = z.object({
+  code: z
+    .string({ required_error: "Kód je povinný" })
+    .length(8, "Kód musí mať 8 znakov"),
+  amount: z
+    .number({ required_error: "Suma je povinná" })
+    .min(0, "Suma musí byť kladná"),
+  note: z.string(),
+  valid_until: z.date().nullable(),
+  contact: z.string().uuid(),
+});
+
+type Values = z.infer<typeof validationSchema>;
 
 export default function NewCouponForm(props: { onSubmit?: () => void }) {
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const router = useRouter();
 
   const { result: contacts, collection: contactsCollection } = useRxData(
@@ -35,68 +40,25 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
 
   const couponsCollection = useRxCollection("coupons");
 
-  const validationSchema = Yup.object().shape({
-    code: Yup.string()
-      .required("Kód je povinný")
-      .length(8, "Kód musí mať 8 znakov"),
-    amount: Yup.number()
-      .required("Suma je povinná")
-      .min(0, "Suma musí byť kladná"),
-    note: Yup.string(),
-    valid_until: Yup.date().required().nullable(),
-    contact: Yup.object().shape({
-      name: Yup.string(),
-      email: Yup.string().email("Neplatný email"),
-      phone: Yup.string(),
-    }),
+  const form = useForm<Values>({
+    defaultValues: {
+      code: uuidv4().slice(0, 8).toUpperCase(),
+      amount: 100,
+      note: "",
+      valid_until: null,
+      contact: "",
+    },
   });
 
-  type Values = Yup.InferType<typeof validationSchema>;
-
-  const initialValues: Values = {
-    code: uuidv4().slice(0, 8).toUpperCase(),
-    amount: 100,
-    note: "",
-    valid_until: null,
-    contact: {
-      name: "",
-      email: "",
-      phone: "",
-    },
-  };
-
   const onSubmit = async (values: Values) => {
+    if (!contactsCollection || !couponsCollection) return;
     if (
-      !values.contact.name &&
+      !values.contact &&
       !confirm(
         "Naozaj chcete vytvoriť poukaz bez mena? Poukaz nebude priradený k žiadnemu kontaktu.",
       )
     )
       return;
-
-    if (!contactsCollection || !couponsCollection) return;
-    let contact: ContactsDocument | null = null;
-
-    if (values.contact.name) {
-      contact = await contactsCollection
-        .findOne({
-          selector: {
-            name: values.contact.name,
-            email: values.contact.email,
-            phone: values.contact.phone,
-          },
-        })
-        .exec();
-
-      if (!contact) {
-        contact = await contactsCollection.insert({
-          id: crypto.randomUUID(),
-          name: values.contact.name,
-          email: values.contact.email,
-          phone: values.contact.phone,
-        });
-      }
-    }
 
     await couponsCollection.insert({
       id: crypto.randomUUID(),
@@ -104,7 +66,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
       amount: values.amount,
       note: values.note,
       original_amount: values.amount,
-      contact_id: contact?.id,
+      contact_id: values.contact,
       valid_until: values.valid_until?.toISOString(),
     });
 
@@ -114,138 +76,98 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
 
   return (
     <>
-      <Formik
-        initialValues={initialValues}
-        onSubmit={onSubmit}
-        validationSchema={validationSchema}
-      >
-        {({ values, isSubmitting, setFieldValue, getFieldMeta }) => (
-          <Form className="flex flex-col items-center">
-            <div className="flex w-full divide-x">
-              <div className="flex grow flex-col gap-2 p-2">
-                <FormikTextField
-                  name="amount"
-                  label="Suma"
-                  type="number"
-                  vertical
-                  iconStart={<CurrencyEuroIcon className="h-4 w-4" />}
-                />
-                <FormikTextField
-                  name="note"
-                  label="Poznámka"
-                  optional
-                  vertical
-                />
-                <CustomDatePicker
-                  value={values.valid_until}
-                  onChange={(date) => setFieldValue("valid_until", date)}
-                  label="Platný do"
-                  vertical
-                />
-                <FormikTextField
-                  name="code"
-                  label="Kód"
-                  vertical
-                  iconEnd={
-                    <ArrowPathIcon
-                      className="h-4 w-4 hover:scale-105 hover:cursor-pointer"
-                      onClick={() =>
-                        setFieldValue(
-                          "code",
-                          uuidv4().slice(0, 8).toUpperCase(),
-                        )
-                      }
-                    />
-                  }
-                />
-              </div>
-              <div className="flex grow flex-col gap-2 p-2">
-                <CustomComboBox
-                  options={contacts.map((c) => {
-                    const { _attachments, _deleted, _meta, _rev, ...data } =
-                      c._data;
-                    return data;
-                  })}
-                  optional
-                  displayFun={(c) => c?.name || ""}
-                  searchKeys={["name"]}
-                  newValueBuilder={(input) => ({
-                    name: input,
-                    email: values.contact.email,
-                    phone: values.contact.phone,
-                    id: crypto.randomUUID(),
-                  })}
-                  onSelect={async (contact) => {
-                    await setFieldValue(
-                      "contact.name",
-                      contact?.name || "",
-                      true,
-                    );
-                    if (contact?.id) {
-                      await setFieldValue(
-                        "contact.email",
-                        contact?.email || "",
-                        true,
-                      );
-                      await setFieldValue(
-                        "contact.phone",
-                        contact?.phone || "",
-                        true,
-                      );
+      <Form form={form} onSubmit={onSubmit} className="flex flex-col gap-2">
+        <div className="grid grid-cols-4 items-center gap-x-4">
+          <Label className="text-end">Kontakt</Label>
+          <SelectContactField
+            form={form}
+            name="contact"
+            buttonProps={{ className: "col-span-3 justify-self-start" }}
+            description="Vyberte kontakt ku poukazu"
+          />
+        </div>
+        <FormTextField
+          form={form}
+          name="amount"
+          label="Suma"
+          type="number"
+          horizontal
+          icons={{ start: <CurrencyEuroIcon className="h-4 w-4" /> }}
+        />
+        <FormTextField form={form} name="note" label="Poznámka" horizontal />
+        <FormDateField
+          form={form}
+          name="valid_until"
+          label="Platný do"
+          horizontal
+        />
+        {/* <FormField
+          control={form.control}
+          name="valid_until"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date of birth</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
                     }
-                  }}
-                  label="Meno"
-                  placeholder="Adam Kováč"
-                  vertical
-                  iconStart={
-                    <UserCircleIcon className="h-4 w-4 text-gray-500" />
-                  }
-                  error={
-                    <CustomErrorMessage
-                      fieldMeta={getFieldMeta("billingName")}
-                    />
-                  }
-                />
-
-                <FormikTextField
-                  // type="email"
-                  name="contact.email"
-                  label="Email"
-                  placeHolder="-"
-                  optional
-                  vertical
-                />
-                <FormikTextField
-                  name="contact.phone"
-                  label="Telefón"
-                  placeHolder="-"
-                  optional
-                  vertical
-                />
-                <SubmitButton
-                  className="ms-auto"
-                  isSubmitting={isSubmitting}
-                  label="Vytvoriť"
-                  submittingLabel="Vytváram"
-                />
-              </div>
-            </div>
-            {/* <hr className="my-2" /> */}
-            <div></div>
-          </Form>
-        )}
-      </Formik>
-      {errorMessages.length > 0 && (
-        <Alert
-          color="failure"
-          className="mt-4"
-          icon={HiOutlineExclamationCircle}
-        >
-          {errorMessages.map((message) => (
-            <p key={message}>{message}</p>
-          ))}
-        </Alert>
-      )}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Your date of birth is used to calculate your age.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        /> */}
+        <FormTextField
+          form={form}
+          name="code"
+          label="Kód"
+          horizontal
+          icons={{
+            end: (
+              <ArrowPathIcon
+                className="pointer-events-auto h-4 w-4 hover:scale-105 hover:cursor-pointer"
+                onClick={() =>
+                  form.setValue("code", uuidv4().slice(0, 8).toUpperCase())
+                }
+              />
+            ),
+          }}
+        />
+        <SubmitButton
+          className="ms-auto"
+          isSubmitting={form.formState.isSubmitting}
+          label="Vytvoriť"
+          submittingLabel="Vytváram..."
+        />
+      </Form>
     </>
   );
 }

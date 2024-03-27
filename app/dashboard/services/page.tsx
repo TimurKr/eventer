@@ -2,7 +2,7 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
-import { TextField } from "@/components/forms/Fields";
+import { InstantTextField } from "@/components/forms/InstantFields";
 import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -36,10 +36,10 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
     <li key={service.id}>
       <div className="flex items-center gap-4 py-1">
         <div>
-          <TextField
+          <InstantTextField
             defaultValue={service.name}
-            updateValue={(name) =>
-              service.incrementalPatch({ name: name || undefined })
+            updateValue={async (name) =>
+              (await service.incrementalPatch({ name: name || undefined })).name
             }
             type="text"
             showAlways={false}

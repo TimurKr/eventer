@@ -17,7 +17,7 @@ import { useCallback, useMemo, useState } from "react";
 import Header from "../../../components/Header";
 import NewCouponButton from "./new/button";
 import NewCouponForm from "./new/form";
-import { searchCoupons } from "./utils";
+import { searchCoupons, validateCoupon } from "./utils";
 
 export default function Coupons() {
   const q = useSearchParams().get("query");
@@ -46,6 +46,11 @@ export default function Coupons() {
       searchCoupons(query, {
         coupons: allCoupons,
         contacts: allContacts,
+      }).sort((a, b) => {
+        // Show valid first
+        if (validateCoupon(a.coupon) && !validateCoupon(b.coupon)) return -1;
+        if (!validateCoupon(a.coupon) && validateCoupon(b.coupon)) return 1;
+        return 0;
       }),
     [query, allContacts, allCoupons],
   );

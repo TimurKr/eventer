@@ -12,9 +12,9 @@ import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 import Fuse from "fuse.js";
 import { useCallback, useMemo, useState } from "react";
-import SearchBar from "./SearchBar";
-import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
+import SearchBar from "../SearchBar";
+import { Button } from "../ui/button";
+import { ScrollArea } from "../ui/scroll-area";
 
 export type SelectContactDialogProps = {
   children: React.ReactNode;

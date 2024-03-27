@@ -1,5 +1,6 @@
 "use client";
 
+import { FormTextField } from "@/components/forms/FormTextField";
 import SubmitButton from "@/components/forms/SubmitButton";
 import {
   Alert,
@@ -9,7 +10,6 @@ import {
 } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { FormTextField } from "@/components/ui/form-text-field";
 import { useRxCollection } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import {

@@ -7,9 +7,12 @@ import {
   type FieldValues,
   type UseFormReturn,
 } from "react-hook-form";
-import { SelectContactDialog, SelectContactDialogProps } from "./SelectContact";
-import { Button, ButtonProps } from "./ui/button";
-import { FormField, FormMessage } from "./ui/form";
+import {
+  SelectContactDialog,
+  SelectContactDialogProps,
+} from "../inputs/SelectContactDialog";
+import { Button, ButtonProps } from "../ui/button";
+import { FormField, FormMessage } from "../ui/form";
 
 export default function SelectContactField<V extends FieldValues>({
   form,
