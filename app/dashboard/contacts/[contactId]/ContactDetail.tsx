@@ -174,63 +174,6 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     toast.success("Kontakty boli spojené");
   };
 
-  // const updateContactField = async <
-  //   K extends keyof Pick<ContactsDocument, "name" | "email" | "phone">,
-  // >(
-  //   field: K,
-  //   value: ContactsDocument[K],
-  // ): Promise<string> => {
-  //   if (!contact) {
-  //     console.error("Contact not found");
-  //     return "";
-  //   }
-  //   const origValue = contact[field] || "";
-  //   const { _attachments, _deleted, _meta, _rev, id, created_at, ...newData } =
-  //     {
-  //       ...contact?._data,
-  //       [field]: value,
-  //     };
-  //   const duplicate = await contactsCollection
-  //     ?.findOne({ selector: newData })
-  //     .exec();
-  //   if (duplicate) {
-  //     if (!confirm("Kontakt s týmito údajmi už existuje. Chcete ich spojiť?"))
-  //       return origValue;
-  //     if (!ticketsCollection || !couponsCollection) {
-  //       console.error("Tickets collection not found");
-  //       return origValue;
-  //     }
-  //     const guestMentions = await ticketsCollection
-  //       .find({ selector: { guest_id: contact?.id || "NOT ID" } })
-  //       .exec();
-  //     const billingMentions = await ticketsCollection
-  //       .find({ selector: { billing_id: contact?.id || "NOT ID" } })
-  //       .exec();
-  //     const couponMentions = await couponsCollection
-  //       .find({ selector: { contact_id: contact?.id || "NOT ID" } })
-  //       .exec();
-
-  //     const guestPromises = guestMentions.map((t) =>
-  //       t.incrementalPatch({ guest_id: duplicate.id }),
-  //     );
-  //     const billingPromises = billingMentions.map((t) =>
-  //       t.incrementalPatch({ billing_id: duplicate.id }),
-  //     );
-  //     const couponPromises = couponMentions.map((c) =>
-  //       c.incrementalPatch({ contact_id: duplicate.id }),
-  //     );
-  //     await Promise.all([
-  //       ...guestPromises,
-  //       ...billingPromises,
-  //       ...couponPromises,
-  //     ]);
-  //     // remove the old contact
-  //     await contact?.remove();
-  //     router.replace(`/dashboard/contacts/${duplicate.id}`);
-  //   }
-  //   return (await contact.incrementalPatch({ [field]: value }))[field] || "";
-  // };
-
   if (!isFetchingContact && !contact) {
     return <NoResults text="Kontakt neexistuje" />;
   }
@@ -247,7 +190,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   );
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <h1 className="p-2 text-2xl font-bold tracking-wider">
         {contact?.name || <InlineLoading />}
       </h1>
@@ -370,7 +313,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
       </Tabs>
       {tickets.length ? (
         <TooltipProvider>
-          <Tooltip>
+          <Tooltip delayDuration={0}>
             <TooltipTrigger className="cursor-not-allowed self-end">
               {deleteButton}
             </TooltipTrigger>
