@@ -213,6 +213,7 @@ export default function EventDetail({
                     ticketsCollection?.bulkRemove(
                       selectedTickets.map((t) => t.id),
                     );
+                    toggleSelectedTicket(selectedTickets);
                   }}
                 >
                   Vymazať
@@ -220,94 +221,105 @@ export default function EventDetail({
               </>
             )}
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">
-                  #
-                  <Checkbox
-                    className="ms-2"
-                    checked={
-                      selectedTickets.length === tickets.length &&
-                      tickets.length > 0
-                    }
-                    onCheckedChange={() =>
-                      toggleSelectedTicket(
-                        selectedTickets.length === tickets.length
-                          ? tickets
-                          : tickets.filter((t) => !selectedTickets.includes(t)),
-                      )
-                    }
-                  />
-                </TableHead>
-                <TableHead>Typ lístka</TableHead>
-                <TableHead className="text-center">Hosť</TableHead>
-                <TableHead className="text-center">Platca</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="flex items-center gap-1">
-                  Dorazil
-                  <button
-                    type="button"
-                    onClick={() => setLockedArrived(!lockedArrived)}
-                  >
-                    {lockedArrived ? (
-                      <LockClosedIcon className="h-3" />
-                    ) : (
-                      <LockOpenIcon className="h-3" />
-                    )}
-                  </button>
-                </TableHead>
-                <TableHead className="text-end">Poznámka</TableHead>
-                <TableHead className="text-end">Cena</TableHead>
-                <TableHead className="sr-only"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.map((ticket, i) => (
-                <TicketRow
-                  key={i}
-                  index={i + 1}
-                  ticket={ticket}
-                  disableArrived={lockedArrived}
-                  selectCheckbox={{
-                    checked: !!selectedTickets.find((t) => t.id === ticket.id),
-                    onCheckedChange: () => toggleSelectedTicket(ticket),
-                  }}
-                />
-              ))}
-              {cancelledTickets.length > 0 && (
-                <>
-                  <TableRow>
-                    <TableCell
-                      className="text-center"
-                      colSpan={9}
-                      onClick={() =>
-                        setShowCancelledTickets(!showCancelledTickets)
+          {tickets.length > 0 || cancelledTickets.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">
+                    #
+                    <Checkbox
+                      className="ms-2"
+                      checked={
+                        selectedTickets.length === tickets.length &&
+                        tickets.length > 0
                       }
+                      onCheckedChange={() =>
+                        toggleSelectedTicket(
+                          selectedTickets.length === tickets.length
+                            ? tickets
+                            : tickets.filter(
+                                (t) => !selectedTickets.includes(t),
+                              ),
+                        )
+                      }
+                    />
+                  </TableHead>
+                  <TableHead>Typ lístka</TableHead>
+                  <TableHead className="text-center">Hosť</TableHead>
+                  <TableHead className="text-center">Platca</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="flex items-center gap-1">
+                    Dorazil
+                    <button
+                      type="button"
+                      onClick={() => setLockedArrived(!lockedArrived)}
                     >
-                      <Button variant="ghost" size={"xs"}>
-                        <ChevronDownIcon
-                          className={`me-2 ${
-                            showCancelledTickets ? "rotate-180 transform" : ""
-                          } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
+                      {lockedArrived ? (
+                        <LockClosedIcon className="h-3" />
+                      ) : (
+                        <LockOpenIcon className="h-3" />
+                      )}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-end">Poznámka</TableHead>
+                  <TableHead className="text-end">Cena</TableHead>
+                  <TableHead className="sr-only"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tickets.map((ticket, i) => (
+                  <TicketRow
+                    key={i}
+                    index={i + 1}
+                    ticket={ticket}
+                    disableArrived={lockedArrived}
+                    selectCheckbox={{
+                      checked: !!selectedTickets.find(
+                        (t) => t.id === ticket.id,
+                      ),
+                      onCheckedChange: () => toggleSelectedTicket(ticket),
+                    }}
+                  />
+                ))}
+                {cancelledTickets.length > 0 && (
+                  <>
+                    <TableRow>
+                      <TableCell
+                        className="text-center"
+                        colSpan={9}
+                        onClick={() =>
+                          setShowCancelledTickets(!showCancelledTickets)
+                        }
+                      >
+                        <Button variant="ghost" size={"xs"}>
+                          <ChevronDownIcon
+                            className={`me-2 ${
+                              showCancelledTickets ? "rotate-180 transform" : ""
+                            } h-4 w-4 transition-transform duration-500 group-hover:text-gray-600`}
+                          />
+                          Zrušené lístky
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    {(showCancelledTickets || highlightedCancelledTickets) &&
+                      cancelledTickets.map((ticket, i) => (
+                        <TicketRow
+                          key={i}
+                          index={i + 1}
+                          ticket={ticket}
+                          disableArrived={lockedArrived}
                         />
-                        Zrušené lístky
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  {(showCancelledTickets || highlightedCancelledTickets) &&
-                    cancelledTickets.map((ticket, i) => (
-                      <TicketRow
-                        key={i}
-                        index={i + 1}
-                        ticket={ticket}
-                        disableArrived={lockedArrived}
-                      />
-                    ))}
-                </>
-              )}
-            </TableBody>
-          </Table>
+                      ))}
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
+              Žiadne lístky
+              <NewTicketsButton eventId={event.id.toString()} size="xs" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
