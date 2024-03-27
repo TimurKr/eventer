@@ -2,15 +2,11 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import SubmitButton from "@/components/forms/SubmitButton";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import {
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "react-toastify";
 
@@ -20,7 +16,6 @@ export default function ConvertToCouponModal({
   selectedTickets: TicketsDocument[];
 }) {
   const [isSubmitting, startSubmition] = useTransition();
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -115,14 +110,6 @@ export default function ConvertToCouponModal({
               className="ms-auto"
             />
           </form>
-          {errorMessages.length > 0 && (
-            <Alert variant={"destructive"}>
-              <ExclamationTriangleIcon className="me-2 h-4 w-4" />
-              {errorMessages.map((message) => (
-                <p key={message}>{message}</p>
-              ))}
-            </Alert>
-          )}
         </DialogContent>
       </Dialog>
     </>

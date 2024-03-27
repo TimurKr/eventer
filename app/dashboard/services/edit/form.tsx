@@ -270,7 +270,7 @@ export default function ServiceForm({
                             (t) => t.type_id === ticket_type.id,
                           );
                           return (
-                            <tr key={index}>
+                            <tr key={ticket_type.id}>
                               <td className="px-1" valign="top">
                                 <Field
                                   name={`ticket_types[${index}].id`}

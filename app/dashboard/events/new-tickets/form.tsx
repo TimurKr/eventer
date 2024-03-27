@@ -17,6 +17,7 @@ import { z } from "zod";
 import CouponCodeField from "../_modals/CouponCodeField";
 
 import InlineLoading from "@/components/InlineLoading";
+import { FormSelectField } from "@/components/forms/FormSelectField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SelectContactField from "@/components/forms/SelectContactField";
 import { Button } from "@/components/ui/button";
@@ -407,38 +408,27 @@ export default function NewTicketsForm() {
             )}
           </div>
         )}
-        <FormField
-          control={form.control}
+        <FormSelectField
+          form={form}
           name="paymentStatus"
-          render={({ field }) => (
-            <FormItem>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Zvoľte status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="rezervované" className="flex justify-end">
-                    <div className="rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-700">
-                      Rezervované
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="zaplatené" className="flex justify-end">
-                    <div className="rounded bg-green-200 px-2 py-0.5 font-medium text-green-800">
-                      Zaplatené
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="zrušené" className="flex justify-end">
-                    <div className="rounded bg-red-200 px-2 py-0.5 font-medium text-red-700 ">
-                      Zrušené
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          placeholder="Zvoľte status"
+          options={{
+            rezervované: (
+              <div className="rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-700">
+                Rezervované
+              </div>
+            ),
+            zaplatené: (
+              <div className="rounded bg-green-200 px-2 py-0.5 font-medium text-green-800">
+                Zaplatené
+              </div>
+            ),
+            zrušené: (
+              <div className="rounded bg-red-200 px-2 py-0.5 font-medium text-red-700 ">
+                Zrušené
+              </div>
+            ),
+          }}
         />
       </div>
 

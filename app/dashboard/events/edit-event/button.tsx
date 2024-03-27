@@ -22,12 +22,12 @@ export default function EditEventButton(params: EditEventFormProps) {
         {}
         {params.eventId ? (
           <>
-            <PencilIcon className="h-4" />
+            <PencilIcon className="me-2 h-4" />
             Upraviť
           </>
         ) : (
           <>
-            <PlusCircleIcon className="h-4" />
+            <PlusCircleIcon className="me-2 h-4" />
             Vytvoriť novú udalosť
           </>
         )}

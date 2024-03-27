@@ -296,9 +296,9 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
             <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" /> //TODO: Pridať možnosť pridania lístku s autofill
           ) : (
             <div className="flex flex-col gap-4">
-              {groupedTickets.map((event, i) => (
+              {groupedTickets.map((event) => (
                 <EventDetail
-                  key={i}
+                  key={event.event.id}
                   {...event}
                   editable={false}
                   hideCancelled={false}

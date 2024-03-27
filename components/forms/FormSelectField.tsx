@@ -9,27 +9,33 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { Input, InputProps } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
-export type FormTextFieldProps<Values extends FieldValues> = Omit<
-  InputProps,
-  "form"
-> & {
+export type FormSelectFieldProps<Values extends FieldValues> = {
   form: UseFormReturn<Values>;
   name: Path<Values>;
   label?: string;
   description?: string;
   horizontal?: boolean;
+  options: Record<string, React.ReactNode>;
+  placeholder?: string;
 };
 
-export function FormTextField<Values extends FieldValues>({
+export function FormSelectField<Values extends FieldValues>({
   form,
   name,
   label,
   horizontal,
   description,
-  ...props
-}: FormTextFieldProps<Values>) {
+  options,
+  placeholder,
+}: FormSelectFieldProps<Values>) {
   return (
     <FormField
       name={name}
@@ -38,8 +44,6 @@ export function FormTextField<Values extends FieldValues>({
         <FormItem
           className={cn(
             horizontal ? "grid grid-cols-4 items-center gap-x-4 space-y-0" : "",
-            props.type === "hidden" ? "hidden" : "",
-            props.baseClassName,
           )}
         >
           {label && (
@@ -47,16 +51,24 @@ export function FormTextField<Values extends FieldValues>({
               {label}
             </FormLabel>
           )}
-          <FormControl>
-            <Input
-              {...field}
-              error={!!fieldState.error}
-              {...props}
-              baseClassName={cn(
-                horizontal ? (label ? "col-span-3" : "col-span-4") : "",
-              )}
-            />
-          </FormControl>
+          <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <FormControl>
+              <SelectTrigger
+                className={cn(
+                  horizontal ? (label ? "col-span-3" : "col-span-4") : "",
+                )}
+              >
+                <SelectValue placeholder={placeholder} />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {Object.entries(options).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {description && (
             <FormDescription
               className={cn(
@@ -67,6 +79,7 @@ export function FormTextField<Values extends FieldValues>({
               {description}
             </FormDescription>
           )}
+
           <FormMessage
             className={cn(
               horizontal ? "col-span-3 col-start-2 pt-1" : "",

@@ -177,7 +177,7 @@ export default function CustomComboBox<T extends {}>({
                         active ? "bg-teal-600 text-white" : "text-gray-900"
                       }`
                     }
-                    key={index}
+                    key={displayFun(option) + index.toString()}
                     value={option}
                   >
                     {({ selected, active }) => (

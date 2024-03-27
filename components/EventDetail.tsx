@@ -269,7 +269,7 @@ export default function EventDetail({
               <TableBody>
                 {tickets.map((ticket, i) => (
                   <TicketRow
-                    key={i}
+                    key={ticket.id}
                     index={i + 1}
                     ticket={ticket}
                     disableArrived={lockedArrived}
@@ -304,7 +304,7 @@ export default function EventDetail({
                     {(showCancelledTickets || highlightedCancelledTickets) &&
                       cancelledTickets.map((ticket, i) => (
                         <TicketRow
-                          key={i}
+                          key={ticket.id}
                           index={i + 1}
                           ticket={ticket}
                           disableArrived={lockedArrived}
