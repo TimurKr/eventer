@@ -71,9 +71,9 @@ export default function Coupons() {
         {coupons.length > 0 ? (
           <Table className="">
             <TableHeader>
-              <TableRow className="first:*:rounded-tl-lg last:*:rounded-tr-lg">
-                <TableHead className="px-2 text-start">Kód</TableHead>
-                <TableHead className="px-2 text-center">Kontakt</TableHead>
+              <TableRow>
+                <TableHead className="text-start">Kód</TableHead>
+                <TableHead className="text-center">Kontakt</TableHead>
                 <TableHead className="text-end">Suma</TableHead>
                 <TableHead className="text-end">
                   Platí do:{" "}
@@ -82,10 +82,14 @@ export default function Coupons() {
                   </span>
                 </TableHead>
                 <TableHead className="text-center">Stav</TableHead>
-                <TableHead className="pe-2 text-end">Poznámka</TableHead>
-                <TableHead className="pe-2 text-end">Použité pri</TableHead>
-                <TableHead className="pe-2 text-end">Vytvorené z</TableHead>
-                <TableHead className=""></TableHead>
+                <TableHead className="text-end">Poznámka</TableHead>
+                <TableHead className="whitespace-nowrap text-end">
+                  Použité pri
+                </TableHead>
+                <TableHead className="whitespace-nowrap text-end">
+                  Vytvorené z
+                </TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
