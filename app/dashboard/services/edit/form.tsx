@@ -236,7 +236,6 @@ export default function ServiceForm({
                     <tbody>
                       {values.ticket_types &&
                         values.ticket_types.map((ticket_type, index) => {
-                          // TODO: implement canDelete
                           const canDelete = !tickets?.some(
                             (t) => t.type_id === ticket_type.id,
                           );

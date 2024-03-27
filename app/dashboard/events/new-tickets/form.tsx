@@ -292,7 +292,7 @@ export default function NewTicketsForm() {
     router.back();
   };
 
-  if (!params.eventId || (!event && !isFetchingEvent)) {
+  if (!params.eventId) {
     router.back();
     return null;
   }
@@ -307,6 +307,19 @@ export default function NewTicketsForm() {
             // className="rounded-lg bg-gray-100 px-2 py-1 text-center text-sm text-gray-600 hover:bg-gray-200"
           >
             Vytvoriť nový typ lístkov
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!event && !isFetchingEvent) {
+    return (
+      <div className="flex h-full w-full flex-col items-center gap-2 text-sm text-gray-700">
+        <p>Udalosť nebola nájdená</p>
+        <Button variant={"outline"} asChild>
+          <Link href="/dashboard/events" passHref>
+            Návrat na udalosti
           </Link>
         </Button>
       </div>
