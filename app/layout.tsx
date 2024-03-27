@@ -17,7 +17,12 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Maroš Kramár",
+  title: "Eventer",
+  description: "A simple event management app",
+  generator: "Next.js",
+  applicationName: "Eventer",
+  keywords: ["Next.js", "React", "JavaScript"],
+  creator: "Timur Kramár",
 };
 
 export default function RootLayout({
