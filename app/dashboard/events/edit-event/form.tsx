@@ -1,18 +1,30 @@
 "use client";
 
-import {
-  FormikCheckboxField,
-  FormikSelectField,
-} from "@/components/forms/formik_dep/FormikElements";
+import { FormDateField } from "@/components/forms/FormDateField";
+import { FormSelectField } from "@/components/forms/FormSelectField";
+import { FormSwitchField } from "@/components/forms/FormSwitchField";
+import { FormTextField } from "@/components/forms/FormTextField";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Form } from "@/components/ui/form";
 import { useRxData } from "@/rxdb/db";
-import { Alert, Datepicker } from "flowbite-react";
-import { Field, Form, Formik } from "formik";
-import moment from "moment";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
+import { useCallback, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import * as z from "zod";
+import NewServiceButton from "../../services/edit/button";
+
+const formSchema = z.object({
+  date: z.date({ required_error: "Vyplňte dátum" }),
+  time: z.string({ required_error: "Vyplňte čas" }),
+  isPublic: z.boolean().default(false),
+  service_id: z
+    .string({ required_error: "Vyberte službu" })
+    .min(1, "Vyberte službu"),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export type EditEventFormProps = {
   eventId?: string;
@@ -21,44 +33,48 @@ export type EditEventFormProps = {
 export default function EditEventForm(
   props?: EditEventFormProps & { onSubmit?: () => void },
 ) {
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
-
   const router = useRouter();
 
-  const { result: allServices } = useRxData("services", (collection) =>
-    collection.find().sort("name"),
+  const { result: allServices, isFetching: isFetchingAllServices } = useRxData(
+    "services",
+    useCallback((collection) => collection.find().sort("name"), []),
+    { initialResult: [] },
   );
 
   const { result: event, collection: eventsCollection } = useRxData(
     "events",
-    (collection) => collection.findOne(props?.eventId || "Not an ID"),
+    (collection) => collection.findOne(props?.eventId || "not an id"),
   );
 
-  const initialValues = useMemo(
-    () => ({
-      date: event
-        ? new Date(event.datetime).toDateString()
-        : new Date().toDateString(),
-      time: event
-        ? moment(event.datetime).format("HH:mm")
-        : moment().startOf("hour").format("HH:mm"),
-      isPublic: event?.is_public || false,
-      service_id: event?.service_id || allServices?.[0]?.id || "",
-    }),
-    [allServices, event],
-  );
+  const form = useForm<FormValues>({
+    defaultValues: {
+      date: new Date(),
+      time: "12:00",
+      isPublic: false,
+      service_id: allServices[0]?.id || "",
+    },
+    resolver: zodResolver(formSchema),
+  });
 
-  if (!allServices?.length) {
-    return null;
-  }
+  const reset = form.reset;
+  useEffect(() => {
+    event
+      ? reset({
+          date: new Date(event.datetime),
+          time: new Date(event.datetime).toLocaleTimeString().slice(0, 5),
+          isPublic: !!event.is_public,
+          service_id: event.service_id,
+        })
+      : reset();
+  }, [event, reset]);
 
-  type Values = typeof initialValues;
-
-  const create = async (values: Values) => {
+  const create = async (values: FormValues) => {
     if (!eventsCollection) return;
     await eventsCollection.insert({
       id: crypto.randomUUID(),
-      datetime: new Date(values.date + " " + values.time).toISOString(),
+      datetime: new Date(
+        values.date.toDateString() + " " + values.time,
+      ).toISOString(),
       is_public: values.isPublic,
       service_id: values.service_id,
     });
@@ -66,10 +82,12 @@ export default function EditEventForm(
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 
-  const update = async (values: Values) => {
+  const update = async (values: FormValues) => {
     if (!event) return;
     await event.incrementalPatch({
-      datetime: new Date(values.date + " " + values.time).toISOString(),
+      datetime: new Date(
+        values.date.toDateString() + " " + values.time,
+      ).toISOString(),
       is_public: values.isPublic,
       service_id: values.service_id,
     });
@@ -77,81 +95,53 @@ export default function EditEventForm(
     props?.onSubmit ? props.onSubmit() : router.back();
   };
 
+  if (!allServices && !isFetchingAllServices) {
+    return (
+      <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
+        Žiadne predstavenia
+        <NewServiceButton />
+      </div>
+    );
+  }
+
   return (
-    <Formik
-      enableReinitialize
-      initialValues={initialValues}
-      onSubmit={event ? update : create}
+    <Form
+      form={form}
+      onSubmit={props?.eventId ? update : create}
+      className="flex flex-col gap-4"
     >
-      {({ setFieldValue, isSubmitting }) => (
-        <Form className="flex flex-col">
-          <div className="flex flex-col gap-4 md:flex-row">
-            <Datepicker
-              language="sk-SK"
-              showClearButton={false}
-              showTodayButton={false}
-              weekStart={1}
-              defaultDate={new Date(initialValues.date)}
-              inline
-              color="red"
-              onSelectedDateChanged={(date) =>
-                setFieldValue("date", date.toDateString())
-              }
-              theme={{
-                popup: {
-                  root: {
-                    base: "!pt-0",
-                    inner:
-                      "!shadow-none border border-gray-200 rounded-lg bg-gray-50",
-                  },
-                  header: {
-                    selectors: {
-                      button: {
-                        base: "rounded-lg text-gray-900 bg-gray-50 font-semibold py-2.5 px-5 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 view-switch",
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-            <div className="flex flex-1 flex-col gap-4">
-              {!event && (
-                <FormikSelectField name="service_id">
-                  {allServices.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </FormikSelectField>
-              )}
-              <Field
-                name="time"
-                type="time"
-                className="rounded-lg border border-gray-200 bg-gray-50 py-1"
-                step={60}
-              />
-              <FormikCheckboxField name="isPublic" label="Verejný" />
-              <SubmitButton
-                isSubmitting={isSubmitting}
-                label={event?.id ? "Uložiť" : "Vytvoriť"}
-                submittingLabel={event?.id ? "Ukladám" : "Vytváram..."}
-                className="mt-auto"
-              />
-              {errorMessages.length > 0 && (
-                <Alert
-                  color="failure"
-                  className="mt-4"
-                  icon={HiOutlineExclamationCircle}
-                >
-                  {errorMessages.map((message) => (
-                    <p key={message}>{message}</p>
-                  ))}
-                </Alert>
-              )}
-            </div>
-          </div>
-        </Form>
+      <FormDateField form={form} name="date" label="Dátum" horizontal />
+      <FormTextField
+        form={form}
+        name="time"
+        type="time"
+        label="Čas"
+        step={60}
+        horizontal
+      />
+      {!event && (
+        <FormSelectField
+          form={form}
+          name="service_id"
+          label="Predstavenie"
+          horizontal
+          placeholder="Vyberte si predstavenie"
+          options={allServices.reduce<Record<string, React.ReactNode>>(
+            (acc, obj) => {
+              acc[obj.id] = obj.name;
+              return acc;
+            },
+            {},
+          )}
+        />
       )}
-    </Formik>
+
+      <FormSwitchField form={form} name="isPublic" label="Verejné" horizontal />
+      <SubmitButton
+        isSubmitting={form.formState.isSubmitting}
+        label={event?.id ? "Uložiť" : "Vytvoriť"}
+        submittingLabel={event?.id ? "Ukladám" : "Vytváram..."}
+      />
+    </Form>
   );
 }

@@ -73,7 +73,7 @@ export type SupabaseReplicationOptions<
 
   /**
    * When the master state is not what rxdb expected, this message will be emmited. You can
-   * listen to the errors$ observable ot provide a the `onError` callback.
+   * listen to the errors$ observable or provide the `onError` callback.
    *
    * @default "Conflict with the server. Overwriting local changes."
    */
@@ -199,6 +199,10 @@ export class SupabaseReplication<
     if (this.autoStart) {
       this.start();
     }
+
+    this.error$.subscribe((error) => {
+      this.options.onError?.(error);
+    });
   }
 
   public override async start(): Promise<void> {

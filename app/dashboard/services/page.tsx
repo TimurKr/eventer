@@ -116,7 +116,7 @@ export default function Page() {
         {services.length > 0 ? (
           <ol className="">
             {services.map((service, index) => (
-              <React.Fragment key={index}>
+              <React.Fragment key={service.id}>
                 {index > 0 && <hr className="my-2" />}
                 <ServiceRow key={service.id} service={service} />
               </React.Fragment>

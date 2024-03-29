@@ -3,12 +3,16 @@
 import InlineLoading from "@/components/InlineLoading";
 import SubmitButton from "@/components/forms/SubmitButton";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { Alert, Modal, Spinner } from "flowbite-react";
 import { useCallback, useState, useTransition } from "react";
-import { HiOutlineExclamationCircle } from "react-icons/hi2";
 import { toast } from "react-toastify";
 
 export default function ConvertToCouponModal({
@@ -17,7 +21,6 @@ export default function ConvertToCouponModal({
   selectedTickets: TicketsDocument[];
 }) {
   const [isSubmitting, startSubmition] = useTransition();
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -78,11 +81,13 @@ export default function ConvertToCouponModal({
       >
         Premeniť na poukaz
       </Button>
-      <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-        <Modal.Header>
-          Naozaj chcete premeniť zvolené lístky na poukaz?
-        </Modal.Header>
-        <Modal.Body>
+      <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Naozaj chcete premeniť zvolené lístky na poukaz?
+            </DialogTitle>
+          </DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <p className="p-2">Zvolené lístky:</p>
             {ticketTypes?.map((type) => (
@@ -97,7 +102,6 @@ export default function ConvertToCouponModal({
                 lístkov
               </div>
             )) || <InlineLoading />}
-            {isSubmitting && <Spinner />}
           </div>
           <hr className="my-2" />
           <p className="flex items-center text-gray-700">
@@ -113,19 +117,8 @@ export default function ConvertToCouponModal({
               className="ms-auto"
             />
           </form>
-          {errorMessages.length > 0 && (
-            <Alert
-              color="failure"
-              className="mt-4"
-              icon={HiOutlineExclamationCircle}
-            >
-              {errorMessages.map((message) => (
-                <p key={message}>{message}</p>
-              ))}
-            </Alert>
-          )}
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -1,9 +1,14 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRxData } from "@/rxdb/db";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
-import { Modal } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EventRow from "../../../../components/EventRow";
@@ -31,17 +36,14 @@ export default function UseCouponSelectEvent({
       >
         Použiť
       </button>
-      <Modal
-        show={isOpen}
-        onClose={() => setIsOpen(false)}
-        dismissible
-        size={"4xl"}
-      >
-        <Modal.Header>
-          Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
-          poukazom
-        </Modal.Header>
-        <Modal.Body>
+      <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
+              poukazom
+            </DialogTitle>
+          </DialogHeader>
           {isFetching ? (
             <InlineLoading />
           ) : (
@@ -57,8 +59,8 @@ export default function UseCouponSelectEvent({
               />
             ))
           )}
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

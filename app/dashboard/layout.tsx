@@ -75,7 +75,7 @@ export default function DashboardLayout({
           </div>
           <Navbar />
         </nav>
-        <div className="h-full grow overflow-scroll  rounded-lg bg-stone-50 pt-0 shadow-md">
+        <div className="h-full grow overflow-auto  rounded-lg bg-stone-50 pt-0 shadow-md">
           {children}
           {modals}
         </div>

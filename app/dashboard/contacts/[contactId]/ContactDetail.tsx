@@ -26,7 +26,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
-import { string as yupString } from "yup";
+import { string as zString } from "zod";
 
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   const {
@@ -174,63 +174,6 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     toast.success("Kontakty boli spojené");
   };
 
-  // const updateContactField = async <
-  //   K extends keyof Pick<ContactsDocument, "name" | "email" | "phone">,
-  // >(
-  //   field: K,
-  //   value: ContactsDocument[K],
-  // ): Promise<string> => {
-  //   if (!contact) {
-  //     console.error("Contact not found");
-  //     return "";
-  //   }
-  //   const origValue = contact[field] || "";
-  //   const { _attachments, _deleted, _meta, _rev, id, created_at, ...newData } =
-  //     {
-  //       ...contact?._data,
-  //       [field]: value,
-  //     };
-  //   const duplicate = await contactsCollection
-  //     ?.findOne({ selector: newData })
-  //     .exec();
-  //   if (duplicate) {
-  //     if (!confirm("Kontakt s týmito údajmi už existuje. Chcete ich spojiť?"))
-  //       return origValue;
-  //     if (!ticketsCollection || !couponsCollection) {
-  //       console.error("Tickets collection not found");
-  //       return origValue;
-  //     }
-  //     const guestMentions = await ticketsCollection
-  //       .find({ selector: { guest_id: contact?.id || "NOT ID" } })
-  //       .exec();
-  //     const billingMentions = await ticketsCollection
-  //       .find({ selector: { billing_id: contact?.id || "NOT ID" } })
-  //       .exec();
-  //     const couponMentions = await couponsCollection
-  //       .find({ selector: { contact_id: contact?.id || "NOT ID" } })
-  //       .exec();
-
-  //     const guestPromises = guestMentions.map((t) =>
-  //       t.incrementalPatch({ guest_id: duplicate.id }),
-  //     );
-  //     const billingPromises = billingMentions.map((t) =>
-  //       t.incrementalPatch({ billing_id: duplicate.id }),
-  //     );
-  //     const couponPromises = couponMentions.map((c) =>
-  //       c.incrementalPatch({ contact_id: duplicate.id }),
-  //     );
-  //     await Promise.all([
-  //       ...guestPromises,
-  //       ...billingPromises,
-  //       ...couponPromises,
-  //     ]);
-  //     // remove the old contact
-  //     await contact?.remove();
-  //     router.replace(`/dashboard/contacts/${duplicate.id}`);
-  //   }
-  //   return (await contact.incrementalPatch({ [field]: value }))[field] || "";
-  // };
-
   if (!isFetchingContact && !contact) {
     return <NoResults text="Kontakt neexistuje" />;
   }
@@ -247,14 +190,13 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   );
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <h1 className="p-2 text-2xl font-bold tracking-wider">
         {contact?.name || <InlineLoading />}
       </h1>
       <div className="flex flex-col gap-2 sm:flex-row">
         <InstantTextField
           defaultValue={contact?.name || ""}
-          // updateValue={(v) => updateContactField("name", v)}
           updateValue={async (v) =>
             (await contact?.patch({ name: v }))?.name || ""
           }
@@ -267,7 +209,6 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
         />
         <InstantTextField
           defaultValue={contact?.email || ""}
-          // updateValue={(v) => updateContactField("email", v)}
           updateValue={async (v) =>
             (await contact?.patch({ email: v }))?.email || ""
           }
@@ -277,13 +218,10 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           vertical
           trim
           placeholder="email@príklad.com"
-          validate={(value) =>
-            yupString()
-              .email("Zadajte platný email")
-              .validate(value)
-              .then(() => null)
-              .catch((err) => err.message)
-          }
+          validate={async (value) => {
+            const r = zString().email("Zadajte platný email").safeParse(value);
+            return r.success ? null : r.error.message;
+          }}
         />
         <InstantTextField
           defaultValue={contact?.phone || ""}
@@ -353,9 +291,9 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
             <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" /> //TODO: Pridať možnosť pridania lístku s autofill
           ) : (
             <div className="flex flex-col gap-4">
-              {groupedTickets.map((event, i) => (
+              {groupedTickets.map((event) => (
                 <EventDetail
-                  key={i}
+                  key={event.event.id}
                   {...event}
                   editable={false}
                   hideCancelled={false}
@@ -370,7 +308,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
       </Tabs>
       {tickets.length ? (
         <TooltipProvider>
-          <Tooltip>
+          <Tooltip delayDuration={0}>
             <TooltipTrigger className="cursor-not-allowed self-end">
               {deleteButton}
             </TooltipTrigger>

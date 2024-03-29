@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRxData } from "@/rxdb/db";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
@@ -8,7 +14,6 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { TicketIcon as TicketIconSolid } from "@heroicons/react/24/solid";
-import { Tooltip } from "flowbite-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CouponCodeField from "./CouponCodeField";
@@ -52,28 +57,30 @@ export default function CouponRelationManager({
       <div className="flex items-center gap-2">
         {coupon ? (
           <>
-            <Tooltip
-              content={
-                type === "created"
-                  ? "Lístok bol premenený na poukaz, kliknutím zobrazíte"
-                  : "Na kúpu bol použitý poukaz, kliknutím zobrazíte"
-              }
-              placement="left"
-            >
-              <Link
-                className={`${
-                  type === "created"
-                    ? "text-red-500 active:text-red-600"
-                    : "text-green-500 active:text-green-600"
-                }`}
-                href={{
-                  pathname: "/dashboard/coupons",
-                  query: { query: "=" + coupon.code },
-                }}
-              >
-                <TicketIconSolid className="h-4 w-4 hover:scale-105" />
-              </Link>
-            </Tooltip>
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    className={`${
+                      type === "created"
+                        ? "text-red-500 active:text-red-600"
+                        : "text-green-500 active:text-green-600"
+                    }`}
+                    href={{
+                      pathname: "/dashboard/coupons",
+                      query: { query: "=" + coupon.code },
+                    }}
+                  >
+                    <TicketIconSolid className="h-4 w-4 hover:scale-105" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  {type === "created"
+                    ? "Lístok bol premenený na poukaz, kliknutím zobrazíte"
+                    : "Na kúpu bol použitý poukaz, kliknutím zobrazíte"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <button
               className="text-gray-500 hover:scale-105 hover:text-red-500 active:text-red-600"
               onClick={() => {

@@ -17,6 +17,8 @@ import { z } from "zod";
 import CouponCodeField from "../_modals/CouponCodeField";
 
 import InlineLoading from "@/components/InlineLoading";
+import FormError from "@/components/forms/FormError";
+import { FormSelectField } from "@/components/forms/FormSelectField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SelectContactField from "@/components/forms/SelectContactField";
 import { Button } from "@/components/ui/button";
@@ -292,7 +294,7 @@ export default function NewTicketsForm() {
     router.back();
   };
 
-  if (!params.eventId || (!event && !isFetchingEvent)) {
+  if (!params.eventId) {
     router.back();
     return null;
   }
@@ -307,6 +309,19 @@ export default function NewTicketsForm() {
             // className="rounded-lg bg-gray-100 px-2 py-1 text-center text-sm text-gray-600 hover:bg-gray-200"
           >
             Vytvoriť nový typ lístkov
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!event && !isFetchingEvent) {
+    return (
+      <div className="flex h-full w-full flex-col items-center gap-2 text-sm text-gray-700">
+        <p>Udalosť nebola nájdená</p>
+        <Button variant={"outline"} asChild>
+          <Link href="/dashboard/events" passHref>
+            Návrat na udalosti
           </Link>
         </Button>
       </div>
@@ -394,38 +409,27 @@ export default function NewTicketsForm() {
             )}
           </div>
         )}
-        <FormField
-          control={form.control}
+        <FormSelectField
+          form={form}
           name="paymentStatus"
-          render={({ field }) => (
-            <FormItem>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Zvoľte status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="rezervované" className="flex justify-end">
-                    <div className="rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-700">
-                      Rezervované
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="zaplatené" className="flex justify-end">
-                    <div className="rounded bg-green-200 px-2 py-0.5 font-medium text-green-800">
-                      Zaplatené
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="zrušené" className="flex justify-end">
-                    <div className="rounded bg-red-200 px-2 py-0.5 font-medium text-red-700 ">
-                      Zrušené
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          placeholder="Zvoľte status"
+          options={{
+            rezervované: (
+              <div className="rounded bg-amber-200 px-2 py-0.5 font-medium text-amber-700">
+                Rezervované
+              </div>
+            ),
+            zaplatené: (
+              <div className="rounded bg-green-200 px-2 py-0.5 font-medium text-green-800">
+                Zaplatené
+              </div>
+            ),
+            zrušené: (
+              <div className="rounded bg-red-200 px-2 py-0.5 font-medium text-red-700 ">
+                Zrušené
+              </div>
+            ),
+          }}
         />
       </div>
 
@@ -465,11 +469,7 @@ export default function NewTicketsForm() {
             (form.getValues("tickets").length === 0 && (
               <p className="pt-3 text-sm text-gray-400">Žiadne lístky</p>
             ))}
-          <FormField
-            control={form.control}
-            name="tickets"
-            render={() => <FormMessage />}
-          />
+          <FormError form={form} name="tickets" />
         </div>
         <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
           {isFetchingTicketTypes ? (

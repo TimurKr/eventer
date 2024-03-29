@@ -160,7 +160,7 @@ export default function Contacts() {
           <>
             <Table>
               <TableHeader>
-                <TableRow className="bg-zinc-200 first:*:rounded-tl-lg last:*:rounded-tr-lg">
+                <TableRow>
                   <SortableTableHead
                     title="Meno"
                     sorting={sort === "name" ? sortDirection : undefined}

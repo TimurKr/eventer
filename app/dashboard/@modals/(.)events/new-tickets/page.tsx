@@ -15,7 +15,7 @@ export default function NewServiceModal() {
   return (
     <Dialog open={true} onOpenChange={() => router.back()}>
       <DialogTrigger />
-      <DialogContent size={"2xl"} className="max-h-screen overflow-y-scroll">
+      <DialogContent size={"2xl"}>
         <DialogHeader>Vytvorte nové lístky</DialogHeader>
         <NewTicketsForm />
       </DialogContent>

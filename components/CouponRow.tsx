@@ -31,7 +31,7 @@ import { sk } from "date-fns/locale";
 import moment from "moment";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { number as yupNumber } from "yup";
+import { number as zNumber } from "zod";
 import UseCouponSelectEvent from "../app/dashboard/coupons/modals/UseCouponSelectEventModal";
 import { validateCoupon } from "../app/dashboard/coupons/utils";
 
@@ -112,14 +112,12 @@ export default function CouponRow({
               type="text"
               defaultValue={coupon.amount.toString()}
               inline
-              validate={(value) =>
-                yupNumber()
+              validate={async (value) => {
+                const r = zNumber({ required_error: "Suma je povinná" })
                   .min(0, "Suma musí byť kladné číslo")
-                  .required("Suma je povinná")
-                  .validate(value)
-                  .then(() => null)
-                  .catch((err) => err.message)
-              }
+                  .safeParse(value);
+                return r.success ? null : r.error.message;
+              }}
               updateValue={async (value) =>
                 (
                   await coupon.patch({ amount: parseFloat(value!) })
@@ -133,14 +131,12 @@ export default function CouponRow({
               type="text"
               defaultValue={coupon.original_amount.toString()}
               inline
-              validate={(value) =>
-                yupNumber()
+              validate={async (value) => {
+                const r = zNumber({ required_error: "Suma je povinná" })
                   .min(0, "Suma musí byť kladné číslo")
-                  .required("Suma je povinná")
-                  .validate(value)
-                  .then(() => null)
-                  .catch((err) => err.message)
-              }
+                  .safeParse(value);
+                return r.success ? null : r.error.message;
+              }}
               updateValue={async (value) =>
                 (
                   await coupon.patch({ original_amount: parseFloat(value!) })

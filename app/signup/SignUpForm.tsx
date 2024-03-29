@@ -1,9 +1,9 @@
 "use client";
 
 import SubmitButton from "@/components/forms/SubmitButton";
-import { Alert } from "flowbite-react";
+import { Alert } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useState, useTransition } from "react";
-import { HiExclamationCircle } from "react-icons/hi2";
 
 export default function LoginForm({
   action,
@@ -57,7 +57,8 @@ export default function LoginForm({
         submittingLabel="Vytváram..."
       />
       {errorMess && (
-        <Alert color="failure" icon={HiExclamationCircle} className="mt-2">
+        <Alert variant="destructive" className="mt-2">
+          <ExclamationTriangleIcon className="h-4 w-4" />
           {errorMess}
         </Alert>
       )}

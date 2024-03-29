@@ -1,6 +1,7 @@
 import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
+import { SwitchProps } from "@radix-ui/react-switch";
 import {
   FormControl,
   FormDescription,
@@ -9,10 +10,10 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { Input, InputProps } from "../ui/input";
+import { Switch } from "../ui/switch";
 
-export type FormTextFieldProps<Values extends FieldValues> = Omit<
-  InputProps,
+export type FormSwitchFieldProps<Values extends FieldValues> = Omit<
+  SwitchProps,
   "form"
 > & {
   form: UseFormReturn<Values>;
@@ -22,14 +23,14 @@ export type FormTextFieldProps<Values extends FieldValues> = Omit<
   horizontal?: boolean;
 };
 
-export function FormTextField<Values extends FieldValues>({
+export function FormSwitchField<Values extends FieldValues>({
   form,
   name,
   label,
   horizontal,
   description,
   ...props
-}: FormTextFieldProps<Values>) {
+}: FormSwitchFieldProps<Values>) {
   return (
     <FormField
       name={name}
@@ -38,8 +39,6 @@ export function FormTextField<Values extends FieldValues>({
         <FormItem
           className={cn(
             horizontal ? "grid grid-cols-4 items-center gap-x-4 space-y-0" : "",
-            props.type === "hidden" ? "hidden" : "",
-            props.baseClassName,
           )}
         >
           {label && (
@@ -48,14 +47,7 @@ export function FormTextField<Values extends FieldValues>({
             </FormLabel>
           )}
           <FormControl>
-            <Input
-              {...field}
-              error={!!fieldState.error}
-              {...props}
-              baseClassName={cn(
-                horizontal ? (label ? "col-span-3" : "col-span-4") : "",
-              )}
-            />
+            <Switch {...field} {...props} />
           </FormControl>
           {description && (
             <FormDescription

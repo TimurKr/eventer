@@ -8,15 +8,9 @@ const config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{ts,tsx}",
     "./utils/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/flowbite/**/*.js",
-    "./node_modules/flowbite-react/lib/**/*.js",
   ],
   prefix: "",
-  plugins: [
-    require("tailwindcss-animate"),
-    require("flowbite/plugin"),
-    require("@tailwindcss/forms"),
-  ],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/forms")],
   theme: {
     container: {
       center: true,

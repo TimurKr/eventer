@@ -1,6 +1,11 @@
 "use client";
 
-import { Modal } from "flowbite-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import ServiceForm from "../../../services/edit/form";
 
@@ -13,16 +18,18 @@ export default function NewServiceModal({
 
   return (
     <>
-      <Modal show={true} onClose={() => router.back()} dismissible>
-        <Modal.Header>
-          {searchParams.serviceId
-            ? "Upraviť predstavenie"
-            : "Vytvorte si nové predstavenie"}
-        </Modal.Header>
-        <Modal.Body>
+      <Dialog open={true} onOpenChange={() => router.back()}>
+        <DialogContent size={"xl"}>
+          <DialogHeader>
+            <DialogTitle>
+              {searchParams.serviceId
+                ? "Upraviť predstavenie"
+                : "Vytvorte si nové predstavenie"}
+            </DialogTitle>
+          </DialogHeader>
           <ServiceForm serviceId={searchParams.serviceId} />
-        </Modal.Body>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
