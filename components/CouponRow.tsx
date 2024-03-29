@@ -194,7 +194,7 @@ export default function CouponRow({
               <p className="px-2 text-gray-500">-</p>
               <button
                 type="button"
-                className="p-2 transition-all duration-100 hover:scale-110 hover:text-green-500 active:text-green-700"
+                className="p-2 transition-all duration-100 hover:scale-110 hover:text-green-600 active:text-green-700"
                 onClick={(date) =>
                   coupon.incrementalPatch({
                     valid_until: moment()

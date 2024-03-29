@@ -79,7 +79,7 @@ export default function CouponCodeField({
             ? "border-red-500 text-red-500"
             : coupon === undefined
               ? ""
-              : "border-green-500 text-green-500"
+              : "border-green-600 text-green-600"
         }`}
         placeholder="Poukaz"
         value={code}
@@ -102,7 +102,7 @@ export default function CouponCodeField({
         </div>
       ) : coupon ? (
         <div className="absolute inset-y-0 end-2 grid place-content-center">
-          <div className="rounded-md bg-green-500 px-2 py-0.5 font-mono text-xs text-white">
+          <div className="rounded-md bg-green-600 px-2 py-0.5 font-mono text-xs text-white shadow-md">
             {coupon.amount} €
           </div>
         </div>

@@ -1,6 +1,7 @@
 import InlineLoading from "@/components/InlineLoading";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
@@ -76,7 +77,10 @@ export default function EventRow({
     <button
       key={event.id}
       type="button"
-      className={`flex w-full flex-wrap items-center justify-between gap-x-6 p-4 hover:bg-muted ${className}`}
+      className={cn(
+        "flex w-full flex-wrap items-center justify-between gap-x-6 p-4 hover:bg-muted",
+        className,
+      )}
       disabled={onClick ? false : true}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
