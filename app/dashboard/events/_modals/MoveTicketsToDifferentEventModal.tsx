@@ -2,7 +2,12 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
@@ -84,9 +89,11 @@ export default function MoveTicketsToDifferentEventModal({
       </Button>
       <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
         <DialogContent>
-          <DialogTitle>
-            Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
-          </DialogTitle>
+          <DialogHeader>
+            <DialogTitle>
+              Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
+            </DialogTitle>
+          </DialogHeader>
           <div className="flex flex-wrap gap-2">
             {ticketTypes?.map((type) => (
               <div

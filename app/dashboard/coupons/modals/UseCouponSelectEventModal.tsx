@@ -1,7 +1,12 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRxData } from "@/rxdb/db";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { useRouter } from "next/navigation";
@@ -33,10 +38,12 @@ export default function UseCouponSelectEvent({
       </button>
       <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
         <DialogContent>
-          <DialogTitle>
-            Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
-            poukazom
-          </DialogTitle>
+          <DialogHeader>
+            <DialogTitle>
+              Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
+              poukazom
+            </DialogTitle>
+          </DialogHeader>
           {isFetching ? (
             <InlineLoading />
           ) : (

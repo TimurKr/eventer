@@ -3,7 +3,12 @@
 import EditEventForm, {
   type EditEventFormProps,
 } from "@/app/dashboard/events/edit-event/form";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 export default function NewServiceModal({
@@ -17,9 +22,11 @@ export default function NewServiceModal({
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>
         <DialogContent>
-          <DialogTitle>
-            {searchParams.eventId ? "Upravte udalosť" : "Zvolťe nový termín"}
-          </DialogTitle>
+          <DialogHeader>
+            <DialogTitle>
+              {searchParams.eventId ? "Upravte udalosť" : "Zvolťe nový termín"}
+            </DialogTitle>
+          </DialogHeader>
           <EditEventForm {...searchParams} />
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
@@ -8,19 +8,19 @@ export default function SubmitButton({
   isSubmitting,
   label = "Hotovo",
   submittingLabel = "Pracujem...",
-  className = "",
+  type = "submit",
+  ...props
 }: {
   isSubmitting: boolean;
   label?: string;
   submittingLabel?: string;
-  className?: string;
-}) {
+} & ButtonProps) {
   return (
     <Button
-      type="submit"
       variant={"default"}
       disabled={isSubmitting}
-      className={cn("mt-4", className)}
+      {...props}
+      className={cn("mt-4", props.className)}
     >
       {isSubmitting ? (
         <>

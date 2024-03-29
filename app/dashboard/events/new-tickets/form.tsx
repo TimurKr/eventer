@@ -17,6 +17,7 @@ import { z } from "zod";
 import CouponCodeField from "../_modals/CouponCodeField";
 
 import InlineLoading from "@/components/InlineLoading";
+import FormError from "@/components/forms/FormError";
 import { FormSelectField } from "@/components/forms/FormSelectField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SelectContactField from "@/components/forms/SelectContactField";
@@ -468,11 +469,7 @@ export default function NewTicketsForm() {
             (form.getValues("tickets").length === 0 && (
               <p className="pt-3 text-sm text-gray-400">Žiadne lístky</p>
             ))}
-          <FormField
-            control={form.control}
-            name="tickets"
-            render={() => <FormMessage />}
-          />
+          <FormError form={form} name="tickets" />
         </div>
         <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
           {isFetchingTicketTypes ? (

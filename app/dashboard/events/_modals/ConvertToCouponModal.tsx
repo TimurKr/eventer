@@ -3,7 +3,12 @@
 import InlineLoading from "@/components/InlineLoading";
 import SubmitButton from "@/components/forms/SubmitButton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
@@ -78,9 +83,11 @@ export default function ConvertToCouponModal({
       </Button>
       <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
         <DialogContent>
-          <DialogTitle>
-            Naozaj chcete premeniť zvolené lístky na poukaz?
-          </DialogTitle>
+          <DialogHeader>
+            <DialogTitle>
+              Naozaj chcete premeniť zvolené lístky na poukaz?
+            </DialogTitle>
+          </DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <p className="p-2">Zvolené lístky:</p>
             {ticketTypes?.map((type) => (

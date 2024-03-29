@@ -124,7 +124,6 @@ export function SelectContactDialog({
         </div>
         <ScrollArea className="max-h-72 sm:max-h-96">
           <div className="divide-y pb-8 pe-4" id="list-of-contacts">
-            {/* TODO: Add a create contact option */}
             {contacts.map((contact) => (
               <button
                 className="group flex w-full flex-col px-2 py-2 text-xs font-light text-gray-500"

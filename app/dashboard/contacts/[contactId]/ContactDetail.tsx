@@ -26,7 +26,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
-import { string as yupString } from "yup";
+import { string as zString } from "zod";
 
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   const {
@@ -197,7 +197,6 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
       <div className="flex flex-col gap-2 sm:flex-row">
         <InstantTextField
           defaultValue={contact?.name || ""}
-          // updateValue={(v) => updateContactField("name", v)}
           updateValue={async (v) =>
             (await contact?.patch({ name: v }))?.name || ""
           }
@@ -210,7 +209,6 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
         />
         <InstantTextField
           defaultValue={contact?.email || ""}
-          // updateValue={(v) => updateContactField("email", v)}
           updateValue={async (v) =>
             (await contact?.patch({ email: v }))?.email || ""
           }
@@ -220,13 +218,10 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           vertical
           trim
           placeholder="email@príklad.com"
-          validate={(value) =>
-            yupString()
-              .email("Zadajte platný email")
-              .validate(value)
-              .then(() => null)
-              .catch((err) => err.message)
-          }
+          validate={async (value) => {
+            const r = zString().email("Zadajte platný email").safeParse(value);
+            return r.success ? null : r.error.message;
+          }}
         />
         <InstantTextField
           defaultValue={contact?.phone || ""}
