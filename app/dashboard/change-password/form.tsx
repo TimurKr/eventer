@@ -7,6 +7,7 @@ import { Form } from "@/components/ui/form";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -23,7 +24,7 @@ const passwordForm = z
 
 type PasswordForm = z.infer<typeof passwordForm>;
 
-export default function PasswordChangeForm() {
+export default function PasswordChangeForm({ next }: { next?: Route }) {
   const router = useRouter();
 
   const form = useForm<PasswordForm>({
@@ -39,7 +40,11 @@ export default function PasswordChangeForm() {
       form.setValue("confirm", "");
       return;
     }
-    router.back();
+    if (next) {
+      router.push(next);
+    } else {
+      router.back();
+    }
   };
 
   return (
@@ -64,6 +69,7 @@ export default function PasswordChangeForm() {
                 form.setValue("password", newPassword);
                 form.setValue("confirm", newPassword);
               }}
+              tabIndex={-1}
             >
               <ArrowPathIcon className="h-4 w-4 sm:me-2" />
               <span className="hidden sm:inline">Generate</span>

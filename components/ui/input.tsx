@@ -44,6 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 size={"xs"}
                 className="px-1"
                 type="button"
+                tabIndex={-1}
               >
                 {visible ? (
                   <EyeSlashIcon

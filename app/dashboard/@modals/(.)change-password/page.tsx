@@ -9,10 +9,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useUser } from "@/lib/supabase/browser";
+import { Route } from "next";
 import { useRouter } from "next/navigation";
 import PasswordChangeForm from "../../change-password/form";
 
-export default function NewServiceModal() {
+export default function NewServiceModal({
+  searchParams,
+}: {
+  searchParams: { next?: string };
+}) {
   const router = useRouter();
 
   const user = useUser();
@@ -24,7 +29,7 @@ export default function NewServiceModal() {
           <DialogHeader>
             <DialogTitle>Zmena hesla</DialogTitle>
             <DialogDescription>
-              Vymyslite si nové heslo pre účet{" "}
+              Zadajte nové heslo pre účet{" "}
               {user.isFetching ? (
                 <InlineLoading />
               ) : (
@@ -32,7 +37,7 @@ export default function NewServiceModal() {
               )}
             </DialogDescription>
           </DialogHeader>
-          <PasswordChangeForm />
+          <PasswordChangeForm next={searchParams.next as Route} />
         </DialogContent>
       </Dialog>
     </>

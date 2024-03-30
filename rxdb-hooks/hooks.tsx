@@ -23,6 +23,19 @@ export function RxHookBuilder<
   let dbPromise: ReturnType<typeof dbInitializator> | undefined;
 
   /**
+   * Function that destroys the database and allows for reinitialization
+   * on next mount of DbProvider. Always use this to delete your database,
+   * if you want to reinitialize it. Example usage is for logout.
+   */
+  async function destroyDb() {
+    if (!dbPromise) return;
+    const { db } = await dbPromise;
+    await db.remove();
+    await db.destroy();
+    dbPromise = undefined;
+  }
+
+  /**
    * Provides a database context for the application.
    *
    * @param handleOffline The callback function to handle offline events. Don't forget to use `useCallback`.
@@ -256,35 +269,6 @@ export function RxHookBuilder<
     useRxCollection,
     useRxQuery,
     useRxData,
+    destroyDb,
   };
 }
-
-// interface MyFunctionOptions<T> {
-//   defaultValue?: T;
-// }
-
-// // Function signature without default value
-// // function myFunction<T>(arg: T): T | undefined;
-
-// // Function signature with default value
-// function myFunction<T, O extends MyFunctionOptions<T>>(
-//   arg: T,
-//   options?: O,
-// ): O extends { defaultValue: T } ? T : T | undefined {
-//   // Your implementation here
-
-//   // Example: Assuming some condition for failure
-//   if (options?.defaultValue) {
-//     return options.defaultValue;
-//   }
-
-//   return Math.random() > 0.5 ? arg : undefined;
-// }
-
-// // Example usage:
-
-// // Without providing a default value
-// const result1 = myFunction("42"); // result1: string | undefined
-
-// // Providing a default value
-// const result2 = myFunction("42" as string); // result2: string

@@ -69,6 +69,7 @@ export const {
   useRxCollection,
   useRxQuery,
   useRxData,
+  destroyDb,
 } = RxHookBuilder(async () => {
   const storage = getRxStorageDexie();
 
