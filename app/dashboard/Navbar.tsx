@@ -1,13 +1,27 @@
 "use client";
 
-import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { cn } from "@/lib/utils";
+import { destroyDb } from "@/rxdb/db";
+import {
+  ArrowLeftStartOnRectangleIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { UserGroupIcon } from "@heroicons/react/24/solid";
 import { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { FaTheaterMasks, FaTicketAlt } from "react-icons/fa";
 import { HiCalendarDays } from "react-icons/hi2";
-import { logOutClient } from "../auth/clientActions";
 
 type route = {
   title: string;
@@ -49,39 +63,54 @@ function PageLink({
 }) {
   const path = usePathname();
   return (
-    <Link
-      key={title}
-      className={`grid w-auto place-content-center rounded-lg p-2 md:block md:px-3 md:py-0.5 ${
-        path.startsWith(`${href}`)
-          ? "cursor-default bg-stone-200 font-bold tracking-widest text-black"
-          : "hover:bg-stone-200"
-      } transition-all duration-200 ease-in-out`}
-      href={href}
+    <Button
+      variant={path.startsWith(href) ? "secondary" : "ghost"}
+      className={cn(
+        "p-2 transition-all duration-200 ease-in-out md:px-3",
+        path.startsWith(href) && "font-semibold tracking-wider",
+      )}
+      asChild
     >
-      <span className="hidden md:block">{title}</span>
-      <span className="block md:hidden">{icon}</span>
-    </Link>
+      <Link href={href}>
+        <span className="hidden md:block">{title}</span>
+        <span className="block md:hidden">{icon}</span>
+      </Link>
+    </Button>
   );
 }
 
 export default function Navbar() {
-  const path = usePathname();
-
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const router = useRouter();
   return (
     <>
       {routes.map((item) => (
         <PageLink key={item.title + item.href} {...item} />
       ))}
-      <button
-        className="ms-auto w-auto rounded-lg bg-red-500 p-2 text-sm text-white hover:bg-red-600 md:px-3 md:py-1"
-        type="button"
-        onClick={() => logOutClient()} //TODO: clear local rxdb sotrage onlogout
-      >
-        <span className="hidden md:block">Odhlásiť</span>
-        <span className="block md:hidden">
-          <ArrowLeftStartOnRectangleIcon className="h-5 w-5" />
-        </span>
-      </button>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size={"icon"} className="ms-auto">
+            <UserCircleIcon className="h-5 w-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-40">
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/change-password">Zmeniť heslo</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={async () => {
+              await destroyDb();
+              await createBrowserSupabase().auth.signOut();
+              router.push("/auth/login");
+            }}
+          >
+            <ArrowLeftStartOnRectangleIcon className="me-2 h-5 w-5" />
+            Odhlásiť
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 }

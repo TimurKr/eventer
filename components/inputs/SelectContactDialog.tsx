@@ -11,7 +11,7 @@ import { useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 import Fuse from "fuse.js";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SearchBar from "../SearchBar";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
@@ -54,6 +54,13 @@ export function SelectContactDialog({
             .map((i) => i.item),
     [allContacts, query],
   );
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [query]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -122,7 +129,7 @@ export function SelectContactDialog({
             </DialogContent>
           </Dialog>
         </div>
-        <ScrollArea className="max-h-72 sm:max-h-96">
+        <ScrollArea className="h-80" ref={scrollRef}>
           <div className="divide-y pb-8 pe-4" id="list-of-contacts">
             {contacts.map((contact) => (
               <button

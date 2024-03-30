@@ -6,11 +6,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useRxData } from "@/rxdb/db";
 import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import EventRow from "../../../../components/EventRow";
 
 export default function UseCouponSelectEvent({
@@ -18,8 +18,6 @@ export default function UseCouponSelectEvent({
 }: {
   coupon: CouponsDocument;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const { result: allEvents, isFetching } = useRxData(
     "events",
     (collection) => collection.find().sort({ datetime: "desc" }),
@@ -30,14 +28,13 @@ export default function UseCouponSelectEvent({
 
   return (
     <>
-      <button
-        className="rounded-md bg-green-500 px-1.5 py-0.5 text-xs text-white hover:bg-green-600 active:bg-green-700"
-        onClick={() => setIsOpen(true)}
-      >
-        Použiť
-      </button>
-      <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
-        <DialogContent>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="rounded-md bg-green-600 px-1.5 py-0.5 text-xs text-white hover:bg-green-700 active:bg-green-800">
+            Použiť
+          </button>
+        </DialogTrigger>
+        <DialogContent size="4xl">
           <DialogHeader>
             <DialogTitle>
               Vyberte si udalosť, na ktorú by ste chceli predať lístky s týmto
@@ -47,17 +44,20 @@ export default function UseCouponSelectEvent({
           {isFetching ? (
             <InlineLoading />
           ) : (
-            allEvents.map((event) => (
-              <EventRow
-                key={event.id}
-                event={event}
-                onClick={() =>
-                  router.push(
-                    `/dashboard/events/new-tickets?eventId=${event.id.toString()}&couponCode=${coupon.code}`,
-                  )
-                }
-              />
-            ))
+            <div className="flex flex-col">
+              {allEvents.map((event) => (
+                <EventRow
+                  key={event.id}
+                  event={event}
+                  className="rounded-md"
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/events/new-tickets?eventId=${event.id.toString()}&couponCode=${coupon.code}`,
+                    )
+                  }
+                />
+              ))}
+            </div>
           )}
         </DialogContent>
       </Dialog>

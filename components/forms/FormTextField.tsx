@@ -51,6 +51,11 @@ export function FormTextField<Values extends FieldValues>({
             <Input
               {...field}
               error={!!fieldState.error}
+              onChange={(e) =>
+                props.type === "number"
+                  ? field.onChange(parseInt(e.target.value))
+                  : field.onChange(e)
+              }
               {...props}
               baseClassName={cn(
                 horizontal ? (label ? "col-span-3" : "col-span-4") : "",

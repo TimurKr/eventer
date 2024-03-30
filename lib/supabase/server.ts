@@ -7,10 +7,8 @@ import { cookies } from "next/headers";
 // Do not cache
 export const revalidate = 0;
 
-export const createServerSupabase = (
-  cookieStore: ReturnType<typeof cookies>,
-  tags?: string[],
-) => {
+export function createServerSupabase(tags?: string[]) {
+  const cookieStore = cookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -48,12 +46,10 @@ export const createServerSupabase = (
       },
     },
   );
-};
+}
 
-export const getServerUser = async (
-  cookieStore: ReturnType<typeof cookies>,
-) => {
-  const supabase = createServerSupabase(cookieStore, ["user"]);
+export const getUser = async (cookieStore: ReturnType<typeof cookies>) => {
+  const supabase = createServerSupabase(["user"]);
   const {
     data: { user },
   } = await supabase.auth.getUser();

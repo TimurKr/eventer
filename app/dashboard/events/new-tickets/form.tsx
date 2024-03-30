@@ -6,7 +6,7 @@ import { CouponsDocument } from "@/rxdb/schemas/public/coupons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   UseFormReturn,
   useFieldArray,
@@ -84,6 +84,11 @@ function FormTicketRow({
     name: `tickets.${index}.contact`,
   });
 
+  const billContactId = useWatch({
+    control: form.control,
+    name: "contact",
+  });
+
   return (
     <tr>
       <td className="px-1">
@@ -92,9 +97,7 @@ function FormTicketRow({
           name={`tickets.${index}.contact`}
           description="Zvoľte kontakt ktorý sa priradí k lístku"
           buttonProps={
-            form.getValues(`tickets.${index}.contact`) &&
-            form.getValues("contact") ===
-              form.getValues(`tickets.${index}.contact`)
+            contactId && contactId === billContactId
               ? { className: "text-gray-600" }
               : undefined
           }
@@ -102,7 +105,7 @@ function FormTicketRow({
         />
       </td>
       <td className="w-px">
-        <FormField
+        <FormField //TODO: convet to FormSelectField
           control={form.control}
           name={`tickets.${index}.type_id`}
           render={({ field }) => (
@@ -131,7 +134,7 @@ function FormTicketRow({
                     <SelectItem key={type.id} value={type.id}>
                       <div className="flex items-center gap-2">
                         {type.is_vip && (
-                          <CheckBadgeIcon className="h-4 w-4 text-green-500" />
+                          <CheckBadgeIcon className="h-4 w-4 text-green-600" />
                         )}
                         {type.label}
                       </div>
@@ -207,12 +210,7 @@ export default function NewTicketsForm() {
     },
   );
 
-  const { result: allContacts, collection: contactsCollection } = useRxData(
-    "contacts",
-    useCallback((c) => c.find(), []),
-    { initialResult: [] },
-  );
-
+  const contactsCollection = useRxCollection("contacts");
   const ticketsCollection = useRxCollection("tickets");
   const couponsCollection = useRxCollection("coupons");
 
@@ -224,6 +222,12 @@ export default function NewTicketsForm() {
       tickets: [],
     },
   });
+
+  useEffect(() => {
+    if (!form.getValues("contact") && coupon?.contact_id) {
+      form.setValue("contact", coupon?.contact_id);
+    }
+  }, [coupon?.contact_id, form]);
 
   const billingContactId = useWatch({
     name: "contact",
@@ -241,6 +245,12 @@ export default function NewTicketsForm() {
     name: "tickets",
     control: form.control,
   });
+  const tickets = useWatch({
+    control: form.control,
+    name: "tickets",
+  });
+
+  console.log(tickets);
 
   const handleSubmit = async (values: Values) => {
     console.log(values);
@@ -385,7 +395,7 @@ export default function NewTicketsForm() {
           name="contact"
           onSelected={(c) => {
             form.setValue("contact", c.id, { shouldValidate: true });
-            form.getValues("tickets").forEach((ticket, index, array) => {
+            tickets.forEach((ticket, index, array) => {
               ticket.contact ||
                 form.setValue(`tickets.${index}.contact`, c.id, {
                   shouldValidate: true,
@@ -465,10 +475,9 @@ export default function NewTicketsForm() {
           </table>
         )}
         <div className="flex flex-col items-center">
-          {!form.getValues("tickets") ||
-            (form.getValues("tickets").length === 0 && (
-              <p className="pt-3 text-sm text-gray-400">Žiadne lístky</p>
-            ))}
+          {tickets.length === 0 && (
+            <p className="pt-3 text-sm text-gray-400">Žiadne lístky</p>
+          )}
           <FormError form={form} name="tickets" />
         </div>
         <div className="flex w-full flex-row flex-wrap items-end justify-end gap-2 pt-4">
@@ -479,7 +488,7 @@ export default function NewTicketsForm() {
               <AddTicketButton
                 key={type.id}
                 type={type}
-                alreadyCreatedTickets={form.getValues("tickets")}
+                alreadyCreatedTickets={tickets}
                 eventId={params.eventId}
                 onClick={() =>
                   ticketsArray.append({
@@ -531,7 +540,7 @@ export default function NewTicketsForm() {
           <tr>
             <td className="pe-6 ps-2">Lístky</td>
             <td className="px-2 text-end">
-              {form.getValues("tickets").reduce((a, b) => a + b.price, 0)} €
+              {tickets.reduce((sum, ticket) => sum + ticket.price, 0)} €
             </td>
           </tr>
           <tr>
@@ -548,9 +557,7 @@ export default function NewTicketsForm() {
                 ? -Math.max(
                     Math.min(
                       coupon.amount,
-                      form
-                        .getValues("tickets")
-                        .reduce((a, b) => a + b.price, 0),
+                      tickets.reduce((sum, ticket) => sum + ticket.price, 0),
                     ),
                     0,
                   )
@@ -562,7 +569,7 @@ export default function NewTicketsForm() {
             <td className="px-2">Spolu</td>
             <td className="px-2 text-end">
               {Math.max(
-                form.getValues("tickets").reduce((a, b) => a + b.price, 0) -
+                tickets.reduce((sum, ticket) => sum + ticket.price, 0) -
                   (coupon ? coupon.amount : 0),
                 0,
               )}{" "}

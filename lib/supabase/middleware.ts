@@ -1,8 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export const createMiddlewareSupabase = (request: NextRequest) => {
-  // Create an unmodified response
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -15,17 +14,19 @@ export const createMiddlewareSupabase = (request: NextRequest) => {
     {
       cookies: {
         get(name: string) {
-          // console.log('Get cookies -> ', name)
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          // If the cookie is updated, update the cookies for the request and response
-          // request.cookies.set({
-          //   name,
-          //   value,
-          //   ...options,
-          // });
-          // console.log('Set cookie ->', name, value, options)
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
           response.cookies.set({
             name,
             value,
@@ -33,8 +34,16 @@ export const createMiddlewareSupabase = (request: NextRequest) => {
           });
         },
         remove(name: string, options: CookieOptions) {
-          // If the cookie is removed, update the cookies for the request and response
-          // console.log('Remov cookie -> ', name, options)
+          request.cookies.set({
+            name,
+            value: "",
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
           response.cookies.set({
             name,
             value: "",
@@ -45,5 +54,9 @@ export const createMiddlewareSupabase = (request: NextRequest) => {
     },
   );
 
-  return { supabase, response };
-};
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { response, user };
+}

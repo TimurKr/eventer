@@ -18,7 +18,6 @@ export default function NewTicketsButton(
             couponCode: couponCode,
           },
         }}
-        // className="rounded-md bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600"
         onClick={(e) => e.stopPropagation()}
       >
         Vytvoriť lístok

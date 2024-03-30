@@ -1,14 +1,18 @@
-import { createMiddlewareSupabase } from "@/lib/supabase/middleware";
+import { updateSession } from "@/lib/supabase/middleware";
 import { Route } from "next";
 import { NextResponse, type NextRequest } from "next/server";
 
 type ExhaustiveRoute = Route | `${Route}/*`;
 
 const authenticatedHomeRoute: Route = "/dashboard";
-const loginRoute: Route = "/login";
+const loginRoute: Route = "/auth/login";
 
 const protectedRoutes: ExhaustiveRoute[] = ["/dashboard/*"];
-const onlyPublicRoutes: ExhaustiveRoute[] = ["/login", "/signup"];
+const onlyPublicRoutes: ExhaustiveRoute[] = [
+  "/auth/login",
+  "/auth/signup",
+  "/auth/forgot-password",
+];
 const redirects: Record<string, Route> = {
   "/": "/dashboard",
   "/dashboard": "/dashboard/events",
@@ -28,18 +32,15 @@ function redirect(path: Route, request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createMiddlewareSupabase(request);
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { response, user } = await updateSession(request);
   if (
-    !session &&
+    !user &&
     pathInExhaustiveRoutes(request.nextUrl.pathname, protectedRoutes)
   ) {
     return redirect(loginRoute, request);
   }
   if (
-    !!session &&
+    !!user &&
     pathInExhaustiveRoutes(request.nextUrl.pathname, onlyPublicRoutes)
   ) {
     return redirect(authenticatedHomeRoute, request);
@@ -67,6 +68,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -21,6 +21,9 @@ type InstantFieldProps<T> = {
   label?: string;
   vertical?: boolean;
   className?: string;
+  /**
+   * Should return an error message if the value is invalid.
+   */
   validate?: (value: T) => Promise<string | null>;
   onBlur?: () => void;
   autoFocus?: boolean;

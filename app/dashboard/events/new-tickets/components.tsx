@@ -74,17 +74,9 @@ export function AddTicketButton({
               ? "sold"
               : "default",
       })}
-      // className={`flex items-center gap-2 rounded-lg border p-0 px-2 py-1 text-sm ${
-      //   type.capacity && creating > type.capacity - (soldTickets?.length || 0)
-      //     ? "border-red-100 bg-red-100 text-red-600 hover:cursor-default"
-      //     : type.capacity &&
-      //         creating == type.capacity - (soldTickets?.length || 0)
-      //       ? "border-gray-100 bg-gray-50 text-gray-400 hover:cursor-default"
-      //       : "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200"
-      // }`}
       onClick={onClick}
     >
-      {type.is_vip && <CheckBadgeIcon className="h-5 w-5 text-green-500" />}
+      {type.is_vip && <CheckBadgeIcon className="h-5 w-5 text-green-600" />}
       <div className="flex flex-col items-start">
         <p className="font-medium">{type.label}</p>
         <div className="text-xs font-light">
