@@ -16,12 +16,12 @@ export default function InlineLoading({ className }: { className?: string }) {
   }, []);
 
   return (
-    <p
+    <span
       className={`whitespace-pre font-mono text-xs text-gray-500 ${className}`}
     >
       Načítavam
       {".".repeat(dots)}
       {" ".repeat(3 - dots)}
-    </p>
+    </span>
   );
 }

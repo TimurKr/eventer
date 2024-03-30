@@ -2,7 +2,7 @@
 
 import EventDetail from "@/components/EventDetail";
 import Loading from "@/components/Loading";
-import { useBrowserUser } from "@/lib/supabase/browser";
+import { useUser } from "@/lib/supabase/browser";
 import { useRxData } from "@/rxdb/db";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
@@ -19,7 +19,7 @@ export default function Page() {
   const q = useSearchParams().get("query");
   const [query, setQuery] = useState(q || "");
 
-  const { user } = useBrowserUser();
+  const { user } = useUser();
 
   const { result: allServices, isFetching: servicesFetching } = useRxData(
     "services",

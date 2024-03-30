@@ -12,19 +12,23 @@ export const createBrowserSupabase = () => {
 };
 
 type UserHookState =
-  | { user: User; isFetching: false }
-  | { user: null; isFetching: boolean };
+  | { user: User | null; isFetching: false }
+  | { user: undefined; isFetching: true };
 
-export function useBrowserUser(): UserHookState {
+/**
+ *
+ * @returns Object with 2 properties: `user` and `isFetching`
+ */
+export function useUser(): UserHookState {
   const [state, setState] = useState<UserHookState>({
-    user: null,
+    user: undefined,
     isFetching: true,
   });
   useEffect(() => {
     const supabase = createBrowserSupabase()
       .auth.getUser()
       .then((user) => {
-        setState({ user: user?.data?.user || null, isFetching: false });
+        setState({ user: user?.data?.user, isFetching: false });
       });
   }, []);
   return state;

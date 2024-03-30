@@ -190,7 +190,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   );
 
   return (
-    <div className="flex flex-col overflow-y-auto">
+    <div className="flex flex-col overflow-y-auto p-1">
       <h1 className="p-2 text-2xl font-bold tracking-wider">
         {contact?.name || <InlineLoading />}
       </h1>
@@ -304,6 +304,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
         </TabsContent>
         <TabsContent value="coupons">
           <p>Coming soon</p>
+          {/* TODO */}
         </TabsContent>
       </Tabs>
       {tickets.length ? (

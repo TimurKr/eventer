@@ -1,4 +1,4 @@
-import { createServerSupabase, getServerUser } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,7 +9,7 @@ export default async function Login({
 }: {
   searchParams: { redirectUrl: string };
 }) {
-  if (await getServerUser(cookies())) {
+  if (await getUser(cookies())) {
     redirect("/dashboard");
   }
 
@@ -33,7 +33,7 @@ export default async function Login({
   };
 
   return (
-    <div className="grid h-full w-full animate-in place-content-center">
+    <div className="grid h-full w-full place-content-center animate-in">
       <LoginForm action={signIn} />
       <Link
         href="/signup"
