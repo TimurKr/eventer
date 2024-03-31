@@ -8,6 +8,7 @@ import SubmitButton from "@/components/forms/SubmitButton";
 import { Form } from "@/components/ui/form";
 import { useRxData } from "@/rxdb/db";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { addDays, addMonths, addWeeks } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -126,7 +127,21 @@ export default function EditEventForm(
           )}
         />
       )}
-      <FormDateField form={form} name="date" label="Dátum" horizontal />
+      <FormDateField
+        form={form}
+        name="date"
+        label="Dátum"
+        horizontal
+        presets={[
+          { label: "Dnes", value: new Date() },
+          { label: "Zajtra", value: addDays(new Date(), 1) },
+          { label: "O týždeň", value: addWeeks(new Date(), 1) },
+          { label: "O mesiac", value: addMonths(new Date(), 1) },
+          { label: "O tri mesiace", value: addMonths(new Date(), 3) },
+          { label: "O pol roka", value: addMonths(new Date(), 6) },
+          { label: "O rok", value: addMonths(new Date(), 12) },
+        ]}
+      />
       <FormTextField
         form={form}
         name="time"

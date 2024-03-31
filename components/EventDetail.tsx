@@ -16,11 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { useRxCollection } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import { ChevronDownIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { LockClosedIcon, LockOpenIcon } from "@heroicons/react/24/solid";
+import { isToday } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
@@ -98,7 +100,13 @@ export default function EventDetail({
   );
 
   return (
-    <Card className="overflow-hidden">
+    <Card
+      className={cn(
+        "overflow-hidden",
+        isToday(new Date(event.datetime)) &&
+          "border-orange-200 shadow-lg shadow-orange-100",
+      )}
+    >
       <CardHeader className="overflow-clip p-0">
         <EventRow
           event={event}

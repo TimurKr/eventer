@@ -105,9 +105,11 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
           presets={[
             { label: "Dnes", value: new Date() },
             { label: "Zajtra", value: addDays(new Date(), 1) },
-            { label: "Týždeň", value: addWeeks(new Date(), 1) },
-            { label: "Mesiac", value: addMonths(new Date(), 1) },
-            { label: "Rok", value: addMonths(new Date(), 12) },
+            { label: "O týždeň", value: addWeeks(new Date(), 1) },
+            { label: "O mesiac", value: addMonths(new Date(), 1) },
+            { label: "O tri mesiace", value: addMonths(new Date(), 3) },
+            { label: "O pol roka", value: addMonths(new Date(), 6) },
+            { label: "O rok", value: addMonths(new Date(), 12) },
           ]}
         />
         <FormTextField
