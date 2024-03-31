@@ -411,30 +411,31 @@ export default function ServiceForm({
         />
       </Form>
       {service &&
-      events &&
-      events.length === 0 &&
-      tickets &&
-      tickets.length === 0 ? (
-        <ConfirmButton
-          title="Naozaj chcete vymazať toto predstavenie?"
-          description="Táto akcia je nezvratná, stratíte tak informáciu aj o typoch lístkov. Zatiaľ ale nemáte predané žiadne lístky na toto predstavenie."
-          variant={"destructive"}
-          onConfirm={() => {
-            service.remove();
-            router.back();
-          }}
-        >
-          <Button variant="destructive" className="mt-4 self-end" type="button">
-            Vymazať predstavenie
-          </Button>
-        </ConfirmButton>
-      ) : (
-        <div className="flex items-center justify-center gap-2 px-6 text-xs text-gray-500">
-          <InformationCircleIcon className="h-4 w-4" />
-          Ak chcete vymazať tento typ predstavenia, najprv musíte vymazať všetky
-          udalosti a všetky lístky
-        </div>
-      )}
+        (events && events.length === 0 && tickets && tickets.length === 0 ? (
+          <ConfirmButton
+            title="Naozaj chcete vymazať toto predstavenie?"
+            description="Táto akcia je nezvratná, stratíte tak informáciu aj o typoch lístkov. Zatiaľ ale nemáte predané žiadne lístky na toto predstavenie."
+            variant={"destructive"}
+            onConfirm={() => {
+              service.remove();
+              router.back();
+            }}
+          >
+            <Button
+              variant="destructive"
+              className="mt-4 self-end"
+              type="button"
+            >
+              Vymazať predstavenie
+            </Button>
+          </ConfirmButton>
+        ) : (
+          <div className="flex items-center justify-center gap-2 px-6 pt-4 text-xs text-gray-500">
+            <InformationCircleIcon className="h-4 w-4" />
+            Ak chcete vymazať tento typ predstavenia, najprv musíte vymazať
+            všetky udalosti a všetky lístky
+          </div>
+        ))}
     </>
   );
 }
