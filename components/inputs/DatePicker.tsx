@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarIcon } from "@radix-ui/react-icons";
-import { addDays, differenceInDays, format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 
 import { Button, ButtonProps } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,9 +24,9 @@ export type DatePickerProps = {
   value?: Date;
   onChange: (date?: Date) => void;
   /**
-   * Presets for quick selection, value is number of days to add to current date
+   * Presets for quick selection
    */
-  presets?: { label: string; value: number }[];
+  presets?: { label: string; value: Date }[];
   buttonProps?: ButtonProps;
   popoverProps?: React.ComponentPropsWithoutRef<typeof PopoverContent>;
 };
@@ -68,30 +68,23 @@ export default function DatePicker({
       >
         {presets?.length && (
           <Select
-            value={(
-              differenceInDays(value || new Date(), new Date()) + 1
-            ).toString()}
-            onValueChange={(value) =>
-              onChange(addDays(new Date(), parseInt(value)))
-            }
+            value={value?.toDateString() || ""}
+            onValueChange={(value) => onChange(new Date(value))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Možnosti" />
             </SelectTrigger>
             <SelectContent position="popper">
-              {!presets?.find(
-                (p) => p.value === differenceInDays(value || 0, new Date()) + 1,
-              ) && (
-                <SelectItem
-                  value={(
-                    differenceInDays(value || 0, new Date()) + 1
-                  ).toString()}
-                >
+              {value && !presets?.find((p) => isSameDay(p.value, value)) && (
+                <SelectItem value={value.toDateString()}>
                   <span className="font-medium">Iný</span>
                 </SelectItem>
               )}
-              {presets?.map((preset) => (
-                <SelectItem key={preset.value} value={preset.value.toString()}>
+              {presets.map((preset) => (
+                <SelectItem
+                  key={preset.label}
+                  value={preset.value.toDateString()}
+                >
                   {preset.label}
                 </SelectItem>
               ))}

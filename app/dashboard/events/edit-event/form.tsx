@@ -110,15 +110,6 @@ export default function EditEventForm(
       onSubmit={props?.eventId ? update : create}
       className="flex flex-col gap-4"
     >
-      <FormDateField form={form} name="date" label="Dátum" horizontal />
-      <FormTextField
-        form={form}
-        name="time"
-        type="time"
-        label="Čas"
-        step={60}
-        horizontal
-      />
       {!event && (
         <FormSelectField
           form={form}
@@ -135,7 +126,15 @@ export default function EditEventForm(
           )}
         />
       )}
-
+      <FormDateField form={form} name="date" label="Dátum" horizontal />
+      <FormTextField
+        form={form}
+        name="time"
+        type="time"
+        label="Čas"
+        step={60}
+        horizontal
+      />
       <FormSwitchField form={form} name="isPublic" label="Verejné" horizontal />
       <SubmitButton
         isSubmitting={form.formState.isSubmitting}

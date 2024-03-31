@@ -185,7 +185,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
       type="button"
       disabled={!!tickets.length}
     >
-      Vamazať kontakt
+      Vymazať kontakt
     </Button>
   );
 

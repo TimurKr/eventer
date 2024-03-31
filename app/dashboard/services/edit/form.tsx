@@ -5,7 +5,9 @@ import { FormSwitchField } from "@/components/forms/FormSwitchField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SubmitButton from "@/components/forms/SubmitButton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button, ConfirmButton } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
@@ -64,6 +66,20 @@ export default function ServiceForm({
       (collection) => collection.findOne(serviceId || "definitely not an ID"),
       [serviceId],
     ),
+  );
+
+  const { result: events } = useRxData(
+    "events",
+    useCallback(
+      (collection) =>
+        collection.find({
+          selector: {
+            service_id: serviceId,
+          },
+        }),
+      [serviceId],
+    ),
+    { hold: !service },
   );
 
   const {
@@ -213,7 +229,7 @@ export default function ServiceForm({
           placeholder="Zadajte názov predstavenia"
         />
         <div className="flex items-center gap-6 pt-4">
-          <p className="text-sm text-gray-600">Typy lístkov</p>
+          <Label>Type Lístkov</Label>
           <div className="h-px flex-grow bg-gray-400" />
         </div>
         <div>
@@ -228,12 +244,12 @@ export default function ServiceForm({
                     Kapacita
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger tabIndex={-1} type="button">
                           <InformationCircleIcon className="h-4 w-4" />
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent className="whitespace-pre-line">
                           Kapacita je nezáväzná, môžete ju kedykoľvek prekročiť.
-                          Nechajte prázdne pre neobmedzenú.
+                          {"\n"}Nechajte prázdne pre neobmedzenú.
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -244,7 +260,7 @@ export default function ServiceForm({
                     Cena
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger tabIndex={-1} type="button">
                           <InformationCircleIcon className="h-4 w-4" />
                         </TooltipTrigger>
                         <TooltipContent>
@@ -259,10 +275,10 @@ export default function ServiceForm({
                     VIP
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger tabIndex={-1} type="button">
                           <InformationCircleIcon className="h-4 w-4" />
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent side="left">
                           Iba pre vašu referenciu, aby sa vám ľahšie rozlišovalo
                           medzi lístkami.
                         </TooltipContent>
@@ -391,8 +407,34 @@ export default function ServiceForm({
           isSubmitting={form.formState.isSubmitting}
           label={service?.id ? "Uložiť" : "Vytvoriť"}
           submittingLabel={service?.id ? "Ukladám..." : "Vytváram..."}
+          disabled={!form.formState.isDirty}
         />
       </Form>
+      {service &&
+      events &&
+      events.length === 0 &&
+      tickets &&
+      tickets.length === 0 ? (
+        <ConfirmButton
+          title="Naozaj chcete vymazať toto predstavenie?"
+          description="Táto akcia je nezvratná, stratíte tak informáciu aj o typoch lístkov. Zatiaľ ale nemáte predané žiadne lístky na toto predstavenie."
+          variant={"destructive"}
+          onConfirm={() => {
+            service.remove();
+            router.back();
+          }}
+        >
+          <Button variant="destructive" className="mt-4 self-end" type="button">
+            Vymazať predstavenie
+          </Button>
+        </ConfirmButton>
+      ) : (
+        <div className="flex items-center justify-center gap-2 px-6 text-xs text-gray-500">
+          <InformationCircleIcon className="h-4 w-4" />
+          Ak chcete vymazať tento typ predstavenia, najprv musíte vymazať všetky
+          udalosti a všetky lístky
+        </div>
+      )}
     </>
   );
 }

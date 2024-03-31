@@ -15,6 +15,7 @@ import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import {
   AtSymbolIcon,
   ExclamationTriangleIcon,
+  PhoneIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -143,6 +144,7 @@ export default function NewContactForm({
         form={form}
         name={"name"}
         label="Meno"
+        placeholder="Meno a Priezvisko"
         horizontal
         icons={{ start: <UserIcon className="h-4 w-4" /> }}
       />
@@ -150,10 +152,18 @@ export default function NewContactForm({
         form={form}
         name={"email"}
         label="Email"
+        placeholder="Email"
         horizontal
         icons={{ start: <AtSymbolIcon className="h-4 w-4" /> }}
       />
-      <FormTextField form={form} name={"phone"} label="Telefón" horizontal />
+      <FormTextField
+        form={form}
+        name={"phone"}
+        label="Telefón"
+        placeholder="Telefón"
+        horizontal
+        icons={{ start: <PhoneIcon className="h-4 w-4" /> }}
+      />
       {duplicateContact && (
         <Alert variant="destructive">
           <ExclamationTriangleIcon className="h-4 w-4" />

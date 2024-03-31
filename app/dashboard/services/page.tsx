@@ -5,7 +5,7 @@ import Loading from "@/components/Loading";
 import { InstantTextField } from "@/components/forms/InstantFields";
 import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon } from "@heroicons/react/24/outline";
 import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import Fuse from "fuse.js";
 import Link from "next/link";
@@ -34,7 +34,7 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
 
   return (
     <li key={service.id}>
-      <div className="flex items-center gap-4 py-1">
+      <div className="flex items-center gap-4 px-2 py-1">
         <div>
           <InstantTextField
             defaultValue={service.name}
@@ -64,21 +64,6 @@ function ServiceRow({ service }: { service: ServicesDocument }) {
         >
           <PencilIcon className="h-5 w-5" />
         </Link>
-        <button
-          className="transition-all hover:scale-110 hover:text-red-500"
-          disabled={events === undefined}
-          onClick={async () => {
-            if (events!.length > 0) {
-              alert(
-                "Nemôžete vymazať predstavenie, ktoré už má udalosti. Vymažte najprv udalosti.",
-              );
-              return;
-            }
-            await service.remove();
-          }}
-        >
-          <TrashIcon className="h-5 w-5" />
-        </button>
       </div>
     </li>
   );
