@@ -28,7 +28,6 @@ export default function Header({
           {title}
         </span>
         <div className="order-3 flex gap-2 sm:order-2">
-          {search && <SearchBar {...search} />}
           {refresh &&
             (!!refresh.refresh ? (
               <button
@@ -50,6 +49,7 @@ export default function Header({
                 </div>
               )
             ))}
+          {search && <SearchBar {...search} />}
         </div>
         <div className="order-2 sm:order-3">{actionButton}</div>
       </div>

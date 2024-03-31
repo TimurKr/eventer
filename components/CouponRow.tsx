@@ -26,7 +26,7 @@ import {
   UserPlusIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
-import { formatDistance } from "date-fns";
+import { addDays, addMonths, addWeeks, formatDistance } from "date-fns";
 import { sk } from "date-fns/locale";
 import moment from "moment";
 import Link from "next/link";
@@ -160,11 +160,13 @@ export default function CouponRow({
                     })
                   }
                   presets={[
-                    { label: "O týždeň", value: 7 },
-                    { label: "O mesiac", value: 30 },
-                    { label: "O 3 mesiace", value: 90 },
-                    { label: "O pol roka", value: 180 },
-                    { label: "O rok", value: 365 },
+                    { label: "Dnes", value: new Date() },
+                    { label: "Zajtra", value: addDays(new Date(), 1) },
+                    { label: "O týždeň", value: addWeeks(new Date(), 1) },
+                    { label: "O mesiac", value: addMonths(new Date(), 1) },
+                    { label: "O tri mesiace", value: addMonths(new Date(), 3) },
+                    { label: "O pol roka", value: addMonths(new Date(), 6) },
+                    { label: "O rok", value: addMonths(new Date(), 12) },
                   ]}
                   buttonProps={{ className: "h-auto w-auto px-2 py-1" }}
                 />

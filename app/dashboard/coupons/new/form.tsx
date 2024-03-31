@@ -4,10 +4,12 @@ import { FormDateField } from "@/components/forms/FormDateField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SelectContactField from "@/components/forms/SelectContactField";
 import SubmitButton from "@/components/forms/SubmitButton";
+import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
+import { addDays, addMonths, addWeeks } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { useForm } from "react-hook-form";
@@ -100,51 +102,16 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
           name="valid_until"
           label="Platný do"
           horizontal
+          presets={[
+            { label: "Dnes", value: new Date() },
+            { label: "Zajtra", value: addDays(new Date(), 1) },
+            { label: "O týždeň", value: addWeeks(new Date(), 1) },
+            { label: "O mesiac", value: addMonths(new Date(), 1) },
+            { label: "O tri mesiace", value: addMonths(new Date(), 3) },
+            { label: "O pol roka", value: addMonths(new Date(), 6) },
+            { label: "O rok", value: addMonths(new Date(), 12) },
+          ]}
         />
-        {/* <FormField
-          control={form.control}
-          name="valid_until"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date of birth</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value || undefined}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormDescription>
-                Your date of birth is used to calculate your age.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
         <FormTextField
           form={form}
           name="code"
@@ -152,12 +119,14 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
           horizontal
           icons={{
             end: (
-              <ArrowPathIcon
-                className="pointer-events-auto h-4 w-4 hover:scale-105 hover:cursor-pointer"
-                onClick={() =>
-                  form.setValue("code", uuidv4().slice(0, 8).toUpperCase())
-                }
-              />
+              <Button variant="ghost" type="button" tabIndex={-1} size="icon">
+                <ArrowPathIcon
+                  className="h-4 w-4"
+                  onClick={() =>
+                    form.setValue("code", uuidv4().slice(0, 8).toUpperCase())
+                  }
+                />
+              </Button>
             ),
           }}
         />
