@@ -20,11 +20,22 @@ import { cn } from "@/lib/utils";
 import { useRxCollection } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
-import { ChevronDownIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  ChevronDownIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { LockClosedIcon, LockOpenIcon } from "@heroicons/react/24/solid";
 import { isToday } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 
 export default function EventDetail({
@@ -99,6 +110,22 @@ export default function EventDetail({
     [hideCancelled, tickets],
   );
 
+  const contactsCollection = useRxCollection("contacts");
+
+  const generateEmails = useCallback(
+    async (type: "guest_id" | "billing_id") => {
+      if (!contactsCollection || !tickets.length) return [];
+      const _tickets = tickets.filter((t) => t.payment_status != "zrušené");
+      const contacts = await contactsCollection
+        .find({
+          selector: { id: { $in: _tickets.map((t) => t[type]) } },
+        })
+        .exec();
+      return contacts.filter((c) => !!c.email).map((c) => c.email!);
+    },
+    [contactsCollection, tickets],
+  );
+
   return (
     <Card
       className={cn(
@@ -126,26 +153,51 @@ export default function EventDetail({
             <>
               <div className="flex items-end justify-end gap-2 overflow-y-hidden">
                 <EditEventButton eventId={event.id.toString()} />
-                <Button
-                  type="button"
-                  onClick={() =>
-                    event.incrementalPatch({ is_public: !event.is_public })
-                  }
-                  variant="outline"
-                  size={"sm"}
-                >
-                  {event.is_public ? (
-                    <>
-                      <LockClosedIcon className="me-2 h-3 w-3"></LockClosedIcon>
-                      <span>Spraviť udalosť súkromnou</span>
-                    </>
-                  ) : (
-                    <>
-                      <LockOpenIcon className="me-2 h-3 w-3"></LockOpenIcon>
-                      <span>Zverejniť udalosť</span>
-                    </>
-                  )}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" size={"sm"}>
+                      <ArrowTopRightOnSquareIcon className="me-2 h-4 w-4" />
+                      Exportovať
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Emaily</DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const emails = await generateEmails("guest_id");
+                        try {
+                          await navigator.clipboard.writeText(
+                            emails.join(", "),
+                          );
+                          alert(
+                            `Emaily (${emails.length}) skopírované: ${emails.join(", ")}`,
+                          );
+                        } catch (err) {
+                          console.error("Failed to copy text: ", err);
+                        }
+                      }}
+                    >
+                      Hostia
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const emails = await generateEmails("billing_id");
+                        try {
+                          await navigator.clipboard.writeText(
+                            emails.join(", "),
+                          );
+                          alert(
+                            `Emaily (${emails.length}) skopírované: ${emails.join(", ")}`,
+                          );
+                        } catch (err) {
+                          console.error("Failed to copy text: ", err);
+                        }
+                      }}
+                    >
+                      Platcovia
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   type="button"
                   variant="destructive"
