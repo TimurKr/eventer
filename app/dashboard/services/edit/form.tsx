@@ -4,7 +4,7 @@ import FormError from "@/components/forms/FormError";
 import { FormSwitchField } from "@/components/forms/FormSwitchField";
 import { FormTextField } from "@/components/forms/FormTextField";
 import SubmitButton from "@/components/forms/SubmitButton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ConfirmButton } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
@@ -123,7 +123,10 @@ export default function ServiceForm({
     resolver: zodResolver(validationSchema),
   });
 
-  const ticketTypesArrays = useFieldArray({
+  // This is to rerender on every change, so the alerts are updated
+  const ticketTypesFields = form.watch("ticket_types");
+
+  const ticketTypesArray = useFieldArray({
     name: "ticket_types",
     control: form.control,
   });
@@ -159,6 +162,8 @@ export default function ServiceForm({
       ...serviceValues,
       id: crypto.randomUUID(),
     });
+    // Artificaial delay, so that the service can be inserted
+    await new Promise((r) => setTimeout(r, 500));
     const { error } = await ticketTypesCollection.bulkInsert(
       ticket_types.map((t) => ({
         ...t,
@@ -290,7 +295,7 @@ export default function ServiceForm({
               </tr>
             </thead>
             <tbody>
-              {ticketTypesArrays.fields.map((ticket_type, index) => {
+              {ticketTypesFields.map((ticket_type, index) => {
                 const canDelete = !tickets?.some(
                   (t) => t.type_id === ticket_type.id,
                 );
@@ -307,6 +312,14 @@ export default function ServiceForm({
                         name={`ticket_types.${index}.label`}
                         className="w-auto"
                       />
+                      {ticketTypesFields.findIndex(
+                        (t, i) => t.label === ticket_type.label,
+                      ) != index && (
+                        <div className="flex items-start gap-1 text-xs text-amber-600">
+                          <InformationCircleIcon className="h-4 w-4 p-0.5" />
+                          Rovnaký názov typu lístku už máte
+                        </div>
+                      )}
                     </td>
                     <td className="px-1" valign="top">
                       <FormTextField
@@ -334,11 +347,11 @@ export default function ServiceForm({
                       />
                     </td>
                     <td valign="top">
-                      {ticketTypesArrays.fields.length > 1 && (
+                      {ticketTypesArray.fields.length > 1 && (
                         <button
                           type="button"
                           className="self-center p-2 text-red-600 transition-all enabled:hover:scale-110 enabled:hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300"
-                          onClick={() => ticketTypesArrays.remove(index)}
+                          onClick={() => ticketTypesArray.remove(index)}
                           title={
                             canDelete
                               ? "Vymyzať"
@@ -355,7 +368,7 @@ export default function ServiceForm({
               })}
             </tbody>
           </table>
-          {ticketTypesArrays.fields.length === 0 && (
+          {ticketTypesArray.fields.length === 0 && (
             <div className="flex items-center justify-center gap-2 p-2 text-yellow-500">
               <InformationCircleIcon className="h-4 w-4" />
               <p className="text-sm">
@@ -369,7 +382,7 @@ export default function ServiceForm({
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-1 text-sm font-medium text-gray-500 hover:bg-gray-200"
               type="button"
               onClick={() =>
-                ticketTypesArrays.append({
+                ticketTypesArray.append({
                   id: crypto.randomUUID(),
                   label: "Standard",
                   price: 20,
@@ -386,19 +399,10 @@ export default function ServiceForm({
         {errorMessages.length > 0 && (
           <Alert variant="destructive" className="mt-4">
             <ExclamationTriangleIcon className="h-4 w-4" />
-            {errorMessages.map((message) => (
-              <p key={message}>{message}</p>
-            ))}
-          </Alert>
-        )}
-        {ticketTypesArrays.fields
-          .map((t) => t.label)
-          .some((t, i, a) => a.indexOf(t) != i) && (
-          <Alert variant="warning" className="mt-4">
-            <ExclamationTriangleIcon className="h-4 w-4" />
-            <AlertTitle>Rovnaké názvy typov lístkov</AlertTitle>
             <AlertDescription>
-              Odporúčame zvoliť rôzne názvy typov lístkov.
+              {errorMessages.map((message) => (
+                <p key={message}>{message}</p>
+              ))}
             </AlertDescription>
           </Alert>
         )}
