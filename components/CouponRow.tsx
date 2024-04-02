@@ -79,7 +79,7 @@ export default function CouponRow({
                 <DropdownMenuItem asChild>
                   <Link href={`/dashboard/contacts/${contact?.id}`}>
                     <PencilIcon className="me-2 h-4 w-4" />
-                    Upraviť kontakt
+                    Detail
                   </Link>
                 </DropdownMenuItem>
                 <SelectContactDialog

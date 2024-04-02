@@ -19,14 +19,24 @@ const Form_dep = FormProvider;
 function Form<Values extends FieldValues>({
   form,
   onSubmit,
+  stopPropagation = true,
   ...props
 }: Omit<React.HTMLAttributes<HTMLFormElement>, "onSubmit"> & {
   form: UseFormReturn<Values>;
   onSubmit: (values: Values) => void;
+  stopPropagation?: boolean;
 }) {
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} {...props} />
+      <form
+        onSubmit={(e) => {
+          if (stopPropagation) {
+            e.stopPropagation();
+          }
+          return form.handleSubmit(onSubmit)(e);
+        }}
+        {...props}
+      />
     </FormProvider>
   );
 }

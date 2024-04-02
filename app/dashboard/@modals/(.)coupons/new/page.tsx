@@ -1,14 +1,15 @@
 "use client";
 
-import NewCouponForm from "@/app/dashboard/coupons/new/form";
-import { type EditEventFormProps } from "@/app/dashboard/events/edit-event/form";
+import NewCouponForm, {
+  type NewCouponFormProps,
+} from "@/app/dashboard/coupons/new/form";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 export default function Page({
   searchParams,
 }: {
-  searchParams: EditEventFormProps;
+  searchParams: NewCouponFormProps;
 }) {
   const router = useRouter();
 
@@ -17,7 +18,7 @@ export default function Page({
       <Dialog open={true} onOpenChange={() => router.back()}>
         <DialogContent>
           <DialogHeader>Vytvorte nový pokaz</DialogHeader>
-          <NewCouponForm />
+          <NewCouponForm {...searchParams} />
         </DialogContent>
       </Dialog>
     </>

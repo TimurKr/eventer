@@ -7,12 +7,11 @@ import SubmitButton from "@/components/forms/SubmitButton";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { useRxCollection, useRxData } from "@/rxdb/db";
+import { useRxCollection } from "@/rxdb/db";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addDays, addMonths, addWeeks } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
@@ -36,15 +35,18 @@ const validationSchema = z.object({
 
 type Values = z.infer<typeof validationSchema>;
 
-export default function NewCouponForm(props: { onSubmit?: () => void }) {
+export type NewCouponFormProps = {
+  contactId?: string;
+};
+
+export default function NewCouponForm(
+  props: {
+    onSubmit?: () => void;
+  } & NewCouponFormProps,
+) {
   const router = useRouter();
 
-  const { result: contacts, collection: contactsCollection } = useRxData(
-    "contacts",
-    useCallback((collection) => collection.find(), []),
-    { initialResult: [] },
-  );
-
+  const contactsCollection = useRxCollection("contacts");
   const couponsCollection = useRxCollection("coupons");
 
   const form = useForm<Values>({
@@ -53,7 +55,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
       amount: 100,
       note: "",
       valid_until: null,
-      contact: "",
+      contact: props.contactId || "",
     },
     resolver: zodResolver(validationSchema),
   });
@@ -79,7 +81,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
     });
 
     toast.success("Poukaz bol vytvorený", { autoClose: 1500 });
-    props.onSubmit ? props.onSubmit() : router.back();
+    await (props.onSubmit ? props.onSubmit() : router.back());
   };
 
   return (

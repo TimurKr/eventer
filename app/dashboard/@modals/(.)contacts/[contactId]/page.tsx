@@ -14,7 +14,6 @@ export default function NewContact({
   if (!params.contactId) router.push("/dashboard/contacts");
 
   return (
-    //TODO: delete these classes everywhere
     <>
       <Dialog open={true} onOpenChange={() => router.back()}>
         <DialogContent size={"4xl"}>

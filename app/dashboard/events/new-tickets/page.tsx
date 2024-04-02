@@ -9,7 +9,6 @@ export default async function Page() {
         Vytvorte nové lístky
       </h1>
       <div className="grid place-content-center">
-        {/* BUG: gets redirected... */}
         <NewTicketsForm />
       </div>
     </div>

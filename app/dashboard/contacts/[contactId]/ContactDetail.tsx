@@ -1,5 +1,6 @@
 "use client";
 
+import CouponRow from "@/components/CouponRow";
 import EventDetail from "@/components/EventDetail";
 import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
@@ -12,6 +13,13 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { Button, ConfirmButton } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -27,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import { string as zString } from "zod";
+import NewCouponButton from "../../coupons/new/button";
 
 export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
   const {
@@ -82,7 +91,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
     { initialResult: [] },
   );
 
-  const { result: events, isFetching } = useRxData(
+  const { result: events, isFetching: isFetchingEvents } = useRxData(
     "events",
     useCallback(
       (c) =>
@@ -97,7 +106,7 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
 
   const {
     result: coupons,
-    isFetching: fetchingCoupons,
+    isFetching: isFetchingCoupons,
     collection: couponsCollection,
   } = useRxData(
     "coupons",
@@ -285,10 +294,10 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           <TabsTrigger value="coupons">Poukazy</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets">
-          {isFetching ? (
+          {isFetchingEvents ? (
             <Loading text="Načítavam lístky..." />
           ) : groupedTickets.length === 0 ? (
-            <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" /> //TODO: Pridať možnosť pridania lístku s autofill
+            <NoResults text="Tento kontakt nie je použitý pri žiadnom lístku" />
           ) : (
             <div className="flex flex-col gap-4">
               {groupedTickets.map((event) => (
@@ -303,8 +312,49 @@ export default function ContactDetail({ id }: { id: ContactsDocument["id"] }) {
           )}
         </TabsContent>
         <TabsContent value="coupons">
-          <p>Coming soon</p>
-          {/* TODO */}
+          {isFetchingCoupons ? (
+            <Loading text="Načítavam poukazy..." />
+          ) : coupons.length === 0 ? (
+            <NoResults text="K tomuto kontktu nie je priradený žiaden poukaz">
+              <NewCouponButton contactId={contact?.id} />
+            </NoResults>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <Table className="">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-start">Kód</TableHead>
+                    <TableHead className="text-center">Kontakt</TableHead>
+                    <TableHead className="text-end">Suma</TableHead>
+                    <TableHead className="text-end">
+                      Platí do:{" "}
+                      <span className="text-xs font-light text-gray-500">
+                        (vrátane)
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-center">Stav</TableHead>
+                    <TableHead className="text-end">Poznámka</TableHead>
+                    <TableHead className="whitespace-nowrap text-end">
+                      Použité pri
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap text-end">
+                      Vytvorené z
+                    </TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {coupons.map((coupon) => (
+                    <CouponRow
+                      key={coupon.id}
+                      coupon={coupon}
+                      contact={contact || undefined}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       {tickets.length ? (

@@ -139,7 +139,12 @@ export default function NewContactForm({
   );
 
   return (
-    <Form form={form} onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <Form
+      form={form}
+      onSubmit={handleSubmit}
+      stopPropagation
+      className="flex flex-col gap-4"
+    >
       <FormTextField
         form={form}
         name={"name"}
@@ -196,6 +201,7 @@ export default function NewContactForm({
       <SubmitButton
         className="self-end"
         form={form}
+        allowSubmitDefault
         label={duplicateContact || duplicateName ? "Vytvoriť nový" : "Vytvoriť"}
         submittingLabel="Vytváram..."
       />
