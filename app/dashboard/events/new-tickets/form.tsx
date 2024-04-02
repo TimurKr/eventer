@@ -105,7 +105,7 @@ function FormTicketRow({
         />
       </td>
       <td className="w-px">
-        <FormField //TODO: convet to FormSelectField
+        <FormField
           control={form.control}
           name={`tickets.${index}.type_id`}
           render={({ field }) => (
@@ -316,7 +316,6 @@ export default function NewTicketsForm() {
         <Button variant={"outline"} asChild>
           <Link
             href={`/dashboard/services/edit?serviceId=${event?.service_id}`}
-            // className="rounded-lg bg-gray-100 px-2 py-1 text-center text-sm text-gray-600 hover:bg-gray-200"
           >
             Vytvoriť nový typ lístkov
           </Link>
