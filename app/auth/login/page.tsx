@@ -92,7 +92,8 @@ export default function LoginForm({
             </Alert>
           )}
           <SubmitButton
-            isSubmitting={form.formState.isSubmitting}
+            form={form}
+            allowSubmitDefault
             label="Prihlásiť"
             submittingLabel="Prihlasujem..."
           />

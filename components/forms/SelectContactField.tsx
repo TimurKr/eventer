@@ -22,7 +22,7 @@ export default function SelectContactField<V extends FieldValues>({
   ...props
 }: {
   form: UseFormReturn<V>;
-  name: FieldPathByValue<V, string>;
+  name: FieldPathByValue<V, string> | FieldPathByValue<V, string | undefined>;
   buttonProps?: ButtonProps;
   required?: boolean;
 } & Partial<SelectContactDialogProps>) {

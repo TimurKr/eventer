@@ -152,7 +152,7 @@ export default function EditEventForm(
       />
       <FormSwitchField form={form} name="isPublic" label="Verejné" horizontal />
       <SubmitButton
-        isSubmitting={form.formState.isSubmitting}
+        form={form}
         label={event?.id ? "Uložiť" : "Vytvoriť"}
         submittingLabel={event?.id ? "Ukladám" : "Vytváram..."}
       />

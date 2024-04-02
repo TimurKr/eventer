@@ -9,6 +9,7 @@ import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ArrowPathIcon, CurrencyEuroIcon } from "@heroicons/react/24/outline";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { addDays, addMonths, addWeeks } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -26,7 +27,11 @@ const validationSchema = z.object({
     .min(0, "Suma musí byť kladná"),
   note: z.string(),
   valid_until: z.date().nullable(),
-  contact: z.string().uuid(),
+  contact: z
+    .string()
+    .uuid()
+    .or(z.literal(""))
+    .transform((value) => value || undefined),
 });
 
 type Values = z.infer<typeof validationSchema>;
@@ -50,6 +55,7 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
       valid_until: null,
       contact: "",
     },
+    resolver: zodResolver(validationSchema),
   });
 
   const onSubmit = async (values: Values) => {
@@ -132,7 +138,8 @@ export default function NewCouponForm(props: { onSubmit?: () => void }) {
         />
         <SubmitButton
           className="ms-auto"
-          isSubmitting={form.formState.isSubmitting}
+          form={form}
+          allowSubmitDefault
           label="Vytvoriť"
           submittingLabel="Vytváram..."
         />

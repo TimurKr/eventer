@@ -407,11 +407,10 @@ export default function ServiceForm({
           </Alert>
         )}
         <SubmitButton
+          form={form}
           className="self-end"
-          isSubmitting={form.formState.isSubmitting}
           label={service?.id ? "Uložiť" : "Vytvoriť"}
           submittingLabel={service?.id ? "Ukladám..." : "Vytváram..."}
-          disabled={!form.formState.isDirty}
         />
       </Form>
       {service &&

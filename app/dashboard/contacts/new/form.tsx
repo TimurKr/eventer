@@ -195,7 +195,7 @@ export default function NewContactForm({
       )}
       <SubmitButton
         className="self-end"
-        isSubmitting={form.formState.isSubmitting}
+        form={form}
         label={duplicateContact || duplicateName ? "Vytvoriť nový" : "Vytvoriť"}
         submittingLabel="Vytváram..."
       />

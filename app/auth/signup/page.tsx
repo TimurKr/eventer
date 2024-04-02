@@ -119,7 +119,8 @@ export default function SignUpForm({
             </Alert>
           )}
           <SubmitButton
-            isSubmitting={form.formState.isSubmitting}
+            form={form}
+            allowSubmitDefault
             label="Vytvoriť účet"
             submittingLabel="Vytváram..."
           />

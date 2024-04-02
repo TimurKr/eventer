@@ -111,7 +111,7 @@ export default function ConvertToCouponModal({
           </p>
           <form action={submit}>
             <SubmitButton
-              isSubmitting={isSubmitting}
+              submitting={isSubmitting}
               label="Potvrdiť"
               submittingLabel="Vytváram poukaz..."
               className="ms-auto"

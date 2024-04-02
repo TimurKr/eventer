@@ -580,7 +580,7 @@ export default function NewTicketsForm() {
       </table>
       <div className="mt-4 flex items-center justify-end gap-4">
         <SubmitButton
-          isSubmitting={form.formState.isSubmitting}
+          form={form}
           label="Vytvoriť"
           submittingLabel="Vytváram..."
           className="m-0"
