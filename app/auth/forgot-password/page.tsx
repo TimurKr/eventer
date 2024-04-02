@@ -18,7 +18,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function LoginForm({
+export default function ForgotPasswordForm({
   searchParams,
 }: {
   searchParams: { email?: string };
@@ -103,7 +103,8 @@ export default function LoginForm({
                 </Alert>
               )}
               <SubmitButton
-                isSubmitting={form.formState.isSubmitting}
+                form={form}
+                allowSubmitDefault
                 label="Odoslať email"
                 submittingLabel="Odosielam..."
               />

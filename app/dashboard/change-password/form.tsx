@@ -94,10 +94,7 @@ export default function PasswordChangeForm({ next }: { next?: Route }) {
         >
           Zrušiť
         </Button>
-        <SubmitButton
-          isSubmitting={form.formState.isSubmitting}
-          className="self-end"
-        />
+        <SubmitButton form={form} className="self-end" />
       </div>
     </Form>
   );

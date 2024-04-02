@@ -27,8 +27,8 @@ export function FormSwitchField<Values extends FieldValues>({
   form,
   name,
   label,
-  horizontal,
   description,
+  horizontal,
   ...props
 }: FormSwitchFieldProps<Values>) {
   return (
@@ -47,7 +47,12 @@ export function FormSwitchField<Values extends FieldValues>({
             </FormLabel>
           )}
           <FormControl>
-            <Switch {...field} {...props} />
+            <Switch
+              {...field}
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              {...props}
+            />
           </FormControl>
           {description && (
             <FormDescription
