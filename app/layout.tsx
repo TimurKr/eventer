@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Roboto } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.min.css";
@@ -37,6 +39,8 @@ export default function RootLayout({
       >
         <main className="h-full min-h-screen w-full">{children}</main>
         <ToastContainer position="top-right" />
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
