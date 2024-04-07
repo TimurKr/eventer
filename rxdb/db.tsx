@@ -86,7 +86,15 @@ export const {
     ignoreDuplicate: true, // DEV
   });
 
-  const myCollections = await db.addCollections(collections);
+  // Add your collections
+  let myCollections: Awaited<ReturnType<typeof db.addCollections<Collections>>>;
+
+  try {
+    myCollections = await db.addCollections(collections);
+  } catch (error) {
+    await removeRxDatabase("mydatabase", storage);
+    myCollections = await db.addCollections(collections);
+  }
 
   // Create Replications with supabase
   const supabaseClient = createBrowserSupabase();
