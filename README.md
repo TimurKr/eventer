@@ -1,37 +1,50 @@
-# Service management app
+# Service Management App
 
-Create services, sell tickets, keep track of events and contacts.
+This application allows you to create services, sell tickets, and manage events and contacts effectively.
 
-## Development
+## Getting Started
 
-### 1. Create `.env` fiel in the root directory with the following contents
+These instructions will get you a copy of the project up and running on your local machine for development purposes.
+
+### Prerequisites
+
+You need to have Node.js and npm installed on your machine. If you don't have these installed, you can download them from [here](https://nodejs.org/en/download/).
+
+### Setting Up
+
+1. **Environment Variables**: Create a `.env` file in the root directory of the project and add the following variables:
 
 ```env
 # Connecting to Supabase with supabase-js
-# https://app.supabase.com/project/_/settings/api
+# Get these values from your project settings on https://app.supabase.com
 NEXT_PUBLIC_SUPABASE_URL=https://<project-id>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key-from-supabase>
 
-
-# Only required if on the prisma experiments branch
-
-# Prisma Client
-DATABASE_URL="postgres://postgres.<project-id>:<db-password>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-# Prisma Direct connection to the database. Used for migrations.
-DIRECT_URL="postgres://postgres.<project-id>:<db-password>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?pgbouncer=true"
+PG_URI="postgres://postgres.<project-id>:<db-password>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?pgbouncer=true"
 ```
 
-Make sure to replace `<project-id>` and `<db-password>` with the actual values from supabase.
+Replace `<project-id>` and `<db-password>` with the actual values from your Supabase project.
 
-### 2. Runnig development
+2. **Running the App**: You can start the development server using the VSCode debugger or by running the following command in your terminal:
 
-Use the VSCode debugger, or run using `npm run dev`
+```sh
+npm run dev
+```
 
-### 3. On changes in the db
+### Development Workflow
 
-Run `npm run generate:types` to update the supabase client
-Run `npx prisma db pull` to update the prisma schema (under development on the branch `prisma-experiments`)
+- **Database Changes**: If you make any changes to the database, run the following command to update the Supabase client and sync RxDB schemas:
 
-### 4. Before pushing
+  ```sh
+  npm run generate:all
+  ```
 
-As vercel builds a preview for each commit on all branches, run `npm run build` before commiting to make sure the build is successfull and the deployment works.
+- **Before Pushing Changes**: Vercel builds a preview for each commit on all branches. Therefore, before committing your changes, make sure to build the project locally to ensure there are no build errors:
+
+  ```sh
+  npm run build
+  ```
+
+## Contributing
+
+Contributions are welcome from everyone! If you're interested in contributing, create an issue before working on a pull request.
