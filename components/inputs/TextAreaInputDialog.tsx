@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { PropsWithChildren, useCallback, useEffect, useState } from "react";
 
 export default function TextAreaInputDialog({
@@ -80,10 +81,29 @@ export default function TextAreaInputDialog({
         <textarea
           value={_value}
           onChange={(e) => _setValue(e.target.value)}
-          autoFocus
+          ref={(textarea) => {
+            if (textarea) {
+              textarea.focus();
+              textarea.selectionStart = textarea.selectionEnd =
+                textarea.value.length;
+            }
+          }}
           className="rounded-md border-gray-300 shadow-sm"
           placeholder="Zadajte text..."
-        ></textarea>
+          rows={5}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSave();
+            }
+          }}
+        />
+        <div className="flex items-center text-xs text-gray-500">
+          <InformationCircleIcon className="me-1 h-4 w-4" />
+          Použite
+          <span className="mx-1 font-medium italic">[shift + Enter]</span>
+          pre nový riadok
+        </div>
         <DialogFooter>
           {onReset && (
             <ConfirmButton

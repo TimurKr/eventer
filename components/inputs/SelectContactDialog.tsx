@@ -12,6 +12,7 @@ import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 import Fuse from "fuse.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import NoResults from "../NoResults";
 import SearchBar from "../SearchBar";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
@@ -144,6 +145,13 @@ export function SelectContactDialog({
                 {contact.phone && <p>Telefón: {contact.phone}</p>}
               </button>
             ))}
+            {allContacts.length === 0 ? (
+              <NoResults text="Nemáte žiadne kontakty." />
+            ) : (
+              contacts.length === 0 && (
+                <NoResults text="Hľadaný kontakt sa nenašiel." />
+              )
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

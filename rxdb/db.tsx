@@ -97,9 +97,6 @@ export const {
   const servicesReplication = new ServicesReplication({
     supabaseClient: supabaseClient,
     collection: myCollections.services,
-    constraintMap: {
-      services_unique_name_constraint: "Už máte predstavenie s týmto názvom",
-    },
     replicationIdentifier:
       "services" + process.env["NEXT_PUBLIC_SUPABASE_URL"]! + safeUserId,
     onError: (error) => toast.error(error.message),

@@ -19,7 +19,6 @@ import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import {
-  ArrowTopRightOnSquareIcon,
   PencilIcon,
   PlusCircleIcon,
   UserGroupIcon,
@@ -29,6 +28,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
+import * as zod from "zod";
+import { InstantTextField } from "./inputs/InstantFields";
 
 function ContactInTicket({
   className,
@@ -131,13 +132,26 @@ export default function TicketRow({
 
   return (
     <TableRow
-      data-state={
-        highlight ? "highlighted" : selectCheckbox?.checked ? "selected" : ""
-      }
+      data-state={selectCheckbox?.checked ? "selected" : ""}
+      className={cn(
+        highlight &&
+          (ticket.payment_status === "zrušené"
+            ? "bg-red-100"
+            : "bg-orange-100"),
+      )}
     >
       <TableCell className="whitespace-nowrap">
         {index}
-        {selectCheckbox && <Checkbox className="ms-2" {...selectCheckbox} />}
+        {selectCheckbox && (
+          <Checkbox
+            className={cn(
+              "ms-2",
+              highlight &&
+                "data-[state=checked]:border-orange-500 data-[state=checked]:bg-orange-500",
+            )}
+            {...selectCheckbox}
+          />
+        )}
       </TableCell>
       <TableCell>
         <DropdownSelector
@@ -275,15 +289,24 @@ export default function TicketRow({
         </TextAreaInputDialog>
       </TableCell>
       <TableCell className="whitespace-nowrap text-end">
-        {ticket.price} €
-      </TableCell>
-      <TableCell className="text-end">
-        <Link
-          href={`/dashboard/events?query=${ticket.id}`}
-          className="transition-colors hover:text-blue-500"
-        >
-          <ArrowTopRightOnSquareIcon className="h-4" />
-        </Link>
+        <InstantTextField
+          type="text"
+          defaultValue={ticket.price.toString()}
+          inline
+          validate={async (value) => {
+            const r = zod.coerce
+              .number({
+                required_error: "Suma je povinná",
+                invalid_type_error: "Zadajte valídne číslo",
+              })
+              .safeParse(value);
+            return r.success ? null : r.error?.format()._errors.join(", ");
+          }}
+          updateValue={async (value) =>
+            (await ticket.patch({ price: parseFloat(value!) })).price.toString()
+          }
+        />{" "}
+        €
       </TableCell>
     </TableRow>
   );

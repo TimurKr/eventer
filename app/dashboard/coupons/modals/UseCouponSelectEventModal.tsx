@@ -1,6 +1,7 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
+import NoResults from "@/components/NoResults";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,9 @@ export default function UseCouponSelectEvent({
                   }
                 />
               ))}
+              {allEvents.length === 0 && (
+                <NoResults text="Nemáte žiadne udalosti." />
+              )}
             </div>
           )}
         </DialogContent>

@@ -41,6 +41,11 @@ const schemaLiteral = {
       format: "uuid",
       maxLength: 64,
     },
+    note: {
+      description: "Database type: text. Default value: ''",
+      type: "string",
+      default: "",
+    },
   },
   required: ["datetime", "service_id", "id"],
   type: "object",

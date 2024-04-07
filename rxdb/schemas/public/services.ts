@@ -50,8 +50,7 @@ export type ServicesCollection = RxCollection<ServicesDocumentType>;
 
 export type ServicesConstraints =
   | "services_pkey"
-  | "services_unique_name_constraint"
-  | "services_user_id_fkey";
+  | "public_services_business_id_fkey";
 
 export class ServicesReplication extends SupabaseReplication<
   ServicesDocumentType,

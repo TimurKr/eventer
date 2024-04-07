@@ -1,8 +1,8 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
-import { InstantTextField } from "@/components/forms/InstantFields";
 import DatePicker from "@/components/inputs/DatePicker";
+import { InstantTextField } from "@/components/inputs/InstantFields";
 import { SelectContactDialog } from "@/components/inputs/SelectContactDialog";
 import TextAreaInputDialog from "@/components/inputs/TextAreaInputDialog";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,7 @@ import { sk } from "date-fns/locale";
 import moment from "moment";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { number as zNumber } from "zod";
+import * as zod from "zod";
 import UseCouponSelectEvent from "../app/dashboard/coupons/modals/UseCouponSelectEventModal";
 import { validateCoupon } from "../app/dashboard/coupons/utils";
 
@@ -113,10 +113,14 @@ export default function CouponRow({
               defaultValue={coupon.amount.toString()}
               inline
               validate={async (value) => {
-                const r = zNumber({ required_error: "Suma je povinná" })
+                const r = zod.coerce
+                  .number({
+                    required_error: "Suma je povinná",
+                    invalid_type_error: "Zadajte valídne číslo",
+                  })
                   .min(0, "Suma musí byť kladné číslo")
                   .safeParse(value);
-                return r.success ? null : r.error.message;
+                return r.success ? null : r.error?.format()._errors.join(", ");
               }}
               updateValue={async (value) =>
                 (
@@ -132,10 +136,14 @@ export default function CouponRow({
               defaultValue={coupon.original_amount.toString()}
               inline
               validate={async (value) => {
-                const r = zNumber({ required_error: "Suma je povinná" })
+                const r = zod.coerce
+                  .number({
+                    required_error: "Suma je povinná",
+                    invalid_type_error: "Zadajte valídne číslo",
+                  })
                   .min(0, "Suma musí byť kladné číslo")
                   .safeParse(value);
-                return r.success ? null : r.error.message;
+                return r.success ? null : r.error?.format()._errors.join(", ");
               }}
               updateValue={async (value) =>
                 (

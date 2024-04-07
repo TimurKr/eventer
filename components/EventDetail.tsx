@@ -23,11 +23,13 @@ import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import {
   ArrowTopRightOnSquareIcon,
   ChevronDownIcon,
+  PlusCircleIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { LockClosedIcon, LockOpenIcon } from "@heroicons/react/24/solid";
 import { isToday } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
+import TextAreaInputDialog from "./inputs/TextAreaInputDialog";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -139,6 +141,7 @@ export default function EventDetail({
           event={event}
           onClick={() => setIsExpanded(!isExpanded)}
           actionButton={<NewTicketsButton eventId={event.id.toString()} />}
+          showNote={isShown ? false : undefined}
         />
       </CardHeader>
       <CardContent
@@ -152,6 +155,26 @@ export default function EventDetail({
           {editable && (
             <>
               <div className="flex items-end justify-end gap-2 overflow-y-hidden">
+                <TextAreaInputDialog
+                  title="Poznámka k udalosti"
+                  value={event.note}
+                  onSave={(note) => event.incrementalPatch({ note })}
+                  onReset={() => event.incrementalPatch({ note: "" })}
+                >
+                  {event.note ? (
+                    <button className="group flex max-w-40 flex-col items-start p-1 pe-4 sm:max-w-80">
+                      <p className="text-xs text-gray-600">Poznámka:</p>
+                      <p className="line-clamp-3 text-start text-sm underline-offset-2 group-hover:underline">
+                        {event.note}
+                      </p>
+                    </button>
+                  ) : (
+                    <Button variant={"ghost"} size={"sm"} className="">
+                      Pridať poznámku
+                      <PlusCircleIcon className="ms-2 h-4" />
+                    </Button>
+                  )}
+                </TextAreaInputDialog>
                 <EditEventButton eventId={event.id.toString()} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -323,7 +346,6 @@ export default function EventDetail({
                   </TableHead>
                   <TableHead className="text-end">Poznámka</TableHead>
                   <TableHead className="text-end">Cena</TableHead>
-                  <TableHead className="sr-only"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -339,6 +361,7 @@ export default function EventDetail({
                       ),
                       onCheckedChange: () => toggleSelectedTicket(ticket),
                     }}
+                    highlight={highlightedTickets?.includes(ticket)}
                   />
                 ))}
                 {cancelledTickets.length > 0 && (
@@ -368,6 +391,9 @@ export default function EventDetail({
                           index={i + 1}
                           ticket={ticket}
                           disableArrived={lockedArrived}
+                          highlight={highlightedCancelledTickets?.includes(
+                            ticket,
+                          )}
                         />
                       ))}
                   </>

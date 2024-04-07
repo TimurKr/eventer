@@ -6,7 +6,8 @@
     "start": "next start",
     "lint": "next lint",
     "generate:types": "supabase gen types typescript --project-id fexmeqvoxejxnzexljdi --schema public > lib/supabase/database.types.ts && npx prettier --write lib/supabase",
-    "generate:schemas": "bun rxdb-supabase/cli.ts -c ./rxdb/config.json && npx prettier --write ./rxdb/schemas"
+    "generate:schemas": "bun rxdb-supabase/cli.ts -c ./rxdb/config.json && npx prettier --write ./rxdb/schemas",
+    "generate:all": "npm run generate:types && npm run generate:schemas"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^12.0.1",

@@ -41,8 +41,7 @@ const validationSchema = z.object({
       price: z.number({ required_error: "Cena je povinná" }),
       is_vip: z.boolean().default(false),
     })
-    .array()
-    .nonempty("Musíte mať aspoň 1 typ lístka"),
+    .array(),
 });
 
 type FormValues = z.infer<typeof validationSchema>;
@@ -234,7 +233,7 @@ export default function ServiceForm({
           placeholder="Zadajte názov predstavenia"
         />
         <div className="flex items-center gap-6 pt-4">
-          <Label>Type Lístkov</Label>
+          <Label>Typy Lístkov</Label>
           <div className="h-px flex-grow bg-gray-400" />
         </div>
         <div>
@@ -347,21 +346,19 @@ export default function ServiceForm({
                       />
                     </td>
                     <td valign="top">
-                      {ticketTypesArray.fields.length > 1 && (
-                        <button
-                          type="button"
-                          className="self-center p-2 text-red-600 transition-all enabled:hover:scale-110 enabled:hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300"
-                          onClick={() => ticketTypesArray.remove(index)}
-                          title={
-                            canDelete
-                              ? "Vymyzať"
-                              : "Nemôžete zmazať, typ je už použitý"
-                          }
-                          disabled={!canDelete}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="self-center p-2 text-red-600 transition-all enabled:hover:scale-110 enabled:hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300"
+                        onClick={() => ticketTypesArray.remove(index)}
+                        title={
+                          canDelete
+                            ? "Vymyzať"
+                            : "Nemôžete zmazať, typ je už použitý"
+                        }
+                        disabled={!canDelete}
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -372,8 +369,8 @@ export default function ServiceForm({
             <div className="flex items-center justify-center gap-2 p-2 text-yellow-500">
               <InformationCircleIcon className="h-4 w-4" />
               <p className="text-sm">
-                Nevytvorili ste žiadne typy lístkov. Vytvorte aspoň 1 aby ste
-                mohli predávať lístky
+                Nevytvorili ste žiadne typy lístkov. Bez typu lístkov nebude
+                môcť zadávať lístky na toto predstavenie.
               </p>
             </div>
           )}
