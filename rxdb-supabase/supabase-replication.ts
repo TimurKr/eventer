@@ -10,6 +10,7 @@ import {
   ReplicationPullOptions,
   ReplicationPushHandler,
   ReplicationPushOptions,
+  RxError,
   RxReplicationPullStreamItem,
   RxReplicationWriteToMasterRow,
   WithDeleted,
@@ -17,6 +18,8 @@ import {
 } from "rxdb";
 import { RxReplicationState } from "rxdb/plugins/replication";
 import { Subject } from "rxjs/internal/Subject";
+
+import { captureException } from "@sentry/nextjs";
 
 const DEFAULT_LAST_MODIFIED_FIELD = "_modified";
 const DEFAULT_DELETED_FIELD = "_deleted";
@@ -201,6 +204,16 @@ export class SupabaseReplication<
     }
 
     this.error$.subscribe((error) => {
+      captureException(error, {
+        data: {
+          replicationIdentifier: this.replicationIdentifier,
+          collectionName: this.collection.name,
+          table: this.table,
+          primaryKey: this.primaryKey,
+          lastModifiedFieldName: this.lastModifiedFieldName,
+          options: this.options,
+        },
+      });
       this.options.onError?.(error);
     });
   }
@@ -322,15 +335,18 @@ export class SupabaseReplication<
     if (errors.length === 0) {
       return []; // Success :)
     }
-
     // Emit errors so the client can display them to user
     errors.forEach((error) =>
-      this.options.onError?.(
-        error.error instanceof Error
+      this.subjects.error.next(
+        error.error instanceof RxError
           ? error.error
-          : new Error(error.error.message),
+          : new RxError("CONFLICT", error.error.message),
       ),
     );
+
+    // There was an issue? Lets just resync to be safe
+    // TODO: This is untested
+    this.reSync();
 
     return errors.map((error) => error.masterState);
   };
