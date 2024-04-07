@@ -131,13 +131,26 @@ export default function TicketRow({
 
   return (
     <TableRow
-      data-state={
-        highlight ? "highlighted" : selectCheckbox?.checked ? "selected" : ""
-      }
+      data-state={selectCheckbox?.checked ? "selected" : ""}
+      className={cn(
+        highlight &&
+          (ticket.payment_status === "zrušené"
+            ? "bg-red-100"
+            : "bg-orange-100"),
+      )}
     >
       <TableCell className="whitespace-nowrap">
         {index}
-        {selectCheckbox && <Checkbox className="ms-2" {...selectCheckbox} />}
+        {selectCheckbox && (
+          <Checkbox
+            className={cn(
+              "ms-2",
+              highlight &&
+                "data-[state=checked]:border-orange-500 data-[state=checked]:bg-orange-500",
+            )}
+            {...selectCheckbox}
+          />
+        )}
       </TableCell>
       <TableCell>
         <DropdownSelector

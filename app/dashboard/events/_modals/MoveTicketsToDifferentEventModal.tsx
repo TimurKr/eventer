@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useRxCollection, useRxData } from "@/rxdb/db";
 import { EventsDocument } from "@/rxdb/schemas/public/events";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
@@ -89,7 +90,7 @@ export default function MoveTicketsToDifferentEventModal({
         Posunúť na inú udalosť
       </Button>
       <Dialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
-        <DialogContent>
+        <DialogContent size="4xl">
           <DialogHeader>
             <DialogTitle>
               Vyberte si udalosť, na ktorú by ste chceli presunúť lístky
@@ -122,7 +123,11 @@ export default function MoveTicketsToDifferentEventModal({
                 }
                 onMouseEnter={() => setHoveringEvent(event)}
                 onMouseLeave={() => setHoveringEvent(null)}
-                className={`${selectedTickets.some((t) => t.event_id == event.id) && "cursor-not-allowed !bg-red-50"}`}
+                className={cn(
+                  "rounded-lg",
+                  selectedTickets.some((t) => t.event_id == event.id) &&
+                    "cursor-not-allowed !bg-red-50",
+                )}
                 additionalTickets={
                   !selectedTickets.some((t) => t.event_id == event.id) &&
                   hoveringEvent?.id === event.id

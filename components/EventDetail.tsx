@@ -362,6 +362,7 @@ export default function EventDetail({
                       ),
                       onCheckedChange: () => toggleSelectedTicket(ticket),
                     }}
+                    highlight={highlightedTickets?.includes(ticket)}
                   />
                 ))}
                 {cancelledTickets.length > 0 && (
@@ -391,6 +392,9 @@ export default function EventDetail({
                           index={i + 1}
                           ticket={ticket}
                           disableArrived={lockedArrived}
+                          highlight={highlightedCancelledTickets?.includes(
+                            ticket,
+                          )}
                         />
                       ))}
                   </>
