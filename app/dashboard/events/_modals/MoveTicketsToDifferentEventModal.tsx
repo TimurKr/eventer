@@ -1,6 +1,7 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
+import NoResults from "@/components/NoResults";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -132,6 +133,9 @@ export default function MoveTicketsToDifferentEventModal({
                 }
               />
             )) || <InlineLoading />}
+            {allEvents?.length === 0 && (
+              <NoResults text="Nemáte žiadne udalosti." />
+            )}
           </div>
         </DialogContent>
       </Dialog>
