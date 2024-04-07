@@ -346,7 +346,6 @@ export default function EventDetail({
                   </TableHead>
                   <TableHead className="text-end">Poznámka</TableHead>
                   <TableHead className="text-end">Cena</TableHead>
-                  <TableHead className="sr-only"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

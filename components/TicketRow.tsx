@@ -19,7 +19,6 @@ import { useRxCollection, useRxData } from "@/rxdb/db";
 import { ContactsDocument } from "@/rxdb/schemas/public/contacts";
 import { TicketsDocument } from "@/rxdb/schemas/public/tickets";
 import {
-  ArrowTopRightOnSquareIcon,
   PencilIcon,
   PlusCircleIcon,
   UserGroupIcon,
@@ -289,14 +288,6 @@ export default function TicketRow({
       </TableCell>
       <TableCell className="whitespace-nowrap text-end">
         {ticket.price} €
-      </TableCell>
-      <TableCell className="text-end">
-        <Link
-          href={`/dashboard/events?query=${ticket.id}`}
-          className="transition-colors hover:text-blue-500"
-        >
-          <ArrowTopRightOnSquareIcon className="h-4" />
-        </Link>
       </TableCell>
     </TableRow>
   );
