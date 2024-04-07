@@ -81,7 +81,13 @@ export default function TextAreaInputDialog({
         <textarea
           value={_value}
           onChange={(e) => _setValue(e.target.value)}
-          autoFocus
+          ref={(textarea) => {
+            if (textarea) {
+              textarea.focus();
+              textarea.selectionStart = textarea.selectionEnd =
+                textarea.value.length;
+            }
+          }}
           className="rounded-md border-gray-300 shadow-sm"
           placeholder="Zadajte text..."
           rows={5}
