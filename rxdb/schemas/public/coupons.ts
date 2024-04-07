@@ -73,7 +73,6 @@ export type CouponsDocument = RxDocument<CouponsDocumentType>;
 export type CouponsCollection = RxCollection<CouponsDocumentType>;
 
 export type CouponsConstraints =
-  | "coupons_code_key"
   | "coupons_pkey"
   | "coupons_user_id_fkey"
   | "public_coupons_contact_id_fkey";

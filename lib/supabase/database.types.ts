@@ -147,6 +147,7 @@ export type Database = {
           datetime: string;
           id: string;
           is_public: boolean;
+          note: string;
           service_id: string;
         };
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           datetime: string;
           id?: string;
           is_public?: boolean;
+          note?: string;
           service_id: string;
         };
         Update: {
@@ -165,6 +167,7 @@ export type Database = {
           datetime?: string;
           id?: string;
           is_public?: boolean;
+          note?: string;
           service_id?: string;
         };
         Relationships: [
@@ -204,7 +207,7 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "services_user_id_fkey";
+            foreignKeyName: "public_services_business_id_fkey";
             columns: ["business_id"];
             isOneToOne: false;
             referencedRelation: "businesses";

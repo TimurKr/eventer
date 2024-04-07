@@ -16,6 +16,7 @@ export default function EventRow({
   onMouseEnter,
   onMouseLeave,
   additionalTickets,
+  showNote,
 }: {
   event: EventsDocument;
   actionButton?: JSX.Element;
@@ -24,6 +25,7 @@ export default function EventRow({
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   additionalTickets?: TicketsDocument[];
+  showNote?: boolean;
 }) {
   const { result: services } = useRxData(
     "services",
@@ -111,6 +113,16 @@ export default function EventRow({
           </span>
           -<span>{new Date(event.datetime).toLocaleTimeString("sk-SK")}</span>
         </div>
+      </div>
+      <div
+        className={cn(
+          "hidden max-w-60 flex-col items-start md:flex lg:max-w-80",
+          showNote === true && "!flex",
+          showNote === false && "!hidden",
+        )}
+      >
+        <p className="text-xs text-gray-600">Poznámka:</p>
+        <p className="line-clamp-2 text-start text-sm">{event.note}</p>
       </div>
       <div className="ms-auto flex flex-col flex-wrap items-center justify-end gap-x-2 lg:flex-row">
         {ticketTypes ? (
