@@ -5,7 +5,7 @@ import EventDetail from "@/components/EventDetail";
 import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
 import NoResults from "@/components/NoResults";
-import { InstantTextField } from "@/components/forms/InstantFields";
+import { InstantTextField } from "@/components/inputs/InstantFields";
 import {
   Alert,
   AlertAction,

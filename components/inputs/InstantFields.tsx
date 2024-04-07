@@ -83,9 +83,7 @@ export function InstantTextAreaField({
         if (err) {
           e.target.focus();
           setError(err);
-          toast.error(err, {
-            autoClose: 2000,
-          });
+          toast.error(err);
           return;
         }
         setError(null);
@@ -161,10 +159,7 @@ export function InstantTextField({
     if (err) {
       refocus();
       setError(null);
-      toast.error(err, {
-        closeButton: true,
-        autoClose: false,
-      });
+      toast.error(err);
       setValue(defaultValue || "");
       return;
     }

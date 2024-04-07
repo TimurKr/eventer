@@ -28,6 +28,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
+import * as zod from "zod";
+import { InstantTextField } from "./inputs/InstantFields";
 
 function ContactInTicket({
   className,
@@ -287,7 +289,24 @@ export default function TicketRow({
         </TextAreaInputDialog>
       </TableCell>
       <TableCell className="whitespace-nowrap text-end">
-        {ticket.price} €
+        <InstantTextField
+          type="text"
+          defaultValue={ticket.price.toString()}
+          inline
+          validate={async (value) => {
+            const r = zod.coerce
+              .number({
+                required_error: "Suma je povinná",
+                invalid_type_error: "Zadajte valídne číslo",
+              })
+              .safeParse(value);
+            return r.success ? null : r.error?.format()._errors.join(", ");
+          }}
+          updateValue={async (value) =>
+            (await ticket.patch({ price: parseFloat(value!) })).price.toString()
+          }
+        />{" "}
+        €
       </TableCell>
     </TableRow>
   );

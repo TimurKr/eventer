@@ -1,7 +1,7 @@
 "use client";
 
 import InlineLoading from "@/components/InlineLoading";
-import { InstantTextField } from "@/components/forms/InstantFields";
+import { InstantTextField } from "@/components/inputs/InstantFields";
 import { useUser } from "@/lib/supabase/browser";
 import { DbProvider, useRxData } from "@/rxdb/db";
 import React, { useCallback } from "react";

@@ -2,7 +2,7 @@
 
 import InlineLoading from "@/components/InlineLoading";
 import Loading from "@/components/Loading";
-import { InstantTextField } from "@/components/forms/InstantFields";
+import { InstantTextField } from "@/components/inputs/InstantFields";
 import { useRxData } from "@/rxdb/db";
 import { ServicesDocument } from "@/rxdb/schemas/public/services";
 import { PencilIcon } from "@heroicons/react/24/outline";
