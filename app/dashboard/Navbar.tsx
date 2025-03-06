@@ -19,6 +19,7 @@ import { UserGroupIcon } from "@heroicons/react/24/solid";
 import { Route } from "next";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import { FaTheaterMasks, FaTicketAlt } from "react-icons/fa";
 import { HiCalendarDays } from "react-icons/hi2";
@@ -82,6 +83,8 @@ function PageLink({
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
+  const posthog = usePostHog();
+
   return (
     <>
       {routes.map((item) => (
@@ -101,6 +104,7 @@ export default function Navbar() {
           <DropdownMenuItem
             className="text-destructive"
             onClick={async () => {
+              posthog.reset();
               await destroyDb();
               await createBrowserSupabase().auth.signOut();
               router.push("/auth/login");

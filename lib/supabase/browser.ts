@@ -1,6 +1,7 @@
 import type { Database } from "@/lib/supabase/database.types";
 import { createBrowserClient } from "@supabase/ssr";
 import { User } from "@supabase/supabase-js";
+import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 
 export function createBrowserSupabase() {
@@ -23,6 +24,17 @@ export function useUser(): UserHookState {
     user: undefined,
     isFetching: true,
   });
+
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    if (state?.user?.id) {
+      posthog.identify(state.user.id, {
+        email: state.user.email,
+      });
+    }
+  }, [state?.user?.id, state?.user?.email, posthog]);
+
   useEffect(() => {
     createBrowserSupabase()
       .auth.getUser()

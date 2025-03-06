@@ -1,3 +1,4 @@
+import { PostHogProvider } from "@/components/Posthog/PosthogProvider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Roboto } from "next/font/google";
@@ -34,14 +35,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={font.className}>
-      <body
-        className={`h-screen bg-background text-foreground ${font.variable}`}
-      >
-        <main className="h-full min-h-screen w-full">{children}</main>
-        <ToastContainer position="top-right" />
-        <SpeedInsights />
-        <Analytics />
-      </body>
+      <PostHogProvider>
+        <body
+          className={`h-screen bg-background text-foreground ${font.variable}`}
+        >
+          <main className="h-full min-h-screen w-full">{children}</main>
+          <ToastContainer position="top-right" />
+          <SpeedInsights />
+          <Analytics />
+        </body>
+      </PostHogProvider>
     </html>
   );
 }
