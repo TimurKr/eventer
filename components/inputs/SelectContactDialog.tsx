@@ -134,7 +134,7 @@ export function SelectContactDialog({
           <div className="divide-y pb-8 pe-4" id="list-of-contacts">
             {contacts.map((contact) => (
               <button
-                className="group flex w-full flex-col px-2 py-2 text-xs font-light text-gray-500"
+                className="group flex w-full flex-col px-2 py-2 text-start text-xs font-light text-gray-500"
                 key={contact.id}
                 onClick={() => handleSelected(contact)}
               >
