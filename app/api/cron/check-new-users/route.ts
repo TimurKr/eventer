@@ -2,7 +2,7 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY!);
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function GET() {
   try {
