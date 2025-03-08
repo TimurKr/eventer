@@ -1,0 +1,16 @@
+name: Daily User Check
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day
+    - cron: "0 0 * * *"
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  check-new-users:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call check-new-users API
+        run: |
+          curl -X GET https://eventer-app.vercel.app/api/cron/check-new-users
